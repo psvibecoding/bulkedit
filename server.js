@@ -163,9 +163,8 @@ app.get('/auth/start', authLimiter, (req, res) => {
     return res.redirect(`https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_CLIENT_ID}&scope=${SHOPIFY_SCOPES}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`);
   }
 
-  // No shop — redirect to Shopify login (merchant picks store there)
-  oauthStates.set(state, { shop: null, exp: Date.now() + 300000 });
-  res.redirect(`https://accounts.shopify.com/oauth2/auth?client_id=${SHOPIFY_CLIENT_ID}&scope=${SHOPIFY_SCOPES}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}&response_type=code`);
+  // No shop provided — return error
+  return res.status(400).send('Missing shop domain. Please provide ?shop=your-store.myshopify.com');
 });
 
 // Step 2 — Shopify calls back with code

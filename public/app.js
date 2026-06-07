@@ -146,7 +146,11 @@ async function apiPost(path, body = {}) {
 }
 
 /* ─── CONNECT: OAuth ─────────────────────── */
-function startOAuth() { window.location.href = '/auth/start'; }
+function startOAuth() {
+  const raw = ($('f-shop-oauth')?.value || '').trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
+  if (!raw || !raw.includes('.myshopify.com')) return toast('Enter your store domain (e.g. your-store.myshopify.com)');
+  window.location.href = `/auth/start?shop=${encodeURIComponent(raw)}`;
+}
 
 /* ─── CONNECT: Token ─────────────────────── */
 async function connectWithToken() {
@@ -785,6 +789,7 @@ function boot() {
   $('c-oauth-go').addEventListener('click',  startOAuth);
   $('c-token-go').addEventListener('click',  connectWithToken);
   document.querySelectorAll('.c-back').forEach(btn => btn.addEventListener('click', () => showStep('c-choose')));
+  $('f-shop-oauth').addEventListener('keydown', e => { if (e.key==='Enter') startOAuth(); });
   $('f-shop').addEventListener('keydown',  e => { if (e.key==='Enter') connectWithToken(); });
   $('f-token').addEventListener('keydown', e => { if (e.key==='Enter') connectWithToken(); });
 

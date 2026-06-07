@@ -40,9 +40,12 @@
           <button class="btn-ghost" id="c-demo-btn">Load demo data</button>
         </div>
 
-        <!-- Step 2a: OAuth — just confirm -->
+        <!-- Step 2a: OAuth — enter shop domain -->
         <div id="c-oauth" class="c-step hidden">
-          <p class="step-hint">You'll be redirected to Shopify to log in and choose your store.</p>
+          <div class="field">
+            <label for="f-shop-oauth">Store domain</label>
+            <input id="f-shop-oauth" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
+          </div>
           <button class="btn-cta" id="c-oauth-go">Continue to Shopify →</button>
           <button class="btn-ghost c-back">← Back</button>
         </div>
