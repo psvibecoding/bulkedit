@@ -7,6 +7,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/styles.css"/>
+  <style>
+    .c-step { display: none; }
+    .c-step:not(.hidden) { display: flex; flex-direction: column; gap: 12px; }
+    #c-choose { display: flex; flex-direction: column; gap: 12px; }
+    #c-choose.hidden { display: none; }
+  </style>
 </head>
 <body>
 <div id="app">
@@ -233,6 +239,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=3"></script>
+<script src="/app-tool.js?v=4"></script>
 </body>
 </html>
