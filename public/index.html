@@ -5,36 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BulkEdit — Shopify without the CSV</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
 <div class="app">
 
-  <!-- ══════════════════════════════════
-       CONNECT SCREEN
-  ══════════════════════════════════ -->
+  <!-- CONNECT -->
   <section id="screen-connect" class="screen active">
     <div class="connect-inner">
       <div class="connect-brand">
         <span class="brand-mark">BE</span>
         <span class="brand-name">BulkEdit</span>
       </div>
-
       <div class="connect-hero">
         <h1>Shopify editing<br>without <em>the CSV</em></h1>
-        <p>Inline table editing · Variant metafields · Scheduling · Undo/redo · Export. Your token never leaves your session.</p>
+        <p>Inline table editing · Variant metafields · Scheduling · Review before publishing</p>
       </div>
-
       <div class="connect-features">
         <span class="feat-pill">✦ Inline editing</span>
         <span class="feat-pill">✦ Variant metafields</span>
+        <span class="feat-pill">✦ Bulk price change</span>
         <span class="feat-pill">✦ Schedule + auto-revert</span>
-        <span class="feat-pill">✦ Undo / Redo</span>
-        <span class="feat-pill">✦ Bulk actions</span>
-        <span class="feat-pill">✦ CSV + JSON export</span>
+        <span class="feat-pill">✦ Review &amp; publish</span>
       </div>
-
       <div class="connect-card">
         <div class="field-group">
           <label for="inp-shop">Store domain</label>
@@ -51,12 +45,9 @@
     </div>
   </section>
 
-  <!-- ══════════════════════════════════
-       WORKSPACE SCREEN
-  ══════════════════════════════════ -->
+  <!-- WORKSPACE -->
   <section id="screen-workspace" class="screen">
 
-    <!-- TOPBAR -->
     <header class="topbar">
       <div class="topbar-left">
         <div class="topbar-brand">
@@ -64,40 +55,40 @@
         </div>
         <div class="store-info">
           <span id="shopName" class="store-name">—</span>
-          <span class="session-pill">session only</span>
+          <span class="session-pill" id="session-pill">session only</span>
+          <span class="demo-pill" id="demo-pill" style="display:none">demo</span>
         </div>
-
         <div class="search-wrap">
           <span class="search-ico">⌕</span>
-          <input id="search" type="text" placeholder="Search products, SKU, tags, vendor…" autocomplete="off" spellcheck="false" />
+          <input id="search" type="text" placeholder="Search products, SKU, tags…" autocomplete="off" spellcheck="false" />
           <div id="suggestions" class="suggestions"></div>
         </div>
       </div>
-
       <div class="topbar-right">
         <button class="btn-icon" id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩</button>
         <button class="btn-icon" id="btn-redo" title="Redo (Ctrl+Y)" disabled>↪</button>
         <button class="btn-ghost sm" id="disconnectBtn">Disconnect</button>
-        <button class="btn-primary sm" id="saveBtn" disabled>
-          Save <span class="save-badge" id="changeCount">0</span>
+        <button class="btn-publish" id="publishBtn" disabled onclick="App.openReviewModal()">
+          Review &amp; publish <span class="pub-count" id="changeCount">0</span>
         </button>
       </div>
     </header>
 
-    <!-- TABS -->
+    <!-- Demo banner -->
+    <div class="demo-banner" id="demo-banner">
+      <span><strong>Demo mode</strong> — changes won't be sent to Shopify. Connect your store to save for real.</span>
+      <button class="btn-ghost sm" onclick="App.goConnect()">Connect store →</button>
+    </div>
+
     <nav class="tabs">
       <button class="tab active" data-tab="products">Products</button>
-      <button class="tab" data-tab="schedule">
-        Scheduled <span class="tab-badge" id="tab-sched-count">0</span>
-      </button>
-      <button class="tab" data-tab="audit">Audit preview</button>
+      <button class="tab" data-tab="schedule">Scheduled <span class="tab-badge" id="tab-sched-count" style="display:none">0</span></button>
+      <button class="tab" data-tab="audit">Change log</button>
       <button class="tab" data-tab="export">Export</button>
     </nav>
 
-    <!-- ── PRODUCTS PANEL ── -->
+    <!-- PRODUCTS -->
     <section id="tab-products" class="panel active">
-
-      <!-- filter + bulk bar -->
       <div class="panel-toolbar">
         <div class="filter-group">
           <span class="filter-label">Status</span>
@@ -109,30 +100,28 @@
           <button class="filter-chip" data-filter="changed">Modified</button>
           <button class="filter-chip" data-filter="scheduled">Scheduled</button>
         </div>
-
         <div class="bulk-actions" id="bulk-actions">
           <span class="bulk-label" id="bulk-label">0 selected</span>
           <button class="btn-ghost xs" onclick="App.bulkStatus('ACTIVE')">● Activate</button>
           <button class="btn-ghost xs" onclick="App.bulkStatus('DRAFT')">○ Draft</button>
           <button class="btn-ghost xs" onclick="App.bulkStatus('ARCHIVED')">⊘ Archive</button>
-          <button class="btn-ghost xs" onclick="App.bulkAddTag()">+ Add tag</button>
-          <button class="btn-ghost xs danger" onclick="App.bulkRemoveTag()">− Remove tag</button>
-          <button class="btn-ghost xs amber" onclick="App.openScheduleModal('bulk')">⏱ Schedule selected</button>
+          <button class="btn-ghost xs" onclick="App.bulkAddTag()">+ Tag</button>
+          <button class="btn-ghost xs danger" onclick="App.bulkRemoveTag()">− Tag</button>
+          <button class="btn-ghost xs amber" onclick="App.bulkSetPrice()">€ Set price</button>
+          <button class="btn-ghost xs amber" onclick="App.openScheduleModal('bulk')">⏱ Schedule</button>
         </div>
       </div>
-
-      <!-- undo hint bar -->
       <div class="undo-bar" id="undo-bar">
         <span id="undo-bar-msg"></span>
         <button class="btn-ghost xs" onclick="App.undo()">↩ Undo</button>
         <button class="btn-ghost xs" onclick="App.redo()">↪ Redo</button>
       </div>
-
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th class="col-check"><input type="checkbox" id="chk-all" /></th>
+              <th class="col-img"></th>
               <th class="col-product">Product</th>
               <th class="col-status">Status</th>
               <th class="col-vendor">Vendor</th>
@@ -150,43 +139,43 @@
       </div>
     </section>
 
-    <!-- ── SCHEDULE PANEL ── -->
+    <!-- SCHEDULE -->
     <section id="tab-schedule" class="panel">
       <div class="panel-split">
         <div class="panel-card">
           <h2>Session scheduler</h2>
-          <p class="panel-sub">Schedules run only while this browser tab is open. Nothing is stored on the server.</p>
+          <p class="panel-sub">Schedules run only while this browser tab is open. Nothing stored on the server.</p>
           <div class="sched-io-btns">
-            <button class="btn-ghost sm" id="exportSchedule">↓ Export schedule JSON</button>
-            <button class="btn-ghost sm" id="importScheduleBtn">↑ Import schedule JSON</button>
+            <button class="btn-ghost sm" id="exportSchedule">↓ Export JSON</button>
+            <button class="btn-ghost sm" id="importScheduleBtn">↑ Import JSON</button>
             <input id="importSchedule" type="file" accept="application/json" hidden />
           </div>
         </div>
         <div class="panel-card grow">
           <div class="sched-list-header">
             <h2>Queued actions</h2>
-            <button class="btn-ghost sm amber" onclick="App.openScheduleModal('new')">+ New task</button>
+            <button class="btn-amber sm" onclick="App.openScheduleModal('new')">+ New task</button>
           </div>
           <div id="scheduleList" class="sched-list empty">No scheduled actions yet.</div>
         </div>
       </div>
     </section>
 
-    <!-- ── AUDIT PANEL ── -->
+    <!-- CHANGE LOG -->
     <section id="tab-audit" class="panel">
-      <div class="panel-card audit-card">
+      <div class="audit-card">
         <div class="audit-header">
           <div>
-            <h2>Audit preview</h2>
-            <p class="panel-sub">No changes are sent to Shopify until you click Save.</p>
+            <h2>Change log</h2>
+            <p class="panel-sub">All pending changes. Click "Review &amp; publish" to confirm and send to Shopify.</p>
           </div>
-          <button class="btn-ghost sm" onclick="App.clearChanges()">Clear all changes</button>
+          <button class="btn-ghost sm danger" onclick="App.clearChanges()">Clear all</button>
         </div>
         <pre id="audit">No pending changes.</pre>
       </div>
     </section>
 
-    <!-- ── EXPORT PANEL ── -->
+    <!-- EXPORT -->
     <section id="tab-export" class="panel">
       <div class="export-wrap">
         <div class="panel-card">
@@ -205,19 +194,40 @@
       </div>
     </section>
 
-    <!-- STATUSBAR -->
     <footer class="statusbar">
       <span class="status-msg" id="status-msg">Ready</span>
-      <span class="status-hint">Changes are validated and proxied — your token is never stored</span>
+      <span class="status-hint">Changes are staged locally — use Review &amp; publish to save to Shopify</span>
     </footer>
 
-  </section><!-- /workspace -->
+  </section>
 
-</div><!-- /app -->
+</div>
 
-<!-- ══════════════════════════════════
-     SCHEDULE MODAL
-══════════════════════════════════ -->
+<!-- REVIEW MODAL -->
+<div class="modal-overlay" id="modal-review" onclick="if(event.target===this)App.closeReviewModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3>Review &amp; publish</h3>
+        <p class="modal-sub" id="review-sub">Review all changes before saving to Shopify</p>
+      </div>
+      <button class="modal-close" onclick="App.closeReviewModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="review-list" id="review-list"></div>
+      <div class="review-commit-field">
+        <label>Commit message <span class="label-hint">(optional — for your records)</span></label>
+        <input class="review-commit-input" id="review-commit-msg" type="text" placeholder="e.g. Black Friday price update, Q4 inventory refresh…" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost sm" onclick="App.closeReviewModal()">Cancel</button>
+      <button class="btn-primary sm" id="confirm-publish-btn" onclick="App.confirmPublish()">Confirm &amp; publish →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE MODAL -->
 <div class="modal-overlay" id="modal-schedule" onclick="if(event.target===this)App.closeScheduleModal()">
   <div class="modal">
     <div class="modal-header">
@@ -227,13 +237,11 @@
       </div>
       <button class="modal-close" onclick="App.closeScheduleModal()">✕</button>
     </div>
-
     <div class="modal-body">
       <div class="modal-field">
         <label>Task name</label>
         <input id="sched-name" type="text" placeholder="e.g. Black Friday sale" />
       </div>
-
       <div class="modal-row">
         <div class="modal-field">
           <label>Activate at — date</label>
@@ -244,7 +252,6 @@
           <input id="sched-time" type="time" value="09:00" />
         </div>
       </div>
-
       <div class="modal-field">
         <label>Change type</label>
         <select id="sched-type" onchange="App.renderSchedTypeFields()">
@@ -254,19 +261,15 @@
           <option value="tags_remove">Remove tags</option>
         </select>
       </div>
-
       <div id="sched-type-fields"></div>
-
       <div class="modal-field" id="sched-products-wrap">
         <label>Products <span id="sched-prod-count" class="label-hint"></span></label>
         <div id="sched-prod-list" class="sched-prod-list"></div>
       </div>
-
       <div class="modal-field">
         <label class="toggle-label">
           <input type="checkbox" id="sched-revert" onchange="App.toggleRevert()" />
-          <span>Auto-revert after end time</span>
-          <small>Restores original values automatically</small>
+          <span>Auto-revert after end time<small>Restores original values automatically</small></span>
         </label>
       </div>
       <div id="sched-revert-fields" class="modal-row hidden">
@@ -280,7 +283,6 @@
         </div>
       </div>
     </div>
-
     <div class="modal-footer">
       <button class="btn-ghost sm" onclick="App.closeScheduleModal()">Cancel</button>
       <button class="btn-amber sm" onclick="App.confirmSchedule()">Schedule task →</button>
@@ -289,7 +291,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-
 <script src="/app.js"></script>
 </body>
 </html>
