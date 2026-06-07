@@ -4,257 +4,370 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>BulkEdit — Shopify bulk editing without the CSV</title>
-  <meta name="description" content="Edit products, variants, metafields and tags in bulk. Review every change before it goes live. No CSV, no exports, no mistakes."/>
+  <meta name="description" content="Edit products, variants and metafields in bulk. Review every change before it goes live. No CSV, no mistakes."/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
-      --bg:#f6f6f3;--white:#fff;--s2:#f0f0ed;--b1:#deded8;--b2:#cecec8;
-      --tx:#181816;--t2:#585850;--t3:#909088;--t4:#b8b8b0;
-      --green:#166534;--green-lt:#15803d;--green-bg:rgba(22,101,52,.07);--green-brd:rgba(22,101,52,.18);
-      --font:'Instrument Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+      --bg:#fafaf8;
+      --white:#ffffff;
+      --ink:#0f0f0d;
+      --ink2:#3a3a36;
+      --ink3:#7a7a72;
+      --ink4:#b8b8b0;
+      --border:#e8e8e2;
+      --green:#1a5c38;
+      --green-lt:#227a4a;
+      --green-bg:rgba(26,92,56,.06);
+      --green-brd:rgba(26,92,56,.15);
+      --serif:'DM Serif Display',Georgia,serif;
+      --sans:'DM Sans',system-ui,sans-serif;
+      --mono:'Geist Mono','Menlo',monospace;
     }
-    html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
-    /* NAV */
-    nav{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;background:var(--white);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:10}
-    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--tx)}
-    .logo-mark{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--green);color:#fff;font-family:var(--mono);font-size:11px;font-weight:500;border-radius:7px}
-    .logo-name{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--t2)}
-    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);text-decoration:none;transition:background .15s}
-    .nav-cta:hover{background:var(--green-lt)}
+    /* ── NAV ── */
+    nav{position:sticky;top:0;z-index:100;background:rgba(250,250,248,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:60px}
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:30px;height:30px;background:var(--green);color:#fff;font-family:var(--mono);font-size:11px;font-weight:500;border-radius:7px;display:flex;align-items:center;justify-content:center;letter-spacing:-.02em}
+    .logo-text{font-family:var(--mono);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3)}
+    .nav-r{display:flex;align-items:center;gap:12px}
+    .nav-link{font-size:14px;color:var(--ink3);text-decoration:none;transition:color .15s}
+    .nav-link:hover{color:var(--ink)}
+    .nav-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);text-decoration:none;transition:background .15s}
+    .nav-btn:hover{background:var(--green-lt)}
 
-    /* HERO */
-    .hero{max-width:800px;margin:0 auto;padding:96px 48px 80px;text-align:center}
-    .hero-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:20px;font-size:12px;color:var(--green);font-family:var(--mono);margin-bottom:28px}
-    .hero h1{font-size:54px;font-weight:300;letter-spacing:-1.5px;line-height:1.1;margin-bottom:20px}
-    .hero h1 em{font-style:normal;color:var(--green);font-weight:600}
-    .hero p{font-size:18px;color:var(--t2);line-height:1.7;max-width:560px;margin:0 auto 40px}
-    .hero-btns{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
-    .btn-hero{background:var(--green);color:#fff;border:none;border-radius:10px;padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--font);text-decoration:none;transition:background .15s,transform .1s}
-    .btn-hero:hover{background:var(--green-lt);transform:translateY(-1px)}
-    .btn-ghost-lg{background:transparent;color:var(--t2);border:1px solid var(--b2);border-radius:10px;padding:14px 28px;font-size:15px;font-weight:500;cursor:pointer;font-family:var(--font);text-decoration:none;transition:all .15s}
-    .btn-ghost-lg:hover{border-color:var(--b3,#b8b8b0);color:var(--tx)}
-    .hero-note{font-size:12px;color:var(--t3);margin-top:14px;font-family:var(--mono)}
+    /* ── HERO ── */
+    .hero{max-width:1100px;margin:0 auto;padding:100px 48px 80px;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+    .hero-l{}
+    .hero-tag{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:20px;font-size:12px;color:var(--green);font-family:var(--mono);margin-bottom:28px}
+    .hero-tag::before{content:'';width:6px;height:6px;background:var(--green);border-radius:50%;display:inline-block}
+    .hero h1{font-family:var(--serif);font-size:56px;line-height:1.05;letter-spacing:-.5px;margin-bottom:20px;color:var(--ink)}
+    .hero h1 em{font-style:italic;color:var(--green)}
+    .hero-sub{font-size:17px;color:var(--ink2);line-height:1.7;margin-bottom:36px;max-width:440px}
+    .hero-btns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
+    .btn-main{background:var(--green);color:#fff;border:none;border-radius:10px;padding:14px 28px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:background .15s,transform .1s}
+    .btn-main:hover{background:var(--green-lt);transform:translateY(-1px)}
+    .btn-outline{background:transparent;color:var(--ink2);border:1px solid var(--border);border-radius:10px;padding:14px 24px;font-size:15px;font-weight:500;cursor:pointer;font-family:var(--sans);text-decoration:none;transition:all .15s}
+    .btn-outline:hover{border-color:var(--ink4);color:var(--ink)}
+    .hero-note{font-size:12px;color:var(--ink4);font-family:var(--mono);display:flex;align-items:center;gap:6px}
+    .hero-note::before{content:'🔒';font-size:11px}
 
-    /* SOCIAL PROOF */
-    .social{background:var(--white);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);padding:20px 48px;text-align:center}
-    .social p{font-size:12px;color:var(--t3);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
-    .social-quotes{display:flex;flex-wrap:wrap;justify-content:center;gap:32px}
-    .quote{max-width:280px;text-align:left}
-    .quote-text{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:8px;font-style:italic}
-    .quote-src{font-size:11px;color:var(--t4);font-family:var(--mono)}
+    /* Hero visual */
+    .hero-r{position:relative}
+    .hero-card{background:var(--white);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.07),0 1px 4px rgba(0,0,0,.04)}
+    .hc-top{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+    .hc-dots{display:flex;gap:6px}
+    .hc-dot{width:10px;height:10px;border-radius:50%}
+    .hc-dot:nth-child(1){background:#ff5f57}
+    .hc-dot:nth-child(2){background:#febc2e}
+    .hc-dot:nth-child(3){background:#28c840}
+    .hc-title{font-size:12px;color:var(--ink3);font-family:var(--mono);margin-left:8px}
+    .hc-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+    .hc-table th{padding:8px 12px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);background:var(--bg);border-bottom:1px solid var(--border)}
+    .hc-table td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--ink2)}
+    .hc-table tr:last-child td{border-bottom:none}
+    .hc-table tr:hover td{background:var(--bg)}
+    .hc-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500}
+    .hc-active{background:rgba(26,92,56,.08);color:var(--green)}
+    .hc-draft{background:rgba(0,0,0,.05);color:var(--ink3)}
+    .hc-changed{background:rgba(26,92,56,.08);border:1px solid var(--green-brd);color:var(--green);font-size:10px;padding:2px 8px;border-radius:4px}
+    .hc-price-old{color:var(--ink4);text-decoration:line-through;margin-right:4px}
+    .hc-price-new{color:var(--green);font-weight:500}
 
-    /* FEATURES */
-    .features{max-width:960px;margin:0 auto;padding:96px 48px}
-    .features-header{text-align:center;margin-bottom:64px}
-    .features-header h2{font-size:36px;font-weight:300;letter-spacing:-.8px;margin-bottom:12px}
-    .features-header p{font-size:16px;color:var(--t2)}
-    .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-    .feature-card{background:var(--white);border:1px solid var(--b1);border-radius:12px;padding:28px}
-    .feature-icon{font-size:24px;margin-bottom:14px}
-    .feature-card h3{font-size:16px;font-weight:600;margin-bottom:8px}
-    .feature-card p{font-size:14px;color:var(--t2);line-height:1.6}
+    /* ── LOGOS ── */
+    .logos{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:24px 48px;text-align:center;background:var(--white)}
+    .logos p{font-size:11px;color:var(--ink4);font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;margin-bottom:0}
 
-    /* HOW IT WORKS */
-    .how{background:var(--white);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);padding:96px 48px}
-    .how-inner{max-width:720px;margin:0 auto;text-align:center}
-    .how h2{font-size:36px;font-weight:300;letter-spacing:-.8px;margin-bottom:48px}
-    .steps{display:flex;flex-direction:column;gap:0}
-    .step{display:grid;grid-template-columns:48px 1fr;gap:20px;padding:24px 0;border-bottom:1px solid var(--b1);text-align:left}
-    .step:last-child{border-bottom:none}
-    .step-num{width:36px;height:36px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:500;color:var(--green);flex-shrink:0;margin-top:2px}
-    .step h4{font-size:16px;font-weight:600;margin-bottom:5px}
-    .step p{font-size:14px;color:var(--t2);line-height:1.6}
+    /* ── BENEFITS ── */
+    .benefits{max-width:1100px;margin:0 auto;padding:96px 48px}
+    .section-label{font-size:11px;font-family:var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--green);margin-bottom:16px}
+    .section-title{font-family:var(--serif);font-size:40px;line-height:1.1;letter-spacing:-.3px;margin-bottom:16px}
+    .section-sub{font-size:17px;color:var(--ink2);max-width:520px;line-height:1.7}
+    .benefits-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:56px}
+    .benefit{background:var(--white);padding:32px;transition:background .15s}
+    .benefit:hover{background:var(--bg)}
+    .benefit-icon{font-size:28px;margin-bottom:16px}
+    .benefit h3{font-size:16px;font-weight:600;margin-bottom:8px;color:var(--ink)}
+    .benefit p{font-size:14px;color:var(--ink3);line-height:1.6}
 
-    /* PAIN POINTS */
-    .pain{max-width:760px;margin:0 auto;padding:96px 48px;text-align:center}
-    .pain h2{font-size:36px;font-weight:300;letter-spacing:-.8px;margin-bottom:12px}
-    .pain .sub{font-size:16px;color:var(--t2);margin-bottom:48px}
-    .pain-list{display:flex;flex-direction:column;gap:12px;text-align:left}
-    .pain-item{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;background:var(--white);border:1px solid var(--b1);border-radius:10px}
-    .pain-x{font-size:16px;flex-shrink:0;margin-top:1px}
-    .pain-item p{font-size:14px;color:var(--t2);line-height:1.5}
-    .pain-item strong{color:var(--tx)}
+    /* ── COMPARISON ── */
+    .comparison{background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:96px 48px}
+    .comparison-inner{max-width:800px;margin:0 auto;text-align:center}
+    .comparison-inner .section-title{margin-bottom:48px}
+    .comp-table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}
+    .comp-table th{padding:12px 20px;font-size:11px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink4);border-bottom:2px solid var(--border)}
+    .comp-table td{padding:14px 20px;border-bottom:1px solid var(--border);color:var(--ink2)}
+    .comp-table tr:last-child td{border-bottom:none}
+    .comp-table .col-feature{font-weight:500;color:var(--ink)}
+    .comp-yes{color:var(--green);font-weight:600}
+    .comp-no{color:var(--ink4)}
+    .comp-highlight{background:var(--green-bg)}
 
-    /* CTA BOTTOM */
-    .cta-bottom{background:var(--green);padding:80px 48px;text-align:center}
-    .cta-bottom h2{font-size:36px;font-weight:300;letter-spacing:-.8px;color:#fff;margin-bottom:12px}
-    .cta-bottom p{font-size:16px;color:rgba(255,255,255,.75);margin-bottom:36px}
-    .btn-cta-white{background:#fff;color:var(--green);border:none;border-radius:10px;padding:14px 32px;font-size:16px;font-weight:700;cursor:pointer;font-family:var(--font);text-decoration:none;transition:opacity .15s}
-    .btn-cta-white:hover{opacity:.9}
-    .cta-note{font-size:12px;color:rgba(255,255,255,.5);margin-top:14px;font-family:var(--mono)}
+    /* ── HOW ── */
+    .how{max-width:900px;margin:0 auto;padding:96px 48px;text-align:center}
+    .how .section-title{margin-bottom:56px}
+    .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;text-align:left}
+    .step{position:relative}
+    .step-num{width:40px;height:40px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:500;color:var(--green);margin-bottom:16px}
+    .step h4{font-size:15px;font-weight:600;margin-bottom:8px}
+    .step p{font-size:13px;color:var(--ink3);line-height:1.6}
+    .step-line{position:absolute;top:20px;left:40px;right:-32px;height:1px;background:var(--border);z-index:0}
+    .step:last-child .step-line{display:none}
 
-    /* FOOTER */
-    footer{padding:32px 48px;border-top:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-    footer .logo-name{font-size:11px}
-    footer p{font-size:12px;color:var(--t4);font-family:var(--mono)}
+    /* ── CTA ── */
+    .cta{background:var(--ink);padding:96px 48px;text-align:center;position:relative;overflow:hidden}
+    .cta::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 70% at 50% 100%,rgba(26,92,56,.4) 0%,transparent 70%);pointer-events:none}
+    .cta h2{font-family:var(--serif);font-size:48px;line-height:1.1;color:#fff;margin-bottom:16px;position:relative}
+    .cta h2 em{font-style:italic;color:#86efac}
+    .cta p{font-size:16px;color:rgba(255,255,255,.6);margin-bottom:40px;position:relative}
+    .btn-cta-lg{background:#fff;color:var(--green);border:none;border-radius:12px;padding:16px 36px;font-size:16px;font-weight:700;cursor:pointer;font-family:var(--sans);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:opacity .15s;position:relative}
+    .btn-cta-lg:hover{opacity:.92}
+    .cta-note{font-size:12px;color:rgba(255,255,255,.35);margin-top:16px;font-family:var(--mono);position:relative}
 
-    @media(max-width:768px){
-      nav{padding:14px 20px}
-      .hero{padding:64px 20px 56px}
-      .hero h1{font-size:36px}
-      .features{padding:64px 20px}
-      .features-grid{grid-template-columns:1fr}
+    /* ── FOOTER ── */
+    footer{padding:32px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:var(--bg)}
+    footer p{font-size:12px;color:var(--ink4);font-family:var(--mono)}
+
+    @media(max-width:900px){
+      nav{padding:0 20px}
+      .hero{grid-template-columns:1fr;gap:48px;padding:64px 20px 48px}
+      .hero h1{font-size:40px}
+      .hero-r{display:none}
+      .logos{padding:20px}
+      .benefits{padding:64px 20px}
+      .benefits-grid{grid-template-columns:1fr}
+      .comparison{padding:64px 20px}
       .how{padding:64px 20px}
-      .pain{padding:64px 20px}
-      .cta-bottom{padding:64px 20px}
+      .steps{grid-template-columns:1fr 1fr;gap:24px}
+      .step-line{display:none}
+      .cta{padding:64px 20px}
+      .cta h2{font-size:36px}
       footer{padding:24px 20px;flex-direction:column;align-items:flex-start}
-      .social{padding:20px}
     }
   </style>
 </head>
 <body>
 
+<!-- NAV -->
 <nav>
   <a href="/" class="nav-logo">
     <span class="logo-mark">BE</span>
-    <span class="logo-name">BulkEdit</span>
+    <span class="logo-text">BulkEdit</span>
   </a>
-  <a href="/app" class="nav-cta">Open app →</a>
+  <div class="nav-r">
+    <a href="#how-it-works" class="nav-link">How it works</a>
+    <a href="/app" class="nav-btn">Open app →</a>
+  </div>
 </nav>
 
+<!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">✦ Free to use · No account needed</div>
-  <h1>Shopify editing<br>without <em>the CSV</em></h1>
-  <p>Edit products, variants, metafields and tags in bulk — directly from your browser. Review every change before it goes live.</p>
-  <div class="hero-btns">
-    <a href="/app" class="btn-hero">Connect your store →</a>
-    <a href="/app?demo=1" class="btn-ghost-lg">Try demo</a>
+  <div class="hero-l">
+    <div class="hero-tag">Free · No account needed</div>
+    <h1>Shopify editing<br>without <em>the CSV</em></h1>
+    <p class="hero-sub">Edit products, variants and metafields in bulk. Review every change before it goes live.</p>
+    <div class="hero-btns">
+      <a href="/app" class="btn-main">Connect your store →</a>
+      <a href="/app?demo=1" class="btn-outline">Try demo</a>
+    </div>
+    <p class="hero-note">No data stored. Token is session-only and never leaves your browser.</p>
   </div>
-  <p class="hero-note">No account. No data stored. Your token never leaves your session.</p>
+  <div class="hero-r">
+    <div class="hero-card">
+      <div class="hc-top">
+        <div class="hc-dots">
+          <div class="hc-dot"></div><div class="hc-dot"></div><div class="hc-dot"></div>
+        </div>
+        <span class="hc-title">your-store.myshopify.com</span>
+      </div>
+      <table class="hc-table">
+        <thead>
+          <tr><th>Product</th><th>Status</th><th>Price</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Merino Wool Sweater — S</td>
+            <td><span class="hc-pill hc-active">Active</span></td>
+            <td><span class="hc-price-old">89.00</span><span class="hc-price-new">69.00</span></td>
+            <td><span class="hc-changed">modified</span></td>
+          </tr>
+          <tr>
+            <td>Merino Wool Sweater — M</td>
+            <td><span class="hc-pill hc-active">Active</span></td>
+            <td><span class="hc-price-old">89.00</span><span class="hc-price-new">69.00</span></td>
+            <td><span class="hc-changed">modified</span></td>
+          </tr>
+          <tr>
+            <td>Leather Crossbody Bag</td>
+            <td><span class="hc-pill hc-draft">Draft</span></td>
+            <td>149.00</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Organic Cotton Tee — XS</td>
+            <td><span class="hc-pill hc-active">Active</span></td>
+            <td>34.00</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Yoga Mat 6mm</td>
+            <td><span class="hc-pill hc-active">Active</span></td>
+            <td><span class="hc-price-old">78.00</span><span class="hc-price-new">65.00</span></td>
+            <td><span class="hc-changed">modified</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 </section>
 
-<section class="social">
-  <p>What merchants say about CSV-based editing</p>
-  <div class="social-quotes">
-    <div class="quote">
-      <p class="quote-text">"The unsexy one: bulk editing anything... still exporting CSVs in 2026."</p>
-      <p class="quote-src">— r/shopifyDev</p>
-    </div>
-    <div class="quote">
-      <p class="quote-text">"Variant metafields don't show in bulk edit — this has been broken for months."</p>
-      <p class="quote-src">— Shopify Community</p>
-    </div>
-    <div class="quote">
-      <p class="quote-text">"If you make an error in a scheduled edit you have to delete it and start over."</p>
-      <p class="quote-src">— Shopify Forum</p>
-    </div>
-  </div>
-</section>
+<!-- LOGOS -->
+<div class="logos">
+  <p>Built for Shopify merchants and agencies who are tired of exporting CSVs</p>
+</div>
 
-<section class="features">
-  <div class="features-header">
-    <h2>Everything you need,<br>nothing you don't</h2>
-    <p>Built for dev-savvy merchants and agencies who need speed and precision.</p>
-  </div>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">⚡</div>
+<!-- BENEFITS -->
+<section class="benefits">
+  <p class="section-label">What you get</p>
+  <h2 class="section-title">Everything Shopify's<br>bulk editor is missing</h2>
+  <p class="section-sub">The native editor is limited, slow, and doesn't touch variant metafields. BulkEdit fixes all of that.</p>
+  <div class="benefits-grid">
+    <div class="benefit">
+      <div class="benefit-icon">⚡</div>
       <h3>Inline table editing</h3>
-      <p>Click any cell and edit directly. Title, price, vendor, tags, SKU — all in one table. No page reloads.</p>
+      <p>Click any cell and edit directly. Title, price, vendor, tags, SKU — all in one view.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔖</div>
+    <div class="benefit">
+      <div class="benefit-icon">🔖</div>
       <h3>Variant metafields</h3>
-      <p>The gap Shopify's own bulk editor still doesn't fill. Edit metafields for every variant, inline.</p>
+      <p>The gap Shopify's own editor still doesn't fill. Edit metafields per variant, right in the table.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">⚙️</div>
+    <div class="benefit">
+      <div class="benefit-icon">⚙️</div>
       <h3>Bulk actions</h3>
-      <p>Select multiple products and change status, set a price, or add/remove tags — all at once.</p>
+      <p>Select multiple products and change status, set a price, or add/remove tags all at once.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">👁️</div>
+    <div class="benefit">
+      <div class="benefit-icon">👁</div>
       <h3>Review before saving</h3>
-      <p>See a diff of every change — old value → new value — before anything hits your store.</p>
+      <p>See a full diff — old value → new value — for every change before anything hits your store.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">⏱️</div>
-      <h3>Scheduling + auto-revert</h3>
-      <p>Schedule price changes or status updates for a future date and time. Set auto-revert to restore original values.</p>
+    <div class="benefit">
+      <div class="benefit-icon">↓</div>
+      <h3>Export & recap</h3>
+      <p>Download your catalog as CSV or JSON. After every save, get an automatic recap file.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">↓</div>
-      <h3>Export + recap</h3>
-      <p>Download your catalog as CSV or JSON. After every save, get an automatic recap of what changed.</p>
-    </div>
-  </div>
-</section>
-
-<section class="how">
-  <div class="how-inner">
-    <h2>How it works</h2>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <div>
-          <h4>Connect your store</h4>
-          <p>Log in with Shopify OAuth or paste your Admin API token. Your credentials never leave your browser session.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <div>
-          <h4>Edit in the table</h4>
-          <p>Your products load instantly. Click any cell to edit. Select multiple rows for bulk actions.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <div>
-          <h4>Review your changes</h4>
-          <p>Before anything is saved, you see a full diff — every field, old value vs new value.</p>
-        </div>
-      </div>
-      <div class="step">
-        <div class="step-num">4</div>
-        <div>
-          <h4>Save to Shopify</h4>
-          <p>Confirm and your changes are sent directly to the Shopify API. A recap file downloads automatically.</p>
-        </div>
-      </div>
+    <div class="benefit">
+      <div class="benefit-icon">🔒</div>
+      <h3>Privacy first</h3>
+      <p>No account. No database. Your token lives in browser memory only and disappears when you close the tab.</p>
     </div>
   </div>
 </section>
 
-<section class="pain">
-  <h2>Sound familiar?</h2>
-  <p class="sub">These are the problems BulkEdit was built to solve.</p>
-  <div class="pain-list">
-    <div class="pain-item">
-      <span class="pain-x">😤</span>
-      <p><strong>Exporting CSVs just to change a price</strong> — formatting errors, import failures, entire galleries wiped by a wrong character.</p>
+<!-- COMPARISON -->
+<section class="comparison">
+  <div class="comparison-inner">
+    <p class="section-label">Why BulkEdit</p>
+    <h2 class="section-title">vs Shopify's built-in editor</h2>
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Shopify built-in</th>
+          <th>BulkEdit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-feature">Edit prices in bulk</td>
+          <td class="comp-yes">✓</td>
+          <td class="comp-yes comp-highlight">✓</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Variant metafields</td>
+          <td class="comp-no">✗ Not supported</td>
+          <td class="comp-yes comp-highlight">✓</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Review diff before saving</td>
+          <td class="comp-no">✗</td>
+          <td class="comp-yes comp-highlight">✓</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Bulk add/remove tags</td>
+          <td class="comp-no">✗</td>
+          <td class="comp-yes comp-highlight">✓</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Undo / Redo</td>
+          <td class="comp-no">✗</td>
+          <td class="comp-yes comp-highlight">✓</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Export CSV / JSON</td>
+          <td class="comp-no">CSV only</td>
+          <td class="comp-yes comp-highlight">✓ Both</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Change recap download</td>
+          <td class="comp-no">✗</td>
+          <td class="comp-yes comp-highlight">✓ Auto</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="how" id="how-it-works">
+  <p class="section-label">How it works</p>
+  <h2 class="section-title">Up and running in 60 seconds</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-line"></div>
+      <div class="step-num">1</div>
+      <h4>Connect your store</h4>
+      <p>Log in with Shopify OAuth or paste your Admin API token. Done.</p>
     </div>
-    <div class="pain-item">
-      <span class="pain-x">😤</span>
-      <p><strong>Variant metafields missing from bulk edit</strong> — Shopify's own editor still doesn't show them. You have to open each variant one by one.</p>
+    <div class="step">
+      <div class="step-line"></div>
+      <div class="step-num">2</div>
+      <h4>Edit in the table</h4>
+      <p>Products load instantly. Click any cell or select multiple rows for bulk actions.</p>
     </div>
-    <div class="pain-item">
-      <span class="pain-x">😤</span>
-      <p><strong>Scheduled edits you can't modify</strong> — make a mistake in a scheduled task and you have to delete it and start over from scratch.</p>
+    <div class="step">
+      <div class="step-line"></div>
+      <div class="step-num">3</div>
+      <h4>Review changes</h4>
+      <p>See a full diff of every field — old vs new — before anything is saved.</p>
     </div>
-    <div class="pain-item">
-      <span class="pain-x">😤</span>
-      <p><strong>No review before saving</strong> — changes go live immediately with no way to see what you're about to do before it's done.</p>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h4>Save to Shopify</h4>
+      <p>Confirm and your changes go live. A recap file downloads automatically.</p>
     </div>
   </div>
 </section>
 
-<section class="cta-bottom">
-  <h2>Ready to edit without the CSV?</h2>
-  <p>Free to use. No account. No data stored on our servers.</p>
-  <a href="/app" class="btn-cta-white">Connect your store →</a>
+<!-- CTA -->
+<section class="cta">
+  <h2>Stop exporting <em>CSVs</em></h2>
+  <p>Free to use. No account. No data stored. Just connect and edit.</p>
+  <a href="/app" class="btn-cta-lg">Connect your store →</a>
   <p class="cta-note">Works with any Shopify store · Requires read/write_products scope</p>
 </section>
 
+<!-- FOOTER -->
 <footer>
   <a href="/" class="nav-logo">
     <span class="logo-mark">BE</span>
-    <span class="logo-name">BulkEdit</span>
+    <span class="logo-text">BulkEdit</span>
   </a>
-  <p>© 2026 BulkEdit · Your token is never stored · Session only</p>
+  <p>© 2026 BulkEdit · No data stored · Session only</p>
 </footer>
 
 </body>
