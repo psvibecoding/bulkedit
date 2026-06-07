@@ -701,8 +701,18 @@ const App = (() => {
 
   /* ─── BOOT ───────────────────────────────────────── */
   function boot() {
-    $('connectBtn').onclick = connect;
-    $('demoBtn').onclick    = loadDemo;
+    // Connect screen
+    $('oauthBtn').onclick      = showOAuthForm;
+    $('tokenModeBtn').onclick  = showTokenForm;
+    $('demoBtn').onclick       = loadDemo;
+    $('oauthSubmitBtn').onclick = startOAuth;
+    $('oauthBackBtn').onclick  = showModes;
+    $('connectBtn').onclick    = connect;
+    $('tokenBackBtn').onclick  = showModes;
+
+    // Enter key on OAuth form
+    $('inp-shop-oauth').addEventListener('keydown', e => { if (e.key === 'Enter') startOAuth(); });
+    $('inp-shop').addEventListener('keydown', e => { if (e.key === 'Enter') connect(); });
     $('disconnectBtn').onclick = disconnect;
     $('btn-undo').onclick = undo;
     $('btn-redo').onclick = redo;
