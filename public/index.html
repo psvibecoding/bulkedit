@@ -30,19 +30,39 @@
         <span class="feat-pill">✦ Review &amp; publish</span>
       </div>
       <div class="connect-card">
-        <div class="field-group">
-          <label for="inp-shop">Store domain</label>
-          <input id="inp-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com" />
+
+        <!-- Mode selector -->
+        <div class="connect-modes" id="connect-modes">
+          <button class="btn-primary" id="oauthBtn" onclick="App.showOAuthForm()">Connect with Shopify →</button>
+          <button class="btn-ghost" id="tokenModeBtn" onclick="App.showTokenForm()">Connect with API token</button>
+          <button class="btn-ghost" id="demoBtn">Load demo data</button>
         </div>
-        <div class="field-group">
-          <label for="inp-token">Admin API access token</label>
-          <input id="inp-token" type="password" autocomplete="off" placeholder="shpat_xxxxxxxxxxxxxxxx" />
+
+        <!-- OAuth form -->
+        <div id="oauth-form" style="display:none">
+          <div class="field-group">
+            <label for="inp-shop-oauth">Store domain</label>
+            <input id="inp-shop-oauth" type="text" autocomplete="off" placeholder="your-store.myshopify.com" />
+          </div>
+          <button class="btn-primary" onclick="App.startOAuth()">Continue with Shopify →</button>
+          <button class="btn-ghost" onclick="App.showModes()">← Back</button>
         </div>
-        <button class="btn-primary" id="oauthBtn" onclick="App.startOAuth()">Connect with Shopify →</button>
-        <div class="connect-divider"><span>or connect manually with API token</span></div>
-        <button class="btn-ghost" id="connectBtn">Connect with token</button>
-        <button class="btn-ghost" id="demoBtn">Load demo data</button>
-        <p class="connect-note">Recommended scopes: <code>read_products write_products read_inventory write_inventory</code>. No customer or order scopes needed.</p>
+
+        <!-- Token form -->
+        <div id="token-form" style="display:none">
+          <div class="field-group">
+            <label for="inp-shop">Store domain</label>
+            <input id="inp-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com" />
+          </div>
+          <div class="field-group">
+            <label for="inp-token">Admin API access token</label>
+            <input id="inp-token" type="password" autocomplete="off" placeholder="shpat_xxxxxxxxxxxxxxxx" />
+          </div>
+          <button class="btn-primary" id="connectBtn">Connect →</button>
+          <button class="btn-ghost" onclick="App.showModes()">← Back</button>
+          <p class="connect-note">Recommended scopes: <code>read_products write_products read_inventory write_inventory</code>.</p>
+        </div>
+
       </div>
     </div>
   </section>

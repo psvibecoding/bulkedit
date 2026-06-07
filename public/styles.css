@@ -629,3 +629,15 @@ pre {
 .connect-divider::after {
   content: ''; flex: 1; height: 1px; background: var(--b1);
 }
+
+/* Connect modes */
+.connect-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#oauth-form, #token-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}

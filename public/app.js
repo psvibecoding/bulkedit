@@ -718,14 +718,33 @@ const App = (() => {
     document.addEventListener('keydown', e => { if(e.key==='Escape'){closeReviewModal();closeScheduleModal();} });
   }
 
+  function showModes() {
+    $('connect-modes').style.display = 'flex';
+    $('oauth-form').style.display    = 'none';
+    $('token-form').style.display    = 'none';
+  }
+  function showOAuthForm() {
+    $('connect-modes').style.display = 'none';
+    $('oauth-form').style.display    = 'flex';
+    $('token-form').style.display    = 'none';
+    setTimeout(() => $('inp-shop-oauth')?.focus(), 50);
+  }
+  function showTokenForm() {
+    $('connect-modes').style.display = 'none';
+    $('oauth-form').style.display    = 'none';
+    $('token-form').style.display    = 'flex';
+    setTimeout(() => $('inp-shop')?.focus(), 50);
+  }
+
   function startOAuth() {
-    const shop = $('inp-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
-    if (!shop || !shop.includes('.myshopify.com')) return toast('Enter your store domain first (e.g. your-store.myshopify.com)');
+    const shop = ($('inp-shop-oauth') || $('inp-shop')).value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
+    if (!shop || !shop.includes('.myshopify.com')) return toast('Enter your store domain (e.g. your-store.myshopify.com)');
     window.location.href = `/auth/start?shop=${encodeURIComponent(shop)}`;
   }
 
   return {
-    connect, loadDemo, disconnect, goConnect, startOAuth,
+    connect, loadDemo, disconnect, goConnect,
+    startOAuth, showModes, showOAuthForm, showTokenForm,
     markProduct, markVariant, markMetafield,
     cycleStatus, removeTag, addTag, addMetafield, removeMetafield,
     toggleRow, toggleAllRows, bulkStatus, bulkAddTag, bulkRemoveTag, bulkSetPrice,
