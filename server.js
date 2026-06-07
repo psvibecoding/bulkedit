@@ -148,7 +148,12 @@ async function gql({ shop, token }, query, variables = {}) {
   } finally { clearTimeout(t); }
 }
 
-// ── OAUTH ─────────────────────────────────────────────────
+// Serve /app
+app.get('/app', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
+
+// Handle OAuth callback redirect to /app
 // Step 1 — if shop provided, redirect directly; otherwise redirect to Shopify account picker
 app.get('/auth/start', authLimiter, (req, res) => {
   if (!SHOPIFY_CLIENT_ID) return res.status(500).send('OAuth not configured.');
@@ -196,7 +201,7 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
     const td = await tr.json();
     if (!td.access_token) throw new Error('No token');
     // Pass token to frontend via URL — never stored server-side
-    res.redirect(`/?shop=${encodeURIComponent(shop)}&token=${encodeURIComponent(td.access_token)}`);
+    res.redirect(`/app?shop=${encodeURIComponent(shop)}&token=${encodeURIComponent(td.access_token)}`);
   } catch (e) {
     res.status(500).send(IS_PROD ? 'Authentication error.' : e.message);
   }
@@ -226,7 +231,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
             variants(first:100) {
               nodes {
                 id title sku price compareAtPrice inventoryQuantity
-                metafields(first:25) { nodes { id namespace key type value } }
+                metafields(first:10) { nodes { id namespace key type value } }
               }
             }
           }

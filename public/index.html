@@ -3,331 +3,259 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>BulkEdit — Shopify without the CSV</title>
+  <title>BulkEdit — Shopify bulk editing without the CSV</title>
+  <meta name="description" content="Edit products, variants, metafields and tags in bulk. Review every change before it goes live. No CSV, no exports, no mistakes."/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/styles.css"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f6f6f3;--white:#fff;--s2:#f0f0ed;--b1:#deded8;--b2:#cecec8;
+      --tx:#181816;--t2:#585850;--t3:#909088;--t4:#b8b8b0;
+      --green:#166534;--green-lt:#15803d;--green-bg:rgba(22,101,52,.07);--green-brd:rgba(22,101,52,.18);
+      --font:'Instrument Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+    /* NAV */
+    nav{display:flex;align-items:center;justify-content:space-between;padding:18px 48px;background:var(--white);border-bottom:1px solid var(--b1);position:sticky;top:0;z-index:10}
+    .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--tx)}
+    .logo-mark{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--green);color:#fff;font-family:var(--mono);font-size:11px;font-weight:500;border-radius:7px}
+    .logo-name{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--t2)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);text-decoration:none;transition:background .15s}
+    .nav-cta:hover{background:var(--green-lt)}
+
+    /* HERO */
+    .hero{max-width:800px;margin:0 auto;padding:96px 48px 80px;text-align:center}
+    .hero-badge{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:20px;font-size:12px;color:var(--green);font-family:var(--mono);margin-bottom:28px}
+    .hero h1{font-size:54px;font-weight:300;letter-spacing:-1.5px;line-height:1.1;margin-bottom:20px}
+    .hero h1 em{font-style:normal;color:var(--green);font-weight:600}
+    .hero p{font-size:18px;color:var(--t2);line-height:1.7;max-width:560px;margin:0 auto 40px}
+    .hero-btns{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+    .btn-hero{background:var(--green);color:#fff;border:none;border-radius:10px;padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;font-family:var(--font);text-decoration:none;transition:background .15s,transform .1s}
+    .btn-hero:hover{background:var(--green-lt);transform:translateY(-1px)}
+    .btn-ghost-lg{background:transparent;color:var(--t2);border:1px solid var(--b2);border-radius:10px;padding:14px 28px;font-size:15px;font-weight:500;cursor:pointer;font-family:var(--font);text-decoration:none;transition:all .15s}
+    .btn-ghost-lg:hover{border-color:var(--b3,#b8b8b0);color:var(--tx)}
+    .hero-note{font-size:12px;color:var(--t3);margin-top:14px;font-family:var(--mono)}
+
+    /* SOCIAL PROOF */
+    .social{background:var(--white);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);padding:20px 48px;text-align:center}
+    .social p{font-size:12px;color:var(--t3);font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+    .social-quotes{display:flex;flex-wrap:wrap;justify-content:center;gap:32px}
+    .quote{max-width:280px;text-align:left}
+    .quote-text{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:8px;font-style:italic}
+    .quote-src{font-size:11px;color:var(--t4);font-family:var(--mono)}
+
+    /* FEATURES */
+    .features{max-width:960px;margin:0 auto;padding:96px 48px}
+    .features-header{text-align:center;margin-bottom:64px}
+    .features-header h2{font-size:36px;font-weight:300;letter-spacing:-.8px;margin-bottom:12px}
+    .features-header p{font-size:16px;color:var(--t2)}
+    .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+    .feature-card{background:var(--white);border:1px solid var(--b1);border-radius:12px;padding:28px}
+    .feature-icon{font-size:24px;margin-bottom:14px}
+    .feature-card h3{font-size:16px;font-weight:600;margin-bottom:8px}
+    .feature-card p{font-size:14px;color:var(--t2);line-height:1.6}
+
+    /* HOW IT WORKS */
+    .how{background:var(--white);border-top:1px solid var(--b1);border-bottom:1px solid var(--b1);padding:96px 48px}
+    .how-inner{max-width:720px;margin:0 auto;text-align:center}
+    .how h2{font-size:36px;font-weight:300;letter-spacing:-.8px;margin-bottom:48px}
+    .steps{display:flex;flex-direction:column;gap:0}
+    .step{display:grid;grid-template-columns:48px 1fr;gap:20px;padding:24px 0;border-bottom:1px solid var(--b1);text-align:left}
+    .step:last-child{border-bottom:none}
+    .step-num{width:36px;height:36px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:500;color:var(--green);flex-shrink:0;margin-top:2px}
+    .step h4{font-size:16px;font-weight:600;margin-bottom:5px}
+    .step p{font-size:14px;color:var(--t2);line-height:1.6}
+
+    /* PAIN POINTS */
+    .pain{max-width:760px;margin:0 auto;padding:96px 48px;text-align:center}
+    .pain h2{font-size:36px;font-weight:300;letter-spacing:-.8px;margin-bottom:12px}
+    .pain .sub{font-size:16px;color:var(--t2);margin-bottom:48px}
+    .pain-list{display:flex;flex-direction:column;gap:12px;text-align:left}
+    .pain-item{display:flex;align-items:flex-start;gap:14px;padding:16px 20px;background:var(--white);border:1px solid var(--b1);border-radius:10px}
+    .pain-x{font-size:16px;flex-shrink:0;margin-top:1px}
+    .pain-item p{font-size:14px;color:var(--t2);line-height:1.5}
+    .pain-item strong{color:var(--tx)}
+
+    /* CTA BOTTOM */
+    .cta-bottom{background:var(--green);padding:80px 48px;text-align:center}
+    .cta-bottom h2{font-size:36px;font-weight:300;letter-spacing:-.8px;color:#fff;margin-bottom:12px}
+    .cta-bottom p{font-size:16px;color:rgba(255,255,255,.75);margin-bottom:36px}
+    .btn-cta-white{background:#fff;color:var(--green);border:none;border-radius:10px;padding:14px 32px;font-size:16px;font-weight:700;cursor:pointer;font-family:var(--font);text-decoration:none;transition:opacity .15s}
+    .btn-cta-white:hover{opacity:.9}
+    .cta-note{font-size:12px;color:rgba(255,255,255,.5);margin-top:14px;font-family:var(--mono)}
+
+    /* FOOTER */
+    footer{padding:32px 48px;border-top:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    footer .logo-name{font-size:11px}
+    footer p{font-size:12px;color:var(--t4);font-family:var(--mono)}
+
+    @media(max-width:768px){
+      nav{padding:14px 20px}
+      .hero{padding:64px 20px 56px}
+      .hero h1{font-size:36px}
+      .features{padding:64px 20px}
+      .features-grid{grid-template-columns:1fr}
+      .how{padding:64px 20px}
+      .pain{padding:64px 20px}
+      .cta-bottom{padding:64px 20px}
+      footer{padding:24px 20px;flex-direction:column;align-items:flex-start}
+      .social{padding:20px}
+    }
+  </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- ════════════════════════════
-       SCREEN: CONNECT
-  ════════════════════════════ -->
-  <div id="s-connect" class="screen active">
-    <div class="connect-wrap">
-      <div class="connect-logo">
-        <span class="logo-mark">BE</span>
-        <span class="logo-name">BulkEdit</span>
-      </div>
-      <div class="connect-headline">
-        <h1>Shopify editing<br>without <em>the CSV</em></h1>
-        <p>Edit products, variants and metafields in bulk.<br>Review every change before it goes live.</p>
-      </div>
-      <div class="connect-pills">
-        <span class="pill">✦ Inline editing</span>
-        <span class="pill">✦ Variant metafields</span>
-        <span class="pill">✦ Bulk price / tags</span>
-        <span class="pill">✦ Scheduling</span>
-        <span class="pill">✦ Review &amp; save</span>
-      </div>
+<nav>
+  <a href="/" class="nav-logo">
+    <span class="logo-mark">BE</span>
+    <span class="logo-name">BulkEdit</span>
+  </a>
+  <a href="/app" class="nav-cta">Open app →</a>
+</nav>
 
-      <div class="connect-card">
-        <!-- Step 1: choose method -->
-        <div id="c-choose">
-          <button class="btn-cta" id="c-oauth-btn">Connect with Shopify</button>
-          <button class="btn-secondary" id="c-token-btn">Connect with API token</button>
-          <button class="btn-ghost" id="c-demo-btn">Load demo data</button>
-        </div>
+<section class="hero">
+  <div class="hero-badge">✦ Free to use · No account needed</div>
+  <h1>Shopify editing<br>without <em>the CSV</em></h1>
+  <p>Edit products, variants, metafields and tags in bulk — directly from your browser. Review every change before it goes live.</p>
+  <div class="hero-btns">
+    <a href="/app" class="btn-hero">Connect your store →</a>
+    <a href="/app?demo=1" class="btn-ghost-lg">Try demo</a>
+  </div>
+  <p class="hero-note">No account. No data stored. Your token never leaves your session.</p>
+</section>
 
-        <!-- Step 2a: OAuth — enter shop domain -->
-        <div id="c-oauth" class="c-step hidden">
-          <div class="field">
-            <label for="f-shop-oauth">Store domain</label>
-            <input id="f-shop-oauth" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
-          </div>
-          <button class="btn-cta" id="c-oauth-go">Continue to Shopify →</button>
-          <button class="btn-ghost c-back">← Back</button>
-        </div>
-
-        <!-- Step 2b: token -->
-        <div id="c-token" class="c-step hidden">
-          <div class="field">
-            <label for="f-shop">Store domain</label>
-            <input id="f-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
-          </div>
-          <div class="field">
-            <label for="f-token">Admin API access token</label>
-            <input id="f-token" type="password" autocomplete="off" placeholder="shpat_xxxxxxxxxxxxxxxx"/>
-          </div>
-          <button class="btn-cta" id="c-token-go">Connect →</button>
-          <button class="btn-ghost c-back">← Back</button>
-          <p class="fine-print">Scopes: <code>read_products write_products read_inventory write_inventory</code></p>
-        </div>
-      </div>
+<section class="social">
+  <p>What merchants say about CSV-based editing</p>
+  <div class="social-quotes">
+    <div class="quote">
+      <p class="quote-text">"The unsexy one: bulk editing anything... still exporting CSVs in 2026."</p>
+      <p class="quote-src">— r/shopifyDev</p>
+    </div>
+    <div class="quote">
+      <p class="quote-text">"Variant metafields don't show in bulk edit — this has been broken for months."</p>
+      <p class="quote-src">— Shopify Community</p>
+    </div>
+    <div class="quote">
+      <p class="quote-text">"If you make an error in a scheduled edit you have to delete it and start over."</p>
+      <p class="quote-src">— Shopify Forum</p>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════
-       SCREEN: LOADING
-  ════════════════════════════ -->
-  <div id="s-loading" class="screen">
-    <div class="loading-wrap">
-      <div class="spinner"></div>
-      <p id="loading-msg">Connecting…</p>
+<section class="features">
+  <div class="features-header">
+    <h2>Everything you need,<br>nothing you don't</h2>
+    <p>Built for dev-savvy merchants and agencies who need speed and precision.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Inline table editing</h3>
+      <p>Click any cell and edit directly. Title, price, vendor, tags, SKU — all in one table. No page reloads.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔖</div>
+      <h3>Variant metafields</h3>
+      <p>The gap Shopify's own bulk editor still doesn't fill. Edit metafields for every variant, inline.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚙️</div>
+      <h3>Bulk actions</h3>
+      <p>Select multiple products and change status, set a price, or add/remove tags — all at once.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👁️</div>
+      <h3>Review before saving</h3>
+      <p>See a diff of every change — old value → new value — before anything hits your store.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⏱️</div>
+      <h3>Scheduling + auto-revert</h3>
+      <p>Schedule price changes or status updates for a future date and time. Set auto-revert to restore original values.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">↓</div>
+      <h3>Export + recap</h3>
+      <p>Download your catalog as CSV or JSON. After every save, get an automatic recap of what changed.</p>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════
-       SCREEN: APP
-  ════════════════════════════ -->
-  <div id="s-app" class="screen">
-
-    <!-- TOPBAR -->
-    <header class="topbar">
-      <div class="topbar-l">
-        <span class="logo-mark sm">BE</span>
-        <span id="store-name" class="store-name"></span>
-        <span id="demo-badge" class="badge-demo hidden">demo</span>
-        <div class="search-box">
-          <span class="search-icon">⌕</span>
-          <input id="search" type="text" placeholder="Search products, SKU, tags…" autocomplete="off" spellcheck="false"/>
-          <div id="search-suggest" class="suggest-list"></div>
-        </div>
-      </div>
-      <div class="topbar-r">
-        <button class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩</button>
-        <button class="icon-btn" id="btn-redo" title="Redo (Ctrl+Y)" disabled>↪</button>
-        <button class="btn-ghost sm" id="btn-disconnect">Disconnect</button>
-        <button class="btn-save" id="btn-save" disabled>
-          Save changes <span id="save-count" class="save-badge">0</span>
-        </button>
-      </div>
-    </header>
-
-    <!-- DEMO BANNER -->
-    <div id="demo-banner" class="demo-banner hidden">
-      <span><strong>Demo mode</strong> — changes won't be saved to Shopify.</span>
-      <button class="btn-ghost sm" id="btn-demo-exit">Connect real store →</button>
-    </div>
-
-    <!-- TABS -->
-    <nav class="tabs">
-      <button class="tab active" data-tab="products">Products</button>
-      <button class="tab" data-tab="schedule">
-        Schedule <span id="sched-count" class="tab-count hidden">0</span>
-      </button>
-      <button class="tab" data-tab="export">Export</button>
-    </nav>
-
-    <!-- ── TAB: PRODUCTS ── -->
-    <div id="tab-products" class="tab-panel active">
-
-      <div class="toolbar">
-        <div class="filters">
-          <span class="filter-label">Status</span>
-          <button class="filter active" data-f="all">All</button>
-          <button class="filter" data-f="ACTIVE">Active</button>
-          <button class="filter" data-f="DRAFT">Draft</button>
-          <button class="filter" data-f="ARCHIVED">Archived</button>
-          <span class="filter-divider"></span>
-          <button class="filter" data-f="changed">Modified</button>
-        </div>
-        <div id="bulk-bar" class="bulk-bar hidden">
-          <span id="bulk-count" class="bulk-count">0 selected</span>
-          <button class="chip-btn" id="bulk-status-btn">● Status</button>
-          <button class="chip-btn" id="bulk-price-btn">€ Price</button>
-          <button class="chip-btn" id="bulk-tags-btn">⌗ Tags</button>
-          <button class="chip-btn amber" id="bulk-sched-btn">⏱ Schedule</button>
-        </div>
-      </div>
-
-      <div id="undo-hint" class="undo-hint hidden">
-        <span id="undo-hint-msg"></span>
-        <button class="link-btn" id="undo-hint-undo">↩ Undo</button>
-        <button class="link-btn" id="undo-hint-redo">↪ Redo</button>
-      </div>
-
-      <div class="table-scroll">
-        <table id="products-table">
-          <thead>
-            <tr>
-              <th class="th-check"><input type="checkbox" id="chk-all"/></th>
-              <th class="th-img"></th>
-              <th>Product</th>
-              <th>Status</th>
-              <th>Vendor</th>
-              <th>Tags</th>
-              <th>Variant</th>
-              <th>SKU</th>
-              <th>Price</th>
-              <th>Compare at</th>
-              <th>Variant metafields</th>
-              <th>Scheduled</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-
-    </div>
-
-    <!-- ── TAB: SCHEDULE ── -->
-    <div id="tab-schedule" class="tab-panel">
-      <div class="two-col">
-        <div class="card">
-          <h3>Session scheduler</h3>
-          <p class="text-muted">Tasks run only while this tab is open. Nothing is stored on the server.</p>
-          <div class="btn-row mt-12">
-            <button class="btn-ghost sm" id="btn-export-sched">↓ Export JSON</button>
-            <button class="btn-ghost sm" id="btn-import-sched-trigger">↑ Import JSON</button>
-            <input id="btn-import-sched" type="file" accept="application/json" class="hidden"/>
-          </div>
-        </div>
-        <div class="card grow">
-          <div class="card-header">
-            <h3>Queued tasks</h3>
-            <button class="btn-amber sm" id="btn-new-sched">+ New task</button>
-          </div>
-          <div id="sched-list" class="sched-list">
-            <p class="empty-msg">No scheduled tasks yet.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── TAB: EXPORT ── -->
-    <div id="tab-export" class="tab-panel">
-      <div class="export-layout">
-        <div class="card">
-          <h3>Fields to export</h3>
-          <div id="export-field-list" class="field-chips mt-12"></div>
-        </div>
-        <div class="card">
-          <h3>Preview <span class="text-muted">(first 3 rows)</span></h3>
-          <pre id="export-preview" class="code-preview">Select fields above…</pre>
-        </div>
-        <div class="btn-row">
-          <button class="btn-cta sm" id="btn-dl-csv">↓ Download CSV</button>
-          <button class="btn-ghost sm" id="btn-dl-json">↓ Download JSON</button>
-          <button class="btn-ghost sm" id="btn-copy-csv">⎘ Copy CSV</button>
-        </div>
-      </div>
-    </div>
-
-    <footer class="statusbar">
-      <span id="status-msg" class="status-text">Ready</span>
-      <span class="status-hint">Changes are staged — click "Save changes" to send to Shopify</span>
-    </footer>
-
-  </div><!-- /s-app -->
-
-</div><!-- /app -->
-
-<!-- ════════════════════════════
-     MODAL: BULK ACTION
-════════════════════════════ -->
-<div id="m-bulk" class="overlay hidden">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <h2 id="m-bulk-title">Bulk action</h2>
-        <p id="m-bulk-sub" class="modal-sub"></p>
-      </div>
-      <button class="close-btn" data-close="m-bulk">✕</button>
-    </div>
-    <div id="m-bulk-body" class="modal-body"></div>
-    <div class="modal-foot">
-      <button class="btn-ghost sm" data-close="m-bulk">Cancel</button>
-      <button class="btn-cta sm" id="m-bulk-apply">Apply →</button>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════
-     MODAL: SAVE / REVIEW
-════════════════════════════ -->
-<div id="m-save" class="overlay hidden">
-  <div class="modal modal-wide">
-    <div class="modal-head">
-      <div>
-        <h2>Save changes</h2>
-        <p id="m-save-sub" class="modal-sub"></p>
-      </div>
-      <button class="close-btn" data-close="m-save">✕</button>
-    </div>
-    <div id="m-save-diff" class="modal-body diff-list"></div>
-    <div class="modal-foot" style="justify-content:space-between">
-      <button class="btn-ghost sm" id="btn-dl-recap">↓ Download recap</button>
-      <div class="btn-row">
-        <button class="btn-ghost sm" data-close="m-save">Cancel</button>
-        <button class="btn-cta sm" id="m-save-confirm">Save to Shopify →</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ════════════════════════════
-     MODAL: SCHEDULE
-════════════════════════════ -->
-<div id="m-sched" class="overlay hidden">
-  <div class="modal">
-    <div class="modal-head">
-      <div>
-        <h2>Schedule a change</h2>
-        <p id="m-sched-sub" class="modal-sub"></p>
-      </div>
-      <button class="close-btn" data-close="m-sched">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="field">
-        <label>Task name</label>
-        <input id="sched-name" type="text" placeholder="e.g. Black Friday sale"/>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Date</label>
-          <input id="sched-date" type="date"/>
-        </div>
-        <div class="field">
-          <label>Time</label>
-          <input id="sched-time" type="time" value="09:00"/>
-        </div>
-      </div>
-      <div class="field">
-        <label>Change type</label>
-        <select id="sched-type">
-          <option value="price">Price change</option>
-          <option value="status">Status change</option>
-          <option value="tags_add">Add tags</option>
-          <option value="tags_remove">Remove tags</option>
-        </select>
-      </div>
-      <div id="sched-value-wrap"></div>
-      <div class="field">
-        <label>Products <span id="sched-prod-count" class="text-muted"></span></label>
-        <div id="sched-prod-list" class="sched-prod-list"></div>
-      </div>
-      <label class="toggle-row">
-        <input type="checkbox" id="sched-revert"/>
+<section class="how">
+  <div class="how-inner">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
         <div>
-          <span>Auto-revert after end time</span>
-          <small>Restores original values automatically</small>
+          <h4>Connect your store</h4>
+          <p>Log in with Shopify OAuth or paste your Admin API token. Your credentials never leave your browser session.</p>
         </div>
-      </label>
-      <div id="sched-revert-wrap" class="field-row hidden">
-        <div class="field"><label>Revert date</label><input id="sched-rv-date" type="date"/></div>
-        <div class="field"><label>Revert time</label><input id="sched-rv-time" type="time" value="23:59"/></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <h4>Edit in the table</h4>
+          <p>Your products load instantly. Click any cell to edit. Select multiple rows for bulk actions.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div>
+          <h4>Review your changes</h4>
+          <p>Before anything is saved, you see a full diff — every field, old value vs new value.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div>
+          <h4>Save to Shopify</h4>
+          <p>Confirm and your changes are sent directly to the Shopify API. A recap file downloads automatically.</p>
+        </div>
       </div>
     </div>
-    <div class="modal-foot">
-      <button class="btn-ghost sm" data-close="m-sched">Cancel</button>
-      <button class="btn-amber sm" id="m-sched-confirm">Schedule →</button>
+  </div>
+</section>
+
+<section class="pain">
+  <h2>Sound familiar?</h2>
+  <p class="sub">These are the problems BulkEdit was built to solve.</p>
+  <div class="pain-list">
+    <div class="pain-item">
+      <span class="pain-x">😤</span>
+      <p><strong>Exporting CSVs just to change a price</strong> — formatting errors, import failures, entire galleries wiped by a wrong character.</p>
+    </div>
+    <div class="pain-item">
+      <span class="pain-x">😤</span>
+      <p><strong>Variant metafields missing from bulk edit</strong> — Shopify's own editor still doesn't show them. You have to open each variant one by one.</p>
+    </div>
+    <div class="pain-item">
+      <span class="pain-x">😤</span>
+      <p><strong>Scheduled edits you can't modify</strong> — make a mistake in a scheduled task and you have to delete it and start over from scratch.</p>
+    </div>
+    <div class="pain-item">
+      <span class="pain-x">😤</span>
+      <p><strong>No review before saving</strong> — changes go live immediately with no way to see what you're about to do before it's done.</p>
     </div>
   </div>
-</div>
+</section>
 
-<div id="toast" class="toast"></div>
-<script src="/app.js"></script>
+<section class="cta-bottom">
+  <h2>Ready to edit without the CSV?</h2>
+  <p>Free to use. No account. No data stored on our servers.</p>
+  <a href="/app" class="btn-cta-white">Connect your store →</a>
+  <p class="cta-note">Works with any Shopify store · Requires read/write_products scope</p>
+</section>
+
+<footer>
+  <a href="/" class="nav-logo">
+    <span class="logo-mark">BE</span>
+    <span class="logo-name">BulkEdit</span>
+  </a>
+  <p>© 2026 BulkEdit · Your token is never stored · Session only</p>
+</footer>
+
 </body>
 </html>

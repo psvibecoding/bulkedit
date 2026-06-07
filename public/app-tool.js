@@ -872,7 +872,8 @@ function boot() {
   /* OAuth callback — reads ?shop=&token= from URL */
   (function checkOAuthCallback() {
     const p = new URLSearchParams(window.location.search);
-    const shop = p.get('shop'), token = p.get('token');
+    const shop = p.get('shop'), token = p.get('token'), demo = p.get('demo');
+    if (demo === '1') { window.history.replaceState({}, '', '/app'); loadDemoMode(); return; }
     if (shop && token) {
       window.history.replaceState({}, '', '/');
       S.shop  = decodeURIComponent(shop);

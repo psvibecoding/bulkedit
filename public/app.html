@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>BulkEdit — App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+<div id="app">
+
+  <!-- CONNECT -->
+  <div id="s-connect" class="screen active">
+    <div class="connect-wrap">
+      <div class="connect-logo">
+        <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
+          <span class="logo-mark">BE</span>
+          <span class="logo-name">BulkEdit</span>
+        </a>
+      </div>
+      <div class="connect-headline">
+        <h1>Connect your store</h1>
+        <p>Your token is session-only and never stored on our servers.</p>
+      </div>
+      <div class="connect-card">
+        <div id="c-choose">
+          <button class="btn-cta" id="c-oauth-btn">Connect with Shopify</button>
+          <button class="btn-secondary" id="c-token-btn">Connect with API token</button>
+          <button class="btn-ghost" id="c-demo-btn">Load demo data</button>
+        </div>
+        <div id="c-oauth" class="c-step hidden">
+          <div class="field">
+            <label for="f-shop-oauth">Store domain</label>
+            <input id="f-shop-oauth" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
+          </div>
+          <button class="btn-cta" id="c-oauth-go">Continue to Shopify →</button>
+          <button class="btn-ghost c-back">← Back</button>
+        </div>
+        <div id="c-token" class="c-step hidden">
+          <div class="field">
+            <label for="f-shop">Store domain</label>
+            <input id="f-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
+          </div>
+          <div class="field">
+            <label for="f-token">Admin API access token</label>
+            <input id="f-token" type="password" autocomplete="off" placeholder="shpat_xxxxxxxxxxxxxxxx"/>
+          </div>
+          <button class="btn-cta" id="c-token-go">Connect →</button>
+          <button class="btn-ghost c-back">← Back</button>
+          <p class="fine-print">Scopes: <code>read_products write_products read_inventory write_inventory</code></p>
+        </div>
+      </div>
+      <a href="/" style="font-size:12px;color:var(--t3);text-decoration:none;font-family:var(--mono)">← Back to homepage</a>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="s-loading" class="screen">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <p id="loading-msg">Connecting…</p>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="s-app" class="screen">
+    <header class="topbar">
+      <div class="topbar-l">
+        <a href="/" style="display:flex;align-items:center;text-decoration:none">
+          <span class="logo-mark sm">BE</span>
+        </a>
+        <span id="store-name" class="store-name"></span>
+        <span id="demo-badge" class="badge-demo hidden">demo</span>
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input id="search" type="text" placeholder="Search products, SKU, tags…" autocomplete="off" spellcheck="false"/>
+          <div id="search-suggest" class="suggest-list"></div>
+        </div>
+      </div>
+      <div class="topbar-r">
+        <button class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩</button>
+        <button class="icon-btn" id="btn-redo" title="Redo (Ctrl+Y)" disabled>↪</button>
+        <button class="btn-ghost sm" id="btn-disconnect">Disconnect</button>
+        <button class="btn-save" id="btn-save" disabled>
+          Save changes <span id="save-count" class="save-badge">0</span>
+        </button>
+      </div>
+    </header>
+
+    <div id="demo-banner" class="demo-banner hidden">
+      <span><strong>Demo mode</strong> — changes won't be saved to Shopify.</span>
+      <button class="btn-ghost sm" id="btn-demo-exit">Connect real store →</button>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="products">Products</button>
+      <button class="tab" data-tab="schedule">Schedule <span id="sched-count" class="tab-count hidden">0</span></button>
+      <button class="tab" data-tab="export">Export</button>
+    </nav>
+
+    <div id="tab-products" class="tab-panel active">
+      <div class="toolbar">
+        <div class="filters">
+          <span class="filter-label">Status</span>
+          <button class="filter active" data-f="all">All</button>
+          <button class="filter" data-f="ACTIVE">Active</button>
+          <button class="filter" data-f="DRAFT">Draft</button>
+          <button class="filter" data-f="ARCHIVED">Archived</button>
+          <span class="filter-divider"></span>
+          <button class="filter" data-f="changed">Modified</button>
+        </div>
+        <div id="bulk-bar" class="bulk-bar hidden">
+          <span id="bulk-count" class="bulk-count">0 selected</span>
+          <button class="chip-btn" id="bulk-status-btn">● Status</button>
+          <button class="chip-btn" id="bulk-price-btn">€ Price</button>
+          <button class="chip-btn" id="bulk-tags-btn">⌗ Tags</button>
+          <button class="chip-btn amber" id="bulk-sched-btn">⏱ Schedule</button>
+        </div>
+      </div>
+      <div id="undo-hint" class="undo-hint hidden">
+        <span id="undo-hint-msg"></span>
+        <button class="link-btn" id="undo-hint-undo">↩ Undo</button>
+        <button class="link-btn" id="undo-hint-redo">↪ Redo</button>
+      </div>
+      <div class="table-scroll">
+        <table id="products-table">
+          <thead>
+            <tr>
+              <th class="th-check"><input type="checkbox" id="chk-all"/></th>
+              <th class="th-img"></th>
+              <th>Product</th><th>Status</th><th>Vendor</th><th>Tags</th>
+              <th>Variant</th><th>SKU</th><th>Price</th><th>Compare at</th>
+              <th>Variant metafields</th><th>Scheduled</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="tab-schedule" class="tab-panel">
+      <div class="two-col">
+        <div class="card">
+          <h3>Session scheduler</h3>
+          <p class="text-muted">Tasks run only while this tab is open.</p>
+          <div class="btn-row mt-12">
+            <button class="btn-ghost sm" id="btn-export-sched">↓ Export JSON</button>
+            <button class="btn-ghost sm" id="btn-import-sched-trigger">↑ Import JSON</button>
+            <input id="btn-import-sched" type="file" accept="application/json" class="hidden"/>
+          </div>
+        </div>
+        <div class="card grow">
+          <div class="card-header">
+            <h3>Queued tasks</h3>
+            <button class="btn-amber sm" id="btn-new-sched">+ New task</button>
+          </div>
+          <div id="sched-list" class="sched-list"><p class="empty-msg">No scheduled tasks yet.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-export" class="tab-panel">
+      <div class="export-layout">
+        <div class="card">
+          <h3>Fields to export</h3>
+          <div id="export-field-list" class="field-chips mt-12"></div>
+        </div>
+        <div class="card">
+          <h3>Preview <span class="text-muted">(first 3 rows)</span></h3>
+          <pre id="export-preview" class="code-preview">Select fields above…</pre>
+        </div>
+        <div class="btn-row">
+          <button class="btn-cta sm" id="btn-dl-csv">↓ Download CSV</button>
+          <button class="btn-ghost sm" id="btn-dl-json">↓ Download JSON</button>
+          <button class="btn-ghost sm" id="btn-copy-csv">⎘ Copy CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="statusbar">
+      <span id="status-msg" class="status-text">Ready</span>
+      <span class="status-hint">Changes are staged — click "Save changes" to send to Shopify</span>
+    </footer>
+  </div>
+
+</div>
+
+<!-- BULK MODAL -->
+<div id="m-bulk" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2 id="m-bulk-title">Bulk action</h2><p id="m-bulk-sub" class="modal-sub"></p></div>
+      <button class="close-btn" data-close="m-bulk">✕</button>
+    </div>
+    <div id="m-bulk-body" class="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost sm" data-close="m-bulk">Cancel</button>
+      <button class="btn-cta sm" id="m-bulk-apply">Apply →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE MODAL -->
+<div id="m-save" class="overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <div><h2>Save changes</h2><p id="m-save-sub" class="modal-sub"></p></div>
+      <button class="close-btn" data-close="m-save">✕</button>
+    </div>
+    <div id="m-save-diff" class="modal-body diff-list"></div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn-ghost sm" id="btn-dl-recap">↓ Download recap</button>
+      <div class="btn-row">
+        <button class="btn-ghost sm" data-close="m-save">Cancel</button>
+        <button class="btn-cta sm" id="m-save-confirm">Save to Shopify →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULE MODAL -->
+<div id="m-sched" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <div><h2>Schedule a change</h2><p id="m-sched-sub" class="modal-sub"></p></div>
+      <button class="close-btn" data-close="m-sched">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Task name</label><input id="sched-name" type="text" placeholder="e.g. Black Friday sale"/></div>
+      <div class="field-row">
+        <div class="field"><label>Date</label><input id="sched-date" type="date"/></div>
+        <div class="field"><label>Time</label><input id="sched-time" type="time" value="09:00"/></div>
+      </div>
+      <div class="field"><label>Change type</label><select id="sched-type"><option value="price">Price change</option><option value="status">Status change</option><option value="tags_add">Add tags</option><option value="tags_remove">Remove tags</option></select></div>
+      <div id="sched-value-wrap"></div>
+      <div class="field"><label>Products <span id="sched-prod-count" class="text-muted"></span></label><div id="sched-prod-list" class="sched-prod-list"></div></div>
+      <label class="toggle-row"><input type="checkbox" id="sched-revert"/><div><span>Auto-revert after end time</span><small>Restores original values automatically</small></div></label>
+      <div id="sched-revert-wrap" class="field-row hidden">
+        <div class="field"><label>Revert date</label><input id="sched-rv-date" type="date"/></div>
+        <div class="field"><label>Revert time</label><input id="sched-rv-time" type="time" value="23:59"/></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost sm" data-close="m-sched">Cancel</button>
+      <button class="btn-amber sm" id="m-sched-confirm">Schedule →</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/app-tool.js"></script>
+</body>
+</html>
