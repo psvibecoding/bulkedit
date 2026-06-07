@@ -123,8 +123,18 @@ function showScreen(name) {
 
 /* ─── CONNECT SCREEN STEPS ───────────────── */
 function showStep(step) {
-  ['c-choose','c-oauth','c-token'].forEach(id => $(id).classList.add('hidden'));
-  $(step).classList.remove('hidden');
+  ['c-choose','c-oauth','c-token'].forEach(id => {
+    const el = $(id); if (el) el.style.display = 'none';
+  });
+  const target = $(step); if (target) target.style.display = 'flex';
+}
+
+// Init — hide all steps except c-choose on page load
+function initSteps() {
+  ['c-oauth','c-token'].forEach(id => {
+    const el = $(id); if (el) el.style.display = 'none';
+  });
+  const choose = $('c-choose'); if (choose) choose.style.display = 'flex';
 }
 
 /* ─── MODALS ──────────────────────────────── */
@@ -643,6 +653,7 @@ function updateExportPreview() {
 
 /* ─── BOOT ────────────────────────────────── */
 function boot() {
+  initSteps();
   /* Connect screen */
   $('c-oauth-btn').addEventListener('click', () => showStep('c-oauth'));
   $('c-token-btn').addEventListener('click', () => showStep('c-token'));
