@@ -251,8 +251,10 @@ function flatRows() { return S.products.flatMap(p => p.variants.nodes.map(v => (
 
 function getFiltered() {
   const q = S.searchQ.toLowerCase();
+  const terms = q ? q.split(',').map(t => t.trim()).filter(Boolean) : [];
   return flatRows().filter(({ p, v }) => {
-    const ms = !q || [p.title, p.vendor, (p.tags||[]).join(' '), v.title, v.sku].join(' ').toLowerCase().includes(q);
+    const haystack = [p.title, p.vendor, (p.tags||[]).join(' '), v.title, v.sku].join(' ').toLowerCase();
+    const ms = !terms.length || terms.some(t => haystack.includes(t));
     const mf = S.filter === 'all'     ? true
              : S.filter === 'changed' ? !!S.changes[p.id]
              : p.status === S.filter;
@@ -263,7 +265,7 @@ function getFiltered() {
 function renderTable() {
   const rows = getFiltered();
   const tbody = $('tbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; }
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; }
   else tbody.innerHTML = rows.map(({ p, v }) => rowHTML(p, v)).join('');
   updateSaveBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview();
 }
@@ -444,7 +446,7 @@ function updateSaveBtn() {
 function openBulkModal(type) {
   S.bulkModalType = type;
   const n = S.selectedVids.size;
-  $('m-bulk-title').textContent = { status:'Change status', price:'Set price', tags:'Add or remove tags' }[type] || 'Bulk action';
+  $('m-bulk-title').textContent = { status:'Change status', price:'Set price', tags:'Add or remove tags', metafield:'Set variant metafield' }[type] || 'Bulk action';
   $('m-bulk-sub').textContent   = `Applied to ${n} selected variant${n!==1?'s':''}`;
   const body = $('m-bulk-body');
   if (type === 'status') {
@@ -453,6 +455,12 @@ function openBulkModal(type) {
     body.innerHTML = `<div class="bulk-field"><label>New price</label><input id="bv-price" type="number" step=".01" min="0" placeholder="0.00" autofocus></div>`;
   } else if (type === 'tags') {
     body.innerHTML = `<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
+  } else if (type === 'metafield') {
+    body.innerHTML = `
+      <div class="bulk-field"><label>Namespace</label><input id="bv-mf-ns" type="text" placeholder="custom" value="custom"></div>
+      <div class="bulk-field"><label>Key</label><input id="bv-mf-key" type="text" placeholder="e.g. material" autofocus></div>
+      <div class="bulk-field"><label>Value</label><input id="bv-mf-val" type="text" placeholder="e.g. Cotton"></div>
+      <div class="bulk-field"><label>Type</label><select id="bv-mf-type"><option value="single_line_text_field">single_line_text_field</option><option value="multi_line_text_field">multi_line_text_field</option><option value="number_integer">number_integer</option><option value="number_decimal">number_decimal</option><option value="boolean">boolean</option></select></div>`;
   }
   openModal('m-bulk');
   setTimeout(() => body.querySelector('input,select')?.focus(), 60);
@@ -486,6 +494,25 @@ function applyBulkModal() {
       ensureChange(pid).product.tags = [...p.tags];
     });
     renderTable(); updateSaveBtn(); toast(`Tag "${tag}" ${action==='add'?'added to':'removed from'} ${pids.length} products.`);
+  } else if (type === 'metafield') {
+    const ns  = $('bv-mf-ns')?.value.trim() || 'custom';
+    const key = $('bv-mf-key')?.value.trim();
+    const val = $('bv-mf-val')?.value ?? '';
+    const mftype = $('bv-mf-type')?.value || 'single_line_text_field';
+    if (!key) return toast('Enter a metafield key.');
+    const vids = [...S.selectedVids];
+    pushHist(`Bulk metafield ${ns}.${key}`);
+    vids.forEach(vid => {
+      const { p, v } = getVar(vid); if (!p||!v) return;
+      // Update or add metafield on variant
+      const existing = v.metafields.nodes.findIndex(m => m.namespace === ns && m.key === key);
+      if (existing >= 0) { v.metafields.nodes[existing].value = val; }
+      else { v.metafields.nodes.push({ namespace:ns, key, type:mftype, value:val }); }
+      const c = ensureChange(p.id);
+      c.metafields = c.metafields.filter(m => !(m.ownerId === vid && m.namespace === ns && m.key === key));
+      c.metafields.push({ ownerId:vid, namespace:ns, key, type:mftype, value:val });
+    });
+    renderTable(); updateSaveBtn(); toast(`Metafield ${ns}.${key} set on ${vids.length} variants.`);
   }
   closeModal('m-bulk');
 }
@@ -702,6 +729,7 @@ function boot() {
   $('bulk-status-btn').addEventListener('click', () => openBulkModal('status'));
   $('bulk-price-btn').addEventListener('click',  () => openBulkModal('price'));
   $('bulk-tags-btn').addEventListener('click',   () => openBulkModal('tags'));
+  $('bulk-mf-btn').addEventListener('click',     () => openBulkModal('metafield'));
 
   /* Bulk modal */
   $('m-bulk-apply').addEventListener('click', applyBulkModal);
@@ -738,7 +766,7 @@ function boot() {
     const shop = p.get('shop'), token = p.get('token'), demo = p.get('demo');
     if (demo === '1') { window.history.replaceState({}, '', '/app'); loadDemoMode(); return; }
     if (shop && token) {
-      window.history.replaceState({}, '', '/');
+      window.history.replaceState({}, '', '/app');
       S.shop  = decodeURIComponent(shop);
       S.token = decodeURIComponent(token);
       S.demo  = false;

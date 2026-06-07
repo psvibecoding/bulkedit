@@ -81,7 +81,7 @@
         <span id="demo-badge" class="badge-demo hidden">demo</span>
         <div class="search-box">
           <span class="search-icon">⌕</span>
-          <input id="search" type="text" placeholder="Search products, SKU, tags…" autocomplete="off" spellcheck="false"/>
+          <input id="search" type="text" placeholder="Search products, SKU, tags… (comma for multiple)" autocomplete="off" spellcheck="false"/>
           <div id="search-suggest" class="suggest-list"></div>
         </div>
       </div>
@@ -121,6 +121,7 @@
           <button class="chip-btn" id="bulk-status-btn">● Status</button>
           <button class="chip-btn" id="bulk-price-btn">€ Price</button>
           <button class="chip-btn" id="bulk-tags-btn">⌗ Tags</button>
+          <button class="chip-btn" id="bulk-mf-btn">≡ Metafield</button>
         </div>
       </div>
       <div id="undo-hint" class="undo-hint hidden">
@@ -136,7 +137,7 @@
               <th class="th-img"></th>
               <th>Product</th><th>Status</th><th>Vendor</th><th>Tags</th>
               <th>Variant</th><th>SKU</th><th>Price</th><th>Compare at</th>
-              <th>Variant metafields</th><th>Scheduled</th>
+              <th>Variant metafields</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -239,6 +240,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=5"></script>
+<script src="/app-tool.js?v=6"></script>
 </body>
 </html>
