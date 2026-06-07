@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>BulkEdit — Shopify bulk editing without the CSV</title>
-  <meta name="description" content="Edit products, variants and metafields in bulk. Review every change before it goes live. No CSV, no mistakes."/>
+  <title>BulkEdit — Shopify catalog updates without spreadsheet chaos</title>
+  <meta name="description" content="Launch promotions, update prices and manage Shopify products, variants and metafields from one safe bulk editing workspace."/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
@@ -93,6 +93,39 @@
     .benefit h3{font-size:16px;font-weight:600;margin-bottom:8px;color:var(--ink)}
     .benefit p{font-size:14px;color:var(--ink3);line-height:1.6}
 
+
+    /* ── PRODUCT PREVIEW ── */
+    .product-preview{max-width:1180px;margin:0 auto;padding:96px 48px}
+    .preview-head{text-align:center;max-width:720px;margin:0 auto 56px}
+    .preview-head .section-sub{margin:0 auto}
+    .preview-wrap{display:grid;grid-template-columns:260px 1fr 260px;gap:24px;align-items:center}
+    .preview-card{background:var(--white);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 2px 14px rgba(0,0,0,.04)}
+    .preview-card small{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--green)}
+    .preview-card h3{font-size:17px;line-height:1.25;margin:10px 0 8px;color:var(--ink)}
+    .preview-card p{font-size:14px;color:var(--ink3);line-height:1.6}
+    .preview-main{background:var(--white);border:1px solid var(--border);border-radius:24px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.05)}
+    .preview-browser{height:42px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#fff}
+    .preview-dots{display:flex;gap:7px}
+    .preview-dots span{width:9px;height:9px;border-radius:50%;background:var(--border)}
+    .preview-url{font-family:var(--mono);font-size:11px;color:var(--ink4)}
+    .preview-toolbar{padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--bg)}
+    .preview-search{width:260px;height:32px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--ink4);font-size:12px;display:flex;align-items:center;padding:0 12px;font-family:var(--sans)}
+    .preview-actions{display:flex;gap:8px}
+    .preview-chip{height:28px;border-radius:14px;border:1px solid var(--green-brd);background:var(--green-bg);color:var(--green);font-size:11px;padding:0 11px;display:flex;align-items:center;font-family:var(--mono)}
+    .preview-table{width:100%;border-collapse:collapse;font-size:12px}
+    .preview-table th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink4);background:#fff;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+    .preview-table td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--ink2)}
+    .preview-table tr:last-child td{border-bottom:none}
+    .preview-status{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:10px;font-family:var(--mono);background:var(--green-bg);color:var(--green)}
+    .preview-price-old{text-decoration:line-through;color:var(--ink4);margin-right:6px}
+    .preview-price-new{color:var(--green);font-weight:600}
+    .preview-change{font-family:var(--mono);font-size:10px;color:var(--green);background:var(--green-bg);border:1px solid var(--green-brd);border-radius:6px;padding:3px 7px}
+    .preview-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#fff;border-top:1px solid var(--border)}
+    .preview-review{font-size:12px;color:var(--ink3);font-family:var(--mono)}
+    .preview-save{background:var(--green);color:white;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600}
+    .preview-glow{position:relative}
+    .preview-glow::before{content:'';position:absolute;inset:-28px;background:radial-gradient(circle at 50% 50%,rgba(26,92,56,.14),transparent 65%);z-index:-1}
+
     /* ── COMPARISON ── */
     .comparison{background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:96px 48px}
     .comparison-inner{max-width:800px;margin:0 auto;text-align:center}
@@ -139,6 +172,14 @@
       .logos{padding:20px}
       .benefits{padding:64px 20px}
       .benefits-grid{grid-template-columns:1fr}
+
+      .product-preview{padding:64px 20px}
+      .preview-wrap{grid-template-columns:1fr}
+      .preview-card{display:none}
+      .preview-main{border-radius:18px}
+      .preview-toolbar{flex-direction:column;align-items:flex-start;gap:12px}
+      .preview-search{width:100%}
+
       .comparison{padding:64px 20px}
       .how{padding:64px 20px}
       .steps{grid-template-columns:1fr 1fr;gap:24px}
@@ -166,14 +207,14 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-l">
-    <div class="hero-tag">Free · No account needed</div>
-    <h1>Shopify editing<br>without <em>the CSV</em></h1>
-    <p class="hero-sub">Edit products, variants and metafields in bulk. Review every change before it goes live.</p>
+    <div class="hero-tag">Built for Shopify merchants and agencies</div>
+    <h1>Launch campaigns<br>without <em>spreadsheet chaos</em></h1>
+    <p class="hero-sub">Update prices, clean product data and manage variant metafields from one spreadsheet-like workspace. Review every change before it goes live and schedule updates for later.</p>
     <div class="hero-btns">
       <a href="/app" class="btn-main">Connect your store →</a>
       <a href="/app?demo=1" class="btn-outline">Try demo</a>
     </div>
-    <p class="hero-note">No data stored. Token is session-only and never leaves your browser.</p>
+    <p class="hero-note">No account required. No data stored. Review changes before publishing.</p>
   </div>
   <div class="hero-r">
     <div class="hero-card">
@@ -226,44 +267,130 @@
 
 <!-- LOGOS -->
 <div class="logos">
-  <p>Built for Shopify merchants and agencies who are tired of exporting CSVs</p>
+  <p>Perfect for sales launches, catalog updates, price changes and metafield management.</p>
 </div>
+
+
+<!-- PRODUCT PREVIEW -->
+<section class="product-preview">
+  <div class="preview-head">
+    <p class="section-label">Product preview</p>
+    <h2 class="section-title">A command center for your next catalog update.</h2>
+    <p class="section-sub">Prepare price changes, clean product data, update variant metafields and review everything before it goes live.</p>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="preview-card">
+      <small>Sales launches</small>
+      <h3>Prepare today. Publish later.</h3>
+      <p>Set up campaign prices in advance and schedule updates for the exact moment your sale starts.</p>
+    </div>
+
+    <div class="preview-glow">
+      <div class="preview-main">
+        <div class="preview-browser">
+          <div class="preview-dots"><span></span><span></span><span></span></div>
+          <div class="preview-url">bulkedit.app/catalog</div>
+        </div>
+        <div class="preview-toolbar">
+          <div class="preview-search">Search products, SKU, tags…</div>
+          <div class="preview-actions">
+            <div class="preview-chip">Bulk price</div>
+            <div class="preview-chip">Metafields</div>
+            <div class="preview-chip">Schedule</div>
+          </div>
+        </div>
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Status</th>
+              <th>Price</th>
+              <th>Metafield</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Merino Wool Sweater — S</td>
+              <td><span class="preview-status">Active</span></td>
+              <td><span class="preview-price-old">89.00</span><span class="preview-price-new">69.00</span></td>
+              <td>campaign_label = Winter Sale</td>
+              <td><span class="preview-change">modified</span></td>
+            </tr>
+            <tr>
+              <td>Merino Wool Sweater — M</td>
+              <td><span class="preview-status">Active</span></td>
+              <td><span class="preview-price-old">89.00</span><span class="preview-price-new">69.00</span></td>
+              <td>campaign_label = Winter Sale</td>
+              <td><span class="preview-change">modified</span></td>
+            </tr>
+            <tr>
+              <td>Leather Crossbody Bag</td>
+              <td><span class="preview-status">Draft</span></td>
+              <td>149.00</td>
+              <td>material = leather</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Organic Cotton Tee — XS</td>
+              <td><span class="preview-status">Active</span></td>
+              <td>34.00</td>
+              <td>fit = oversized</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="preview-footer">
+          <div class="preview-review">12 changes ready to review · scheduled for Friday 09:00</div>
+          <div class="preview-save">Review & schedule</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-card">
+      <small>Safer operations</small>
+      <h3>No blind imports.</h3>
+      <p>See old values, new values and affected variants before anything touches your Shopify store.</p>
+    </div>
+  </div>
+</section>
 
 <!-- BENEFITS -->
 <section class="benefits">
-  <p class="section-label">What you get</p>
-  <h2 class="section-title">Everything Shopify's<br>bulk editor is missing</h2>
-  <p class="section-sub">The native editor is limited, slow, and doesn't touch variant metafields. BulkEdit fixes all of that.</p>
+  <p class="section-label">Built for real Shopify work</p>
+  <h2 class="section-title">Make catalog updates<br>feel effortless</h2>
+  <p class="section-sub">Whether you are preparing a sale, cleaning product data or managing metafields, BulkEdit keeps every change in one safe workflow.</p>
   <div class="benefits-grid">
     <div class="benefit">
       <div class="benefit-icon">⚡</div>
-      <h3>Inline table editing</h3>
-      <p>Click any cell and edit directly. Title, price, vendor, tags, SKU — all in one view.</p>
+      <h3>Launch promotions faster</h3>
+      <p>Update hundreds of prices before a campaign goes live without exporting or importing CSV files.</p>
     </div>
     <div class="benefit">
       <div class="benefit-icon">🔖</div>
-      <h3>Variant metafields</h3>
-      <p>The gap Shopify's own editor still doesn't fill. Edit metafields per variant, right in the table.</p>
+      <h3>Manage variant metafields</h3>
+      <p>Edit product and variant metafields from one table instead of opening products one by one.</p>
     </div>
     <div class="benefit">
       <div class="benefit-icon">⚙️</div>
-      <h3>Bulk actions</h3>
-      <p>Select multiple products and change status, set a price, or add/remove tags all at once.</p>
+      <h3>Clean your catalog</h3>
+      <p>Bulk update titles, vendors, tags, SKUs and statuses across your store in one focused workspace.</p>
     </div>
     <div class="benefit">
       <div class="benefit-icon">👁</div>
-      <h3>Review before saving</h3>
-      <p>See a full diff — old value → new value — for every change before anything hits your store.</p>
+      <h3>Review before publishing</h3>
+      <p>See exactly what changed before anything reaches your storefront.</p>
     </div>
     <div class="benefit">
       <div class="benefit-icon">↓</div>
-      <h3>Export & recap</h3>
-      <p>Download your catalog as CSV or JSON. After every save, get an automatic recap file.</p>
+      <h3>Export anytime</h3>
+      <p>Download your catalog as CSV or JSON and keep a clean recap of every update.</p>
     </div>
     <div class="benefit">
       <div class="benefit-icon">🔒</div>
-      <h3>Privacy first</h3>
-      <p>No account. No database. Your token lives in browser memory only and disappears when you close the tab.</p>
+      <h3>Schedule changes</h3>
+      <p>Prepare updates today and publish them automatically later for launches, sales and seasonal campaigns.</p>
     </div>
   </div>
 </section>
@@ -271,8 +398,8 @@
 <!-- COMPARISON -->
 <section class="comparison">
   <div class="comparison-inner">
-    <p class="section-label">Why BulkEdit</p>
-    <h2 class="section-title">vs Shopify's built-in editor</h2>
+    <p class="section-label">Why merchants switch</p>
+    <h2 class="section-title">A better alternative to CSV workflows</h2>
     <table class="comp-table">
       <thead>
         <tr>
@@ -283,39 +410,39 @@
       </thead>
       <tbody>
         <tr>
-          <td class="col-feature">Edit prices in bulk</td>
-          <td class="comp-yes">✓</td>
-          <td class="comp-yes comp-highlight">✓</td>
+          <td class="col-feature">Bulk price updates</td>
+          <td class="comp-no">Multiple steps</td>
+          <td class="comp-yes comp-highlight">Direct editing</td>
         </tr>
         <tr>
           <td class="col-feature">Variant metafields</td>
-          <td class="comp-no">✗ Not supported</td>
-          <td class="comp-yes comp-highlight">✓</td>
+          <td class="comp-no">Difficult</td>
+          <td class="comp-yes comp-highlight">Built in</td>
         </tr>
         <tr>
-          <td class="col-feature">Review diff before saving</td>
+          <td class="col-feature">Review changes before publishing</td>
+          <td class="comp-no">Manual</td>
+          <td class="comp-yes comp-highlight">Automatic</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Bulk catalog cleanup</td>
+          <td class="comp-no">Limited</td>
+          <td class="comp-yes comp-highlight">Built in</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Undo mistakes</td>
+          <td class="comp-no">No scheduling</td>
+          <td class="comp-yes comp-highlight">Built in</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Export when needed</td>
+          <td class="comp-no">Manual export</td>
+          <td class="comp-yes comp-highlight">CSV / JSON</td>
+        </tr>
+        <tr>
+          <td class="col-feature">Schedule updates for later</td>
           <td class="comp-no">✗</td>
           <td class="comp-yes comp-highlight">✓</td>
-        </tr>
-        <tr>
-          <td class="col-feature">Bulk add/remove tags</td>
-          <td class="comp-no">✗</td>
-          <td class="comp-yes comp-highlight">✓</td>
-        </tr>
-        <tr>
-          <td class="col-feature">Undo / Redo</td>
-          <td class="comp-no">✗</td>
-          <td class="comp-yes comp-highlight">✓</td>
-        </tr>
-        <tr>
-          <td class="col-feature">Export CSV / JSON</td>
-          <td class="comp-no">CSV only</td>
-          <td class="comp-yes comp-highlight">✓ Both</td>
-        </tr>
-        <tr>
-          <td class="col-feature">Change recap download</td>
-          <td class="comp-no">✗</td>
-          <td class="comp-yes comp-highlight">✓ Auto</td>
         </tr>
       </tbody>
     </table>
@@ -325,40 +452,40 @@
 <!-- HOW -->
 <section class="how" id="how-it-works">
   <p class="section-label">How it works</p>
-  <h2 class="section-title">Up and running in 60 seconds</h2>
+  <h2 class="section-title">Go from idea to live changes in under a minute</h2>
   <div class="steps">
     <div class="step">
       <div class="step-line"></div>
       <div class="step-num">1</div>
       <h4>Connect your store</h4>
-      <p>Log in with Shopify OAuth or paste your Admin API token. Done.</p>
+      <p>Connect through Shopify and instantly load your catalog.</p>
     </div>
     <div class="step">
       <div class="step-line"></div>
       <div class="step-num">2</div>
-      <h4>Edit in the table</h4>
-      <p>Products load instantly. Click any cell or select multiple rows for bulk actions.</p>
+      <h4>Edit directly</h4>
+      <p>Update products, variants and metafields from a spreadsheet-like interface.</p>
     </div>
     <div class="step">
       <div class="step-line"></div>
       <div class="step-num">3</div>
       <h4>Review changes</h4>
-      <p>See a full diff of every field — old vs new — before anything is saved.</p>
+      <p>Check every modification before anything is published.</p>
     </div>
     <div class="step">
       <div class="step-num">4</div>
-      <h4>Save to Shopify</h4>
-      <p>Confirm and your changes go live. A recap file downloads automatically.</p>
+      <h4>Publish with confidence</h4>
+      <p>Apply your changes immediately or schedule them for later.</p>
     </div>
   </div>
 </section>
 
 <!-- CTA -->
 <section class="cta">
-  <h2>Stop exporting <em>CSVs</em></h2>
-  <p>Free to use. No account. No data stored. Just connect and edit.</p>
+  <h2>Your next catalog update shouldn't take <em>all afternoon</em></h2>
+  <p>Connect your store, make your changes, review them and publish with confidence.</p>
   <a href="/app" class="btn-cta-lg">Connect your store →</a>
-  <p class="cta-note">Works with any Shopify store · Requires read/write_products scope</p>
+  <p class="cta-note">Works with Shopify stores of any size.</p>
 </section>
 
 <!-- FOOTER -->
