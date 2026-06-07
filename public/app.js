@@ -29,27 +29,45 @@ const App = (() => {
 
   /* ─── DEMO DATA ──────────────────────────────────── */
   const DEMO = [
-    { id:'gid://shopify/Product/1', title:'Click Bottle Rose Cobalt', status:'ACTIVE', vendor:'air up', tags:['hydration','new-arrivals'],
+    { id:'gid://shopify/Product/1', title:'Merino Wool Crew Neck Sweater', status:'ACTIVE', vendor:'NordWear', tags:['knitwear','winter','new-arrivals'],
       variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/11', title:'600ml', sku:'CLICK-ROSE-600', price:'29.99', compareAtPrice:'', inventoryQuantity:120,
-          metafields:{nodes:[{namespace:'custom',key:'material',type:'single_line_text_field',value:'Tritan'}]}},
-        {id:'gid://shopify/ProductVariant/12', title:'850ml', sku:'CLICK-ROSE-850', price:'34.99', compareAtPrice:'39.99', inventoryQuantity:34,
+        {id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45,
+          metafields:{nodes:[{namespace:'custom',key:'material',type:'single_line_text_field',value:'100% Merino Wool'}]}},
+        {id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62,
+          metafields:{nodes:[{namespace:'custom',key:'material',type:'single_line_text_field',value:'100% Merino Wool'}]}},
+        {id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28,
           metafields:{nodes:[]}}
       ]}},
-    { id:'gid://shopify/Product/2', title:'Twist Pro Stormy Blue', status:'DRAFT', vendor:'air up', tags:['twist','pro','sale'],
+    { id:'gid://shopify/Product/2', title:'Leather Crossbody Bag — Tan', status:'ACTIVE', vendor:'StudioLeather', tags:['bags','accessories','sale'],
       variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/21', title:'850ml', sku:'TWIST-STORMY-850', price:'34.99', compareAtPrice:'39.99', inventoryQuantity:45,
-          metafields:{nodes:[{namespace:'custom',key:'campaign_label',type:'single_line_text_field',value:'Summer24'}]}}
+        {id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18,
+          metafields:{nodes:[{namespace:'custom',key:'campaign_label',type:'single_line_text_field',value:'Summer Sale'}]}}
       ]}},
-    { id:'gid://shopify/Product/3', title:'Kids Shrimp Pink', status:'ACTIVE', vendor:'air up', tags:['kids','gift'],
+    { id:'gid://shopify/Product/3', title:'Organic Cotton Oversized Tee', status:'ACTIVE', vendor:'EarthBasics', tags:['apparel','sustainable','basics'],
       variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/31', title:'480ml', sku:'KIDS-SHRIMP-480', price:'24.99', compareAtPrice:'29.99', inventoryQuantity:0,
+        {id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,
+          metafields:{nodes:[]}},
+        {id:'gid://shopify/ProductVariant/32', title:'S / White', sku:'EB-TEE-S-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:55,
+          metafields:{nodes:[]}},
+        {id:'gid://shopify/ProductVariant/33', title:'M / Black', sku:'EB-TEE-M-BLK', price:'34.00', compareAtPrice:'', inventoryQuantity:40,
           metafields:{nodes:[]}}
       ]}},
-    { id:'gid://shopify/Product/4', title:'Iced Ocean Starter Set', status:'ARCHIVED', vendor:'air up', tags:['bundle','summer','sale'],
+    { id:'gid://shopify/Product/4', title:'Ceramic Pour-Over Coffee Set', status:'DRAFT', vendor:'KitchenStudio', tags:['kitchen','coffee','gifts'],
       variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/41', title:'Default', sku:'ICE-OCEAN-SET', price:'59.99', compareAtPrice:'79.99', inventoryQuantity:12,
-          metafields:{nodes:[{namespace:'seo',key:'custom_title',type:'single_line_text_field',value:''}]}}
+        {id:'gid://shopify/ProductVariant/41', title:'White', sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22,
+          metafields:{nodes:[{namespace:'seo',key:'custom_title',type:'single_line_text_field',value:''}]}},
+        {id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14,
+          metafields:{nodes:[]}}
+      ]}},
+    { id:'gid://shopify/Product/5', title:'Yoga Mat — 6mm Natural Rubber', status:'ACTIVE', vendor:'MoveWell', tags:['fitness','yoga','eco'],
+      variants:{nodes:[
+        {id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33,
+          metafields:{nodes:[{namespace:'custom',key:'thickness_mm',type:'number_integer',value:'6'}]}}
+      ]}},
+    { id:'gid://shopify/Product/6', title:'Linen Duvet Cover Set — King', status:'ARCHIVED', vendor:'HomeTextile', tags:['bedding','linen','home'],
+      variants:{nodes:[
+        {id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7,
+          metafields:{nodes:[]}}
       ]}},
   ];
 
