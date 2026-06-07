@@ -633,11 +633,21 @@ function renderSchedValueFields() {
   const wrap = $('sched-value-wrap');
   const items = document.querySelectorAll('#sched-prod-list .sched-prod-item');
   if (type === 'price') {
-    wrap.innerHTML = `<div class="field"><label>Default price <span class="text-muted">(override per-variant below)</span></label><input id="sched-default-price" type="number" step=".01" min="0" placeholder="0.00"></div>`;
+    // No default field — just per-variant prices with an "Apply to all" helper
+    wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--t3)">New price per variant</span><button type="button" id="apply-all-price" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;font-family:var(--mono)">Apply same to all</button></div>`;
     items.forEach(item => {
       const vid = item.dataset.vid; const { v } = getVar(vid);
       const el = $(`spwrap-${vid}`); if (el) el.innerHTML = `<input class="spi-price-inp" id="sprice-${esc(vid)}" type="number" step=".01" min="0" placeholder="${esc(v?.price||'')}">`;
     });
+    // Apply to all button
+    setTimeout(() => {
+      const btn = $('apply-all-price');
+      if (btn) btn.addEventListener('click', () => {
+        const first = document.querySelector('.spi-price-inp');
+        if (!first || !first.value) return;
+        document.querySelectorAll('.spi-price-inp').forEach(inp => { inp.value = first.value; });
+      });
+    }, 0);
   } else if (type === 'status') {
     wrap.innerHTML = `<div class="field"><label>New status</label><select id="sched-status-val"><option value="ACTIVE">Active</option><option value="DRAFT">Draft</option><option value="ARCHIVED">Archived</option></select></div>`;
     items.forEach(item => { const el = $(`spwrap-${item.dataset.vid}`); if (el) el.innerHTML = ''; });
@@ -658,14 +668,14 @@ function confirmSched() {
   const revert    = $('sched-revert').checked;
   const revertAt  = revert ? new Date(`${$('sched-rv-date').value}T${$('sched-rv-time').value}`) : null;
   let defVal = null;
-  if (type === 'price')  defVal = $('sched-default-price')?.value || null;
   if (type === 'status') defVal = $('sched-status-val')?.value || 'ACTIVE';
   if (type.startsWith('tags')) defVal = $('sched-tags-val')?.value || '';
   const items = [...document.querySelectorAll('#sched-prod-list .sched-prod-item')];
   items.forEach(item => {
     const { p, v } = getVar(item.dataset.vid); if (!p || !v) return;
-    const overPrice = $(`sprice-${item.dataset.vid}`)?.value || null;
-    S.schedules.push({ id:crypto.randomUUID(), name, productId:item.dataset.pid, variantId:item.dataset.vid, productTitle:p.title, variantTitle:v.title||'Default', runAt:runAt.toISOString(), revertAt:revert&&revertAt&&!isNaN(revertAt.getTime())?revertAt.toISOString():null, type, value:type==='price'?(overPrice||defVal):defVal, original:{ price:v.price, status:p.status, tags:clone(p.tags||[]) }, state:'queued' });
+    const priceVal = type === 'price' ? ($(`sprice-${item.dataset.vid}`)?.value || null) : null;
+    const taskVal  = type === 'price' ? priceVal : defVal;
+    S.schedules.push({ id:crypto.randomUUID(), name, productId:item.dataset.pid, variantId:item.dataset.vid, productTitle:p.title, variantTitle:v.title||'Default', runAt:runAt.toISOString(), revertAt:revert&&revertAt&&!isNaN(revertAt.getTime())?revertAt.toISOString():null, type, value:taskVal, original:{ price:v.price, status:p.status, tags:clone(p.tags||[]) }, state:'queued' });
     const task = S.schedules[S.schedules.length - 1];
     armSchedTimer(task);
   });
@@ -845,6 +855,7 @@ function boot() {
   $('btn-import-sched-trigger').addEventListener('click', () => $('btn-import-sched').click());
   $('btn-import-sched').addEventListener('change',     e => e.target.files[0] && importSchedFile(e.target.files[0]));
   $('sched-type').addEventListener('change',           renderSchedValueFields);
+  try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; const tzEl = $('sched-tz'); if (tzEl) tzEl.textContent = `(${tz})`; } catch(e) {}
   $('sched-revert').addEventListener('change',         () => $('sched-revert-wrap').classList.toggle('hidden', !$('sched-revert').checked));
   $('m-sched-confirm').addEventListener('click',       confirmSched);
 
