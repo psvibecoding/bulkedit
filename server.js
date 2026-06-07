@@ -46,8 +46,16 @@ app.use(helmet({
 app.use(express.json({ limit: '256kb', strict: true }));
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: true,
-  maxAge: IS_PROD ? '1h' : 0,
-  setHeaders(res) { res.setHeader('X-Content-Type-Options', 'nosniff'); }
+  maxAge: 0,
+  setHeaders(res, filePath) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Never cache JS/HTML — always serve fresh
+    if (filePath.endsWith('.js') || filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    } else {
+      res.setHeader('Cache-Control', IS_PROD ? 'public, max-age=3600' : 'no-store');
+    }
+  }
 }));
 
 // ── RATE LIMITING ─────────────────────────────────────────
