@@ -122,6 +122,7 @@
           <button class="chip-btn" id="bulk-price-btn">€ Price</button>
           <button class="chip-btn" id="bulk-tags-btn">⌗ Tags</button>
           <button class="chip-btn" id="bulk-mf-btn">≡ Metafield</button>
+          <button class="chip-btn" id="bulk-coll-btn">⊞ Collections</button>
         </div>
       </div>
       <div id="undo-hint" class="undo-hint hidden">
@@ -240,6 +241,40 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=6"></script>
+
+<!-- COLLECTIONS MODAL -->
+<div id="m-coll" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>Add to collection</h2>
+        <p id="m-coll-sub" class="modal-sub"></p>
+      </div>
+      <button class="close-btn" data-close="m-coll">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="bulk-field">
+        <label>Action</label>
+        <select id="coll-action">
+          <option value="add">Add to collection</option>
+          <option value="remove">Remove from collection</option>
+        </select>
+      </div>
+      <div class="bulk-field">
+        <label>Collection <span id="coll-loading" style="color:var(--t3);font-size:11px"></span></label>
+        <select id="coll-select" style="min-height:40px">
+          <option value="">Loading collections…</option>
+        </select>
+      </div>
+      <div id="coll-selected-products" style="display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost sm" data-close="m-coll">Cancel</button>
+      <button class="btn-cta sm" id="m-coll-confirm">Apply →</button>
+    </div>
+  </div>
+</div>
+
+<script src="/app-tool.js?v=7"></script>
 </body>
 </html>

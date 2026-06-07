@@ -678,6 +678,81 @@ function updateExportPreview() {
   )].join('\n') + (flatRows().length > 3 ? `\n… (${flatRows().length} total rows)` : '');
 }
 
+/* ─── COLLECTIONS ─────────────────────────── */
+let collectionsCache = null;
+
+async function openCollModal() {
+  const n = S.selectedVids.size;
+  if (!n) return toast('Select products first.');
+  const pids = getSelPids();
+  $('m-coll-sub').textContent = `${pids.length} product${pids!==1?'s':''} selected`;
+
+  // Show selected products
+  const prodList = $('coll-selected-products');
+  prodList.innerHTML = pids.map(pid => {
+    const p = getProd(pid); if (!p) return '';
+    return `<div style="padding:6px 10px;background:var(--bg);border:1px solid var(--border,var(--b1));border-radius:6px;font-size:12px;color:var(--t2)">${esc(p.title)}</div>`;
+  }).join('');
+
+  openModal('m-coll');
+
+  // Load collections if not cached
+  if (S.demo) {
+    $('coll-select').innerHTML = '<option value="">Not available in demo mode</option>';
+    return;
+  }
+  if (!collectionsCache) {
+    $('coll-loading').textContent = '(loading…)';
+    $('coll-select').innerHTML = '<option value="">Loading…</option>';
+    try {
+      const r = await apiPost('/api/collections', { first: 100 });
+      collectionsCache = r.collections;
+    } catch(e) {
+      $('coll-loading').textContent = '';
+      $('coll-select').innerHTML = '<option value="">Failed to load — check permissions</option>';
+      toast('Could not load collections: ' + e.message);
+      return;
+    }
+  }
+  $('coll-loading').textContent = '';
+  if (!collectionsCache.length) {
+    $('coll-select').innerHTML = '<option value="">No collections found</option>';
+    return;
+  }
+  $('coll-select').innerHTML = '<option value="">Select a collection…</option>' +
+    collectionsCache.map(c => `<option value="${esc(c.id)}">${esc(c.title)} (${c.productsCount?.count ?? '?'} products)</option>`).join('');
+}
+
+async function confirmCollModal() {
+  const collId = $('coll-select').value;
+  const action = $('coll-action').value;
+  if (!collId) return toast('Select a collection first.');
+  const pids = getSelPids();
+  if (!pids.length) return toast('No products selected.');
+
+  const btn = $('m-coll-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    if (S.demo) {
+      await new Promise(r => setTimeout(r, 500));
+      toast(`Demo: would ${action} ${pids.length} products to/from collection.`);
+    } else {
+      const path = action === 'add' ? '/api/collection-add' : '/api/collection-remove';
+      const r = await apiPost(path, { collectionId: collId, productIds: pids });
+      const collName = collectionsCache?.find(c => c.id === collId)?.title || 'collection';
+      toast(`${pids.length} product${pids.length!==1?'s':''} ${action==='add'?'added to':'removed from'} "${collName}".`);
+    }
+    closeModal('m-coll');
+  } catch(e) {
+    toast(e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Apply →';
+  }
+}
+
 /* ─── BOOT ────────────────────────────────── */
 function boot() {
   initSteps();
@@ -730,6 +805,10 @@ function boot() {
   $('bulk-price-btn').addEventListener('click',  () => openBulkModal('price'));
   $('bulk-tags-btn').addEventListener('click',   () => openBulkModal('tags'));
   $('bulk-mf-btn').addEventListener('click',     () => openBulkModal('metafield'));
+  $('bulk-coll-btn').addEventListener('click',   () => openCollModal());
+
+  /* Collections modal */
+  $('m-coll-confirm').addEventListener('click', confirmCollModal);
 
   /* Bulk modal */
   $('m-bulk-apply').addEventListener('click', applyBulkModal);
@@ -754,7 +833,7 @@ function boot() {
 
   /* Keyboard */
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') ['m-bulk','m-save',].forEach(id => closeModal(id));
+    if (e.key === 'Escape') ['m-bulk','m-save','m-coll'].forEach(id => closeModal(id));
   });
 
   /* Table events */

@@ -16,7 +16,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || (IS_PROD ? '' : 'http://
 const SHOPIFY_TIMEOUT_MS  = Number(process.env.SHOPIFY_TIMEOUT_MS || 15000);
 const SHOPIFY_CLIENT_ID   = process.env.SHOPIFY_CLIENT_ID   || '';
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET || '';
-const SHOPIFY_SCOPES      = process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_inventory,write_inventory';
+const SHOPIFY_SCOPES      = process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_inventory,write_inventory,read_collections,write_collections';
 const APP_URL             = (process.env.APP_URL || 'http://localhost:8787').replace(/\/$/, '');
 
 // In-memory OAuth state (stateless — no DB)
@@ -317,6 +317,71 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
     }
 
     res.json({ ok: true, results });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+// ── COLLECTIONS API ───────────────────────────────────────
+
+// Get all collections (custom + smart)
+app.post('/api/collections', apiLimiter, async (req, res) => {
+  try {
+    const s = getSession(req);
+    const first = Math.min(Number(req.body?.first || 50), 100);
+    const d = await gql(s, `
+      query Collections($first: Int!) {
+        collections(first: $first, sortKey: TITLE) {
+          nodes {
+            id
+            title
+            handle
+            productsCount { count }
+          }
+        }
+      }`, { first });
+    res.json({ ok: true, collections: d.collections.nodes });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+// Add products to a collection
+app.post('/api/collection-add', apiLimiter, writeLimiter, async (req, res) => {
+  try {
+    const s = getSession(req);
+    const { collectionId, productIds } = req.body || {};
+    if (!collectionId || !Array.isArray(productIds) || !productIds.length) throw new Error('Missing collectionId or productIds');
+    gid(collectionId, 'Collection');
+    if (productIds.length > 100) throw new Error('Too many products (max 100)');
+    productIds.forEach(id => gid(id, 'Product'));
+    const d = await gql(s, `
+      mutation CollectionAddProducts($id: ID!, $productIds: [ID!]!) {
+        collectionAddProducts(id: $id, productIds: $productIds) {
+          collection { id title productsCount { count } }
+          userErrors { field message }
+        }
+      }`, { id: collectionId, productIds });
+    const errs = d.collectionAddProducts.userErrors;
+    if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+    res.json({ ok: true, collection: d.collectionAddProducts.collection });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+// Remove products from a collection
+app.post('/api/collection-remove', apiLimiter, writeLimiter, async (req, res) => {
+  try {
+    const s = getSession(req);
+    const { collectionId, productIds } = req.body || {};
+    if (!collectionId || !Array.isArray(productIds) || !productIds.length) throw new Error('Missing collectionId or productIds');
+    gid(collectionId, 'Collection');
+    productIds.forEach(id => gid(id, 'Product'));
+    const d = await gql(s, `
+      mutation CollectionRemoveProducts($id: ID!, $productIds: [ID!]!) {
+        collectionRemoveProducts(id: $id, productIds: $productIds) {
+          job { id }
+          userErrors { field message }
+        }
+      }`, { id: collectionId, productIds });
+    const errs = d.collectionRemoveProducts.userErrors;
+    if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+    res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
