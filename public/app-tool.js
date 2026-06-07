@@ -19,15 +19,12 @@ let S = {
   products: [],
   originals: [],   // snapshot at load time — used for diff
   changes: {},     // { productId: { productId, product:{}, variants:{}, metafields:[] } }
-  schedules: [],
-  timers: new Map(),
   past: [], future: [],
   filter: 'all',
   searchQ: '',
   selectedVids: new Set(),
   exportFields: ['title','status','vendor','tags','variant','sku','price','compareAtPrice'],
   bulkModalType: null,
-  schedCtx: null,
 };
 const MAX_HIST = 80;
 
@@ -193,8 +190,7 @@ async function loadProducts(q = '') {
 }
 
 function disconnect() {
-  Object.assign(S, { shop:'', token:'', demo:false, products:[], originals:[], changes:{}, schedules:[], past:[], future:[], filter:'all', searchQ:'', selectedVids:new Set(), bulkModalType:null, schedCtx:null });
-  S.timers.forEach(t => clearTimeout(t)); S.timers.clear();
+  Object.assign(S, { shop:'', token:'', demo:false, products:[], originals:[], changes:{}, past:[], future:[], filter:'all', searchQ:'', selectedVids:new Set(), bulkModalType:null, });
   $('f-token').value = '';
   showStep('c-choose');
   showScreen('s-connect');
@@ -265,7 +261,6 @@ function renderTable() {
 function rowHTML(p, v) {
   const dirty = !!S.changes[p.id];
   const sel   = S.selectedVids.has(v.id);
-  const hasSched = S.schedules.some(s => s.variantId === v.id && s.state === 'queued');
   const cls = [dirty?'r-changed':'', sel?'r-selected':''].filter(Boolean).join(' ');
   const imgSrc = prodImg(p);
   const imgCell = imgSrc
@@ -278,10 +273,6 @@ function rowHTML(p, v) {
   ).join('') + `<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
   const mfHTML = v.metafields.nodes.map((m,i) => mfRowHTML(v.id, m, i)).join('')
     + `<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
-  const schedSched = S.schedules.find(s => s.variantId === v.id && s.state === 'queued');
-  const schedCell = schedSched
-    ? `<span class="sched-pill" data-switchtab="schedule" title="${esc(schedSched.name)}">⏱ ${esc(schedSched.name)}</span>`
-    : `<button class="sched-add" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">+ schedule</button>`;
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
@@ -294,7 +285,6 @@ function rowHTML(p, v) {
 <td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vfield="price" value="${esc(v.price||'')}"></td>
 <td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vfield="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"></td>
 <td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
-<td>${schedCell}</td>
 </tr>`;
 }
 
@@ -326,7 +316,6 @@ function bindTableEvents() {
     if (el.classList.contains('tag-add'))     { addTagPrompt(el.dataset.pid); return; }
     if (el.classList.contains('mf-add'))      { addMf(el.dataset.vid); return; }
     if (el.classList.contains('mf-del'))      { removeMf(el.dataset.vid, +el.dataset.idx); return; }
-    if (el.classList.contains('sched-add'))   { openSchedModal({ productId:el.dataset.pid, variantId:el.dataset.vid }); return; }
     if (el.dataset.switchtab)                 { switchTab(el.dataset.switchtab); return; }
   });
 }
@@ -605,144 +594,6 @@ function switchTab(name) {
   if (name === 'export') updateExportPreview();
 }
 
-/* ─── SCHEDULE ────────────────────────────── */
-function openSchedModal(ctx) {
-  S.schedCtx = ctx;
-  const modal = $('m-sched');
-  const tom = new Date(); tom.setDate(tom.getDate() + 1);
-  $('sched-date').value    = tom.toISOString().split('T')[0];
-  $('sched-time').value    = '09:00';
-  $('sched-name').value    = '';
-  $('sched-revert').checked = false;
-  $('sched-revert-wrap').classList.add('hidden');
-  let rows;
-  if (ctx === 'bulk' || ctx === 'new') rows = ctx === 'bulk' ? flatRows().filter(({ v }) => S.selectedVids.has(v.id)) : flatRows().slice(0, 20);
-  else if (ctx?.variantId) rows = flatRows().filter(({ v }) => v.id === ctx.variantId);
-  else rows = flatRows().slice(0, 20);
-  $('m-sched-sub').textContent   = ctx === 'bulk' ? `${rows.length} selected variants` : ctx?.variantId ? `${rows[0]?.p.title||''} — ${rows[0]?.v.title||'Default'}` : `${rows.length} products`;
-  $('sched-prod-count').textContent = `(${rows.length})`;
-  $('sched-prod-list').innerHTML = rows.map(({ p, v }) =>
-    `<div class="sched-prod-item" data-vid="${esc(v.id)}" data-pid="${esc(p.id)}"><span class="spi-name">${esc(p.title)} — ${esc(v.title||'Default')}</span><div id="spwrap-${esc(v.id)}"></div></div>`
-  ).join('');
-  renderSchedValueFields();
-  openModal('m-sched');
-}
-
-function renderSchedValueFields() {
-  const type = $('sched-type').value;
-  const wrap = $('sched-value-wrap');
-  const items = document.querySelectorAll('#sched-prod-list .sched-prod-item');
-  if (type === 'price') {
-    // No default field — just per-variant prices with an "Apply to all" helper
-    wrap.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><span style="font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--t3)">New price per variant</span><button type="button" id="apply-all-price" style="font-size:11px;color:var(--green);background:none;border:none;cursor:pointer;font-family:var(--mono)">Apply same to all</button></div>`;
-    items.forEach(item => {
-      const vid = item.dataset.vid; const { v } = getVar(vid);
-      const el = $(`spwrap-${vid}`); if (el) el.innerHTML = `<input class="spi-price-inp" id="sprice-${esc(vid)}" type="number" step=".01" min="0" placeholder="${esc(v?.price||'')}">`;
-    });
-    // Apply to all button
-    setTimeout(() => {
-      const btn = $('apply-all-price');
-      if (btn) btn.addEventListener('click', () => {
-        const first = document.querySelector('.spi-price-inp');
-        if (!first || !first.value) return;
-        document.querySelectorAll('.spi-price-inp').forEach(inp => { inp.value = first.value; });
-      });
-    }, 0);
-  } else if (type === 'status') {
-    wrap.innerHTML = `<div class="field"><label>New status</label><select id="sched-status-val"><option value="ACTIVE">Active</option><option value="DRAFT">Draft</option><option value="ARCHIVED">Archived</option></select></div>`;
-    items.forEach(item => { const el = $(`spwrap-${item.dataset.vid}`); if (el) el.innerHTML = ''; });
-  } else {
-    wrap.innerHTML = `<div class="field"><label>${type==='tags_add'?'Tags to add':'Tags to remove'}</label><input id="sched-tags-val" type="text" placeholder="sale, promo"></div>`;
-    items.forEach(item => { const el = $(`spwrap-${item.dataset.vid}`); if (el) el.innerHTML = ''; });
-  }
-}
-
-function confirmSched() {
-  const name    = $('sched-name').value.trim() || 'Scheduled task';
-  const date    = $('sched-date').value;
-  const time    = $('sched-time').value || '09:00';
-  const type    = $('sched-type').value;
-  if (!date) return toast('Please set a date.');
-  const runAt = new Date(`${date}T${time}`);
-  if (isNaN(runAt.getTime()) || runAt < new Date()) return toast('Date must be in the future.');
-  const revert    = $('sched-revert').checked;
-  const revertAt  = revert ? new Date(`${$('sched-rv-date').value}T${$('sched-rv-time').value}`) : null;
-  let defVal = null;
-  if (type === 'status') defVal = $('sched-status-val')?.value || 'ACTIVE';
-  if (type.startsWith('tags')) defVal = $('sched-tags-val')?.value || '';
-  const items = [...document.querySelectorAll('#sched-prod-list .sched-prod-item')];
-  items.forEach(item => {
-    const { p, v } = getVar(item.dataset.vid); if (!p || !v) return;
-    const priceVal = type === 'price' ? ($(`sprice-${item.dataset.vid}`)?.value || null) : null;
-    const taskVal  = type === 'price' ? priceVal : defVal;
-    S.schedules.push({ id:crypto.randomUUID(), name, productId:item.dataset.pid, variantId:item.dataset.vid, productTitle:p.title, variantTitle:v.title||'Default', runAt:runAt.toISOString(), revertAt:revert&&revertAt&&!isNaN(revertAt.getTime())?revertAt.toISOString():null, type, value:taskVal, original:{ price:v.price, status:p.status, tags:clone(p.tags||[]) }, state:'queued' });
-    const task = S.schedules[S.schedules.length - 1];
-    armSchedTimer(task);
-  });
-  updateSchedBadge(); renderSchedList(); renderTable();
-  closeModal('m-sched');
-  toast(`"${name}" scheduled for ${date} ${time}.`);
-}
-
-function armSchedTimer(s) {
-  if (S.timers.has(s.id)) clearTimeout(S.timers.get(s.id));
-  const ms = new Date(s.runAt) - Date.now(); if (ms < 0) return;
-  S.timers.set(s.id, setTimeout(() => runSchedTask(s.id, false), ms));
-}
-
-async function runSchedTask(id, isRevert) {
-  const s = S.schedules.find(x => x.id === id); if (!s) return;
-  const { p, v } = getVar(s.variantId); if (!p || !v) return;
-  const product = {}, variants = {};
-  if (isRevert) { if (s.original.status) product.status = s.original.status; if (s.original.price) variants[s.variantId] = { id:s.variantId, price:s.original.price }; s.state = 'reverted'; }
-  else { if (s.type==='price'&&s.value) variants[s.variantId]={id:s.variantId,price:s.value}; if (s.type==='status'&&s.value) product.status=s.value; if (s.type==='tags_add'&&s.value){s.value.split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>{if(!p.tags.includes(t))p.tags.push(t);});product.tags=clone(p.tags);} if (s.type==='tags_remove'&&s.value){p.tags=p.tags.filter(t=>!s.value.split(',').map(x=>x.trim()).includes(t));product.tags=clone(p.tags);} s.state='running'; }
-  if (!S.demo) { try { await apiPost('/api/save-product',{productId:s.productId,product,variants,metafields:[]}); } catch(e) { toast('Schedule error: '+e.message); } }
-  if (!isRevert && s.revertAt) { const ms = new Date(s.revertAt) - Date.now(); if (ms > 0) setTimeout(() => runSchedTask(id, true), ms); }
-  else if (!isRevert) s.state = 'done';
-  renderSchedList(); renderTable();
-}
-
-function cancelSched(id) {
-  if (S.timers.has(id)) clearTimeout(S.timers.get(id));
-  S.schedules = S.schedules.filter(s => s.id !== id);
-  updateSchedBadge(); renderSchedList(); renderTable();
-  toast('Task cancelled.');
-}
-
-function updateSchedBadge() {
-  const n = S.schedules.filter(s => s.state === 'queued').length;
-  const b = $('sched-count'); b.textContent = n; b.classList.toggle('hidden', !n);
-}
-
-function renderSchedList() {
-  updateSchedBadge();
-  const el = $('sched-list');
-  if (!S.schedules.length) { el.innerHTML = '<p class="empty-msg">No scheduled tasks yet.</p>'; return; }
-  const sorted = clone(S.schedules).sort((a,b) => new Date(b.runAt) - new Date(a.runAt));
-  el.innerHTML = sorted.map(s => {
-    const past = new Date(s.runAt) < new Date();
-    const tl = { price:'Price change', status:'Status change', tags_add:'Add tags', tags_remove:'Remove tags' }[s.type] || s.type;
-    return `<div class="sched-card">
-<div class="sched-card-top">
-<div><div class="sched-card-name">${esc(s.name)}</div><div class="sched-card-meta"><span>${tl}</span>${s.value?`<span>· ${esc(String(s.value))}</span>`:''}<span>· ${esc(s.state)}</span>${s.revertAt?`<span class="revert-tag">↺ auto-revert</span>`:''}</div></div>
-<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="sched-card-time${past||s.state!=='queued'?' done':''}">${fmt(s.runAt)}</span><button class="btn-ghost sm sched-cancel" data-id="${s.id}">Cancel</button></div>
-</div>
-<div style="display:flex;flex-wrap:wrap;gap:4px"><span style="padding:2px 8px;background:var(--s2);border:1px solid var(--b1);border-radius:3px;font-size:11px;color:var(--t2);font-family:var(--mono)">${esc(s.productTitle)} — ${esc(s.variantTitle)}</span></div>
-</div>`;
-  }).join('');
-  el.querySelectorAll('.sched-cancel').forEach(btn => btn.addEventListener('click', () => cancelSched(btn.dataset.id)));
-}
-
-function exportSchedJSON() {
-  downloadText(JSON.stringify(S.schedules, null, 2), `bulkedit-schedule-${Date.now()}.json`);
-  toast('Schedule exported.');
-}
-function importSchedFile(file) {
-  const r = new FileReader();
-  r.onload = () => { try { const imp = JSON.parse(r.result); if (!Array.isArray(imp)) throw 0; S.schedules = imp; S.schedules.forEach(s => { if (s.state==='queued') armSchedTimer(s); }); renderSchedList(); toast(`${imp.length} task${imp.length!==1?'s':''} imported.`); } catch { toast('Invalid JSON.'); } };
-  r.readAsText(file);
-}
-
 /* ─── EXPORT ──────────────────────────────── */
 const EX_FIELDS = ['id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
 const EX_LABELS = { id:'ID', title:'Title', status:'Status', vendor:'Vendor', tags:'Tags', variant:'Variant', sku:'SKU', price:'Price', compareAtPrice:'Compare at', inventoryQuantity:'Inventory' };
@@ -840,7 +691,6 @@ function boot() {
   $('bulk-status-btn').addEventListener('click', () => openBulkModal('status'));
   $('bulk-price-btn').addEventListener('click',  () => openBulkModal('price'));
   $('bulk-tags-btn').addEventListener('click',   () => openBulkModal('tags'));
-  $('bulk-sched-btn').addEventListener('click',  () => openSchedModal('bulk'));
 
   /* Bulk modal */
   $('m-bulk-apply').addEventListener('click', applyBulkModal);
@@ -849,16 +699,7 @@ function boot() {
   $('m-save-confirm').addEventListener('click',    confirmSave);
   $('btn-dl-recap').addEventListener('click',      manualDownloadRecap);
 
-  /* Schedule modal */
-  $('btn-new-sched').addEventListener('click',         () => openSchedModal('new'));
-  $('btn-export-sched').addEventListener('click',      exportSchedJSON);
-  $('btn-import-sched-trigger').addEventListener('click', () => $('btn-import-sched').click());
-  $('btn-import-sched').addEventListener('change',     e => e.target.files[0] && importSchedFile(e.target.files[0]));
-  $('sched-type').addEventListener('change',           renderSchedValueFields);
-  try { const tz = Intl.DateTimeFormat().resolvedOptions().timeZone; const tzEl = $('sched-tz'); if (tzEl) tzEl.textContent = `(${tz})`; } catch(e) {}
-  $('sched-revert').addEventListener('change',         () => $('sched-revert-wrap').classList.toggle('hidden', !$('sched-revert').checked));
-  $('m-sched-confirm').addEventListener('click',       confirmSched);
-
+  // Schedule removed
   /* Export */
   $('btn-dl-csv').addEventListener('click',   () => { downloadText(buildCSV(), `shopify-export-${Date.now()}.csv`); toast('CSV downloaded.'); });
   $('btn-dl-json').addEventListener('click',  () => { downloadText(buildJSON(), `shopify-export-${Date.now()}.json`); toast('JSON downloaded.'); });
@@ -874,7 +715,7 @@ function boot() {
 
   /* Keyboard */
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') ['m-bulk','m-save','m-sched'].forEach(id => closeModal(id));
+    if (e.key === 'Escape') ['m-bulk','m-save',].forEach(id => closeModal(id));
   });
 
   /* Table events */

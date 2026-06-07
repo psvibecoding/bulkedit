@@ -96,7 +96,6 @@
 
     <nav class="tabs">
       <button class="tab active" data-tab="products">Products</button>
-      <button class="tab" data-tab="schedule">Schedule <span id="sched-count" class="tab-count hidden">0</span></button>
       <button class="tab" data-tab="export">Export</button>
     </nav>
 
@@ -116,7 +115,6 @@
           <button class="chip-btn" id="bulk-status-btn">● Status</button>
           <button class="chip-btn" id="bulk-price-btn">€ Price</button>
           <button class="chip-btn" id="bulk-tags-btn">⌗ Tags</button>
-          <button class="chip-btn amber" id="bulk-sched-btn">⏱ Schedule</button>
         </div>
       </div>
       <div id="undo-hint" class="undo-hint hidden">
@@ -140,16 +138,6 @@
       </div>
     </div>
 
-    <div id="tab-schedule" class="tab-panel">
-      <div class="two-col">
-        <div class="card">
-          <h3>Session scheduler</h3>
-          <p class="text-muted">Tasks run only while this tab is open.</p>
-          <div class="btn-row mt-12">
-            <button class="btn-ghost sm" id="btn-export-sched">↓ Export JSON</button>
-            <button class="btn-ghost sm" id="btn-import-sched-trigger">↑ Import JSON</button>
-            <input id="btn-import-sched" type="file" accept="application/json" class="hidden"/>
-          </div>
         </div>
         <div class="card grow">
           <div class="card-header">
@@ -220,11 +208,6 @@
   </div>
 </div>
 
-<!-- SCHEDULE MODAL -->
-<div id="m-sched" class="overlay hidden">
-  <div class="modal">
-    <div class="modal-head">
-      <div><h2>Schedule a change</h2><p id="m-sched-sub" class="modal-sub"></p></div>
       <button class="close-btn" data-close="m-sched">✕</button>
     </div>
     <div class="modal-body">
@@ -250,6 +233,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=2"></script>
+<script src="/app-tool.js?v=3"></script>
 </body>
 </html>
