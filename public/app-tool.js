@@ -115,13 +115,13 @@ function setStatus(msg, cls = '') {
 /* ─── SCREENS ─────────────────────────────── */
 function showScreen(name) {
   ['s-connect','s-loading','s-app'].forEach(id => {
-    const el = $(id);
+    const el = $(id); if (!el) return;
     el.classList.remove('active');
-    el.style.display = '';
+    el.style.display = 'none';
   });
-  const target = $(name);
+  const target = $(name); if (!target) return;
   target.classList.add('active');
-  if (name === 's-loading' || name === 's-connect') target.style.display = 'flex';
+  target.style.display = (name === 's-loading' || name === 's-connect') ? 'flex' : 'block';
 }
 
 /* ─── CONNECT SCREEN STEPS ───────────────── */
