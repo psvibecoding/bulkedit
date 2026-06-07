@@ -38,7 +38,9 @@
           <label for="inp-token">Admin API access token</label>
           <input id="inp-token" type="password" autocomplete="off" placeholder="shpat_xxxxxxxxxxxxxxxx" />
         </div>
-        <button class="btn-primary" id="connectBtn">Connect store →</button>
+        <button class="btn-primary" id="oauthBtn" onclick="App.startOAuth()">Connect with Shopify →</button>
+        <div class="connect-divider"><span>or connect manually with API token</span></div>
+        <button class="btn-ghost" id="connectBtn">Connect with token</button>
         <button class="btn-ghost" id="demoBtn">Load demo data</button>
         <p class="connect-note">Recommended scopes: <code>read_products write_products read_inventory write_inventory</code>. No customer or order scopes needed.</p>
       </div>

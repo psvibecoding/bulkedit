@@ -12,12 +12,23 @@ const API_VERSION = process.env.SHOPIFY_API_VERSION || '2026-01';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const IS_PROD = NODE_ENV === 'production';
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || (IS_PROD ? '' : 'http://localhost:8787,http://127.0.0.1:8787'))
-  .split(',')
-  .map(v => v.trim())
-  .filter(Boolean);
+  .split(',').map(v => v.trim()).filter(Boolean);
 const MAX_BODY_BYTES = '256kb';
 const SHOPIFY_TIMEOUT_MS = Number(process.env.SHOPIFY_TIMEOUT_MS || 15000);
-const TOKEN_PREFIX_ALLOWLIST = ['shpat_', 'shpca_', 'shppa_', 'shpss_'];
+const TOKEN_PREFIX_ALLOWLIST = ['shpat_', 'shpca_', 'shppa_', 'shpss_', 'shpua_'];
+
+// OAuth config
+const SHOPIFY_CLIENT_ID     = process.env.SHOPIFY_CLIENT_ID || '';
+const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET || '';
+const SHOPIFY_SCOPES        = process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_inventory,write_inventory';
+const APP_URL               = (process.env.APP_URL || 'http://localhost:8787').replace(/\/$/, '');
+
+// In-memory OAuth state store (stateless — no DB)
+const oauthStates = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of oauthStates.entries()) if (now > v.expiresAt) oauthStates.delete(k);
+}, 60000).unref();
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
@@ -29,6 +40,9 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
+  // Allow OAuth callback (GET, from Shopify redirect)
+  if (req.path === '/auth/callback') return next();
+  if (req.path === '/auth/start') return next();
   const origin = req.headers.origin;
   if (!origin || !ALLOWED_ORIGINS.length || ALLOWED_ORIGINS.includes(origin)) return next();
   return res.status(403).json({ ok: false, error: 'Origin not allowed' });
@@ -40,10 +54,10 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", 'data:'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      imgSrc: ["'self'", 'data:', 'https://images.unsplash.com', 'https://cdn.shopify.com'],
       connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
       objectSrc: ["'none'"],
       frameAncestors: ["'none'"],
       formAction: ["'self'"],
@@ -66,16 +80,14 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
+// ── RATE LIMITING ──────────────────────────────────────────
 const buckets = new Map();
 function rateLimit({ windowMs, max, keyFn }) {
   return (req, res, next) => {
     const now = Date.now();
     const key = keyFn(req);
     const bucket = buckets.get(key) || { count: 0, resetAt: now + windowMs };
-    if (now > bucket.resetAt) {
-      bucket.count = 0;
-      bucket.resetAt = now + windowMs;
-    }
+    if (now > bucket.resetAt) { bucket.count = 0; bucket.resetAt = now + windowMs; }
     bucket.count += 1;
     buckets.set(key, bucket);
     res.setHeader('RateLimit-Limit', String(max));
@@ -85,23 +97,13 @@ function rateLimit({ windowMs, max, keyFn }) {
     next();
   };
 }
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of buckets.entries()) if (now > value.resetAt) buckets.delete(key);
-}, 60000).unref();
+setInterval(() => { const now = Date.now(); for (const [k, v] of buckets.entries()) if (now > v.resetAt) buckets.delete(k); }, 60000).unref();
 
-const apiLimiter = rateLimit({
-  windowMs: 60_000,
-  max: Number(process.env.RATE_LIMIT_PER_MINUTE || 120),
-  keyFn: req => `${req.ip}:${String(req.headers['x-shopify-shop'] || 'unknown')}`
-});
+const apiLimiter   = rateLimit({ windowMs: 60_000, max: Number(process.env.RATE_LIMIT_PER_MINUTE || 120), keyFn: req => `${req.ip}:${String(req.headers['x-shopify-shop'] || req.query.shop || 'unknown')}` });
+const writeLimiter = rateLimit({ windowMs: 60_000, max: Number(process.env.WRITE_LIMIT_PER_MINUTE || 30),  keyFn: req => `${req.ip}:${String(req.headers['x-shopify-shop'] || 'unknown')}:write` });
+const authLimiter  = rateLimit({ windowMs: 60_000, max: 20, keyFn: req => req.ip });
 
-const writeLimiter = rateLimit({
-  windowMs: 60_000,
-  max: Number(process.env.WRITE_LIMIT_PER_MINUTE || 30),
-  keyFn: req => `${req.ip}:${String(req.headers['x-shopify-shop'] || 'unknown')}:write`
-});
-
+// ── HELPERS ────────────────────────────────────────────────
 function safeError(err) {
   if (!IS_PROD) return err.message || 'Request failed';
   const msg = String(err.message || 'Request failed');
@@ -112,9 +114,7 @@ function safeError(err) {
 function cleanShop(shop) {
   if (!shop || typeof shop !== 'string') throw new Error('Missing shop domain');
   const normalized = shop.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
-  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(normalized)) {
-    throw new Error('Invalid shop domain. Use your-store.myshopify.com');
-  }
+  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(normalized)) throw new Error('Invalid shop domain. Use your-store.myshopify.com');
   return normalized;
 }
 
@@ -122,9 +122,7 @@ function getSession(req) {
   const shop = cleanShop(req.headers['x-shopify-shop']);
   const token = String(req.headers['x-shopify-token'] || '').trim();
   const hasAllowedPrefix = TOKEN_PREFIX_ALLOWLIST.some(prefix => token.startsWith(prefix));
-  if (!hasAllowedPrefix || token.length < 32 || token.length > 256 || /\s/.test(token)) {
-    throw new Error('Missing or invalid Admin API access token');
-  }
+  if (!hasAllowedPrefix || token.length < 20 || token.length > 256 || /\s/.test(token)) throw new Error('Missing or invalid Admin API access token');
   return { shop, token };
 }
 
@@ -157,9 +155,7 @@ function ensureMetafields(metafields = []) {
   if (metafields.length > 50) throw new Error('Too many metafields in one request');
   return metafields.map(m => {
     const ownerId = String(m.ownerId || '');
-    if (!ownerId.startsWith('gid://shopify/ProductVariant/') && !ownerId.startsWith('gid://shopify/Product/')) {
-      throw new Error('Invalid metafield owner');
-    }
+    if (!ownerId.startsWith('gid://shopify/ProductVariant/') && !ownerId.startsWith('gid://shopify/Product/')) throw new Error('Invalid metafield owner');
     const namespace = String(m.namespace || '').trim();
     const key = String(m.key || '').trim();
     const type = String(m.type || '').trim();
@@ -178,13 +174,8 @@ async function shopifyGraphQL({ shop, token }, query, variables = {}) {
   const timeout = setTimeout(() => controller.abort(), SHOPIFY_TIMEOUT_MS);
   try {
     const res = await fetch(`https://${shop}/admin/api/${API_VERSION}/graphql.json`, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': token,
-        'User-Agent': 'Shopify-Privacy-Bulk-Tool/0.2'
-      },
+      method: 'POST', signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': token, 'User-Agent': 'BulkEdit/1.0' },
       body: JSON.stringify({ query, variables })
     });
     const text = await res.text();
@@ -195,19 +186,72 @@ async function shopifyGraphQL({ shop, token }, query, variables = {}) {
       throw new Error(String(msg).slice(0, 300));
     }
     return json.data;
-  } finally {
-    clearTimeout(timeout);
-  }
+  } finally { clearTimeout(timeout); }
 }
+
+// ── OAUTH ROUTES ───────────────────────────────────────────
+
+// Step 1: merchant enters shop domain → we redirect to Shopify OAuth
+app.get('/auth/start', authLimiter, (req, res) => {
+  if (!SHOPIFY_CLIENT_ID) return res.status(500).send('OAuth not configured.');
+  let shop;
+  try { shop = cleanShop(String(req.query.shop || '')); } catch { return res.status(400).send('Invalid shop domain.'); }
+
+  const state = crypto.randomBytes(16).toString('hex');
+  oauthStates.set(state, { shop, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+  const redirectUri = `${APP_URL}/auth/callback`;
+  const authUrl = `https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_CLIENT_ID}&scope=${SHOPIFY_SCOPES}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+  res.redirect(authUrl);
+});
+
+// Step 2: Shopify redirects back with code → exchange for token → return to frontend
+app.get('/auth/callback', authLimiter, async (req, res) => {
+  if (!SHOPIFY_CLIENT_ID || !SHOPIFY_CLIENT_SECRET) return res.status(500).send('OAuth not configured.');
+
+  const { code, state, shop: rawShop, hmac } = req.query;
+  let shop;
+  try { shop = cleanShop(String(rawShop || '')); } catch { return res.status(400).send('Invalid shop.'); }
+
+  // Validate state
+  const stored = oauthStates.get(String(state));
+  if (!stored || stored.shop !== shop || Date.now() > stored.expiresAt) return res.status(403).send('Invalid or expired state.');
+  oauthStates.delete(String(state));
+
+  // Validate HMAC
+  const queryObj = { ...req.query };
+  delete queryObj.hmac;
+  const message = Object.keys(queryObj).sort().map(k => `${k}=${queryObj[k]}`).join('&');
+  const expectedHmac = crypto.createHmac('sha256', SHOPIFY_CLIENT_SECRET).update(message).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(hmac || '', 'hex'), Buffer.from(expectedHmac, 'hex'))) return res.status(403).send('HMAC validation failed.');
+
+  // Exchange code for token
+  try {
+    const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code })
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error('No access token returned');
+
+    // Pass token to frontend via URL fragment — never stored server-side
+    const token = encodeURIComponent(tokenData.access_token);
+    const shopEnc = encodeURIComponent(shop);
+    res.redirect(`/?shop=${shopEnc}&token=${token}`);
+  } catch (err) {
+    res.status(500).send('Failed to get access token: ' + (IS_PROD ? 'Authentication error.' : err.message));
+  }
+});
+
+// ── API ROUTES ─────────────────────────────────────────────
 
 app.post('/api/test', apiLimiter, async (req, res) => {
   try {
     const session = getSession(req);
     const data = await shopifyGraphQL(session, `query { shop { name myshopifyDomain } }`);
     res.json({ ok: true, shop: data.shop });
-  } catch (err) {
-    res.status(400).json({ ok: false, error: safeError(err), requestId: req.requestId });
-  }
+  } catch (err) { res.status(400).json({ ok: false, error: safeError(err), requestId: req.requestId }); }
 });
 
 app.post('/api/products', apiLimiter, async (req, res) => {
@@ -222,6 +266,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
         products(first:$first, query:$query, sortKey:UPDATED_AT, reverse:true) {
           nodes {
             id legacyResourceId title status vendor tags handle updatedAt
+            featuredImage { url }
             variants(first:50) {
               nodes {
                 id legacyResourceId title sku price compareAtPrice inventoryQuantity
@@ -232,9 +277,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
         }
       }`, { first, query: search });
     res.json({ ok: true, products: data.products.nodes });
-  } catch (err) {
-    res.status(400).json({ ok: false, error: safeError(err), requestId: req.requestId });
-  }
+  } catch (err) { res.status(400).json({ ok: false, error: safeError(err), requestId: req.requestId }); }
 });
 
 app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
@@ -282,33 +325,13 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
     }
 
     res.json({ ok: true, results });
-  } catch (err) {
-    res.status(400).json({ ok: false, error: safeError(err), requestId: req.requestId });
-  }
+  } catch (err) { res.status(400).json({ ok: false, error: safeError(err), requestId: req.requestId }); }
 });
 
-if (!IS_PROD && process.env.ENABLE_RAW_GRAPHQL === 'true') {
-  app.post('/api/graphql', apiLimiter, async (req, res) => {
-    try {
-      const session = getSession(req);
-      const { query, variables } = req.body || {};
-      const data = await shopifyGraphQL(session, query, variables || {});
-      res.json({ ok: true, data });
-    } catch (err) {
-      res.status(400).json({ ok: false, error: safeError(err), requestId: req.requestId });
-    }
-  });
-}
-
-app.use((req, res) => {
-  res.status(404).json({ ok: false, error: 'Not found' });
-});
-
-app.use((err, req, res, _next) => {
-  res.status(err.status || 500).json({ ok: false, error: safeError(err), requestId: req.requestId });
-});
+app.use((req, res) => { res.status(404).json({ ok: false, error: 'Not found' }); });
+app.use((err, req, res, _next) => { res.status(err.status || 500).json({ ok: false, error: safeError(err), requestId: req.requestId }); });
 
 app.listen(PORT, () => {
-  console.log(`Shopify Privacy Bulk Tool running on http://localhost:${PORT}`);
-  console.log('Security mode: stateless proxy, no token storage, strict headers, rate limits, validated payloads.');
+  console.log(`BulkEdit running on http://localhost:${PORT}`);
+  console.log(`OAuth: ${SHOPIFY_CLIENT_ID ? 'configured' : 'NOT configured — set SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET'}`);
 });

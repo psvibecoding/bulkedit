@@ -718,8 +718,14 @@ const App = (() => {
     document.addEventListener('keydown', e => { if(e.key==='Escape'){closeReviewModal();closeScheduleModal();} });
   }
 
+  function startOAuth() {
+    const shop = $('inp-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
+    if (!shop || !shop.includes('.myshopify.com')) return toast('Enter your store domain first (e.g. your-store.myshopify.com)');
+    window.location.href = `/auth/start?shop=${encodeURIComponent(shop)}`;
+  }
+
   return {
-    connect, loadDemo, disconnect, goConnect,
+    connect, loadDemo, disconnect, goConnect, startOAuth,
     markProduct, markVariant, markMetafield,
     cycleStatus, removeTag, addTag, addMetafield, removeMetafield,
     toggleRow, toggleAllRows, bulkStatus, bulkAddTag, bulkRemoveTag, bulkSetPrice,
@@ -734,3 +740,29 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', () => App.boot());
+
+/* ═══════════════════════════════════════════════════════
+   OAuth boot — reads ?shop=...&token=... from URL after
+   Shopify redirects back via /auth/callback
+═══════════════════════════════════════════════════════ */
+(function checkOAuthCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const shop  = params.get('shop');
+  const token = params.get('token');
+  if (shop && token) {
+    // Clean URL immediately — token should never sit in browser history
+    window.history.replaceState({}, '', '/');
+    // Auto-connect
+    document.addEventListener('DOMContentLoaded', () => {
+      // Pre-fill and trigger connect
+      const shopInput  = document.getElementById('inp-shop');
+      const tokenInput = document.getElementById('inp-token');
+      if (shopInput && tokenInput) {
+        shopInput.value  = decodeURIComponent(shop);
+        tokenInput.value = decodeURIComponent(token);
+        // Small delay to let App.boot() finish
+        setTimeout(() => App.connect(), 100);
+      }
+    });
+  }
+})();
