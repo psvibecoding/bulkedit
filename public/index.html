@@ -1,313 +1,325 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>BulkEdit — Shopify without the CSV</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/styles.css"/>
 </head>
 <body>
-<div class="app">
+<div id="app">
 
-  <!-- CONNECT -->
-  <section id="screen-connect" class="screen active">
-    <div class="connect-inner">
-      <div class="connect-brand">
-        <span class="brand-mark">BE</span>
-        <span class="brand-name">BulkEdit</span>
+  <!-- ════════════════════════════
+       SCREEN: CONNECT
+  ════════════════════════════ -->
+  <div id="s-connect" class="screen active">
+    <div class="connect-wrap">
+      <div class="connect-logo">
+        <span class="logo-mark">BE</span>
+        <span class="logo-name">BulkEdit</span>
       </div>
-      <div class="connect-hero">
+      <div class="connect-headline">
         <h1>Shopify editing<br>without <em>the CSV</em></h1>
-        <p>Inline table editing · Variant metafields · Scheduling · Review before publishing</p>
+        <p>Edit products, variants and metafields in bulk.<br>Review every change before it goes live.</p>
       </div>
-      <div class="connect-features">
-        <span class="feat-pill">✦ Inline editing</span>
-        <span class="feat-pill">✦ Variant metafields</span>
-        <span class="feat-pill">✦ Bulk price change</span>
-        <span class="feat-pill">✦ Schedule + auto-revert</span>
-        <span class="feat-pill">✦ Review &amp; publish</span>
+      <div class="connect-pills">
+        <span class="pill">✦ Inline editing</span>
+        <span class="pill">✦ Variant metafields</span>
+        <span class="pill">✦ Bulk price / tags</span>
+        <span class="pill">✦ Scheduling</span>
+        <span class="pill">✦ Review &amp; save</span>
       </div>
+
       <div class="connect-card">
-
-        <!-- Mode selector -->
-        <div class="connect-modes" id="connect-modes">
-          <button class="btn-primary" id="oauthBtn">Connect with Shopify →</button>
-          <button class="btn-ghost" id="tokenModeBtn">Connect with API token</button>
-          <button class="btn-ghost" id="demoBtn">Load demo data</button>
+        <!-- Step 1: choose method -->
+        <div id="c-choose">
+          <button class="btn-cta" id="c-oauth-btn">Connect with Shopify</button>
+          <button class="btn-secondary" id="c-token-btn">Connect with API token</button>
+          <button class="btn-ghost" id="c-demo-btn">Load demo data</button>
         </div>
 
-        <!-- OAuth form -->
-        <div id="oauth-form" style="display:none">
-          <div class="field-group">
-            <label for="inp-shop-oauth">Store domain</label>
-            <input id="inp-shop-oauth" type="text" autocomplete="off" placeholder="your-store.myshopify.com" />
-          </div>
-          <button class="btn-primary" id="oauthSubmitBtn">Continue with Shopify →</button>
-          <button class="btn-ghost" id="oauthBackBtn">← Back</button>
+        <!-- Step 2a: OAuth — just confirm -->
+        <div id="c-oauth" class="c-step hidden">
+          <p class="step-hint">You'll be redirected to Shopify to log in and choose your store.</p>
+          <button class="btn-cta" id="c-oauth-go">Continue to Shopify →</button>
+          <button class="btn-ghost c-back">← Back</button>
         </div>
 
-        <!-- Token form -->
-        <div id="token-form" style="display:none">
-          <div class="field-group">
-            <label for="inp-shop">Store domain</label>
-            <input id="inp-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com" />
+        <!-- Step 2b: token -->
+        <div id="c-token" class="c-step hidden">
+          <div class="field">
+            <label for="f-shop">Store domain</label>
+            <input id="f-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
           </div>
-          <div class="field-group">
-            <label for="inp-token">Admin API access token</label>
-            <input id="inp-token" type="password" autocomplete="off" placeholder="shpat_xxxxxxxxxxxxxxxx" />
+          <div class="field">
+            <label for="f-token">Admin API access token</label>
+            <input id="f-token" type="password" autocomplete="off" placeholder="shpat_xxxxxxxxxxxxxxxx"/>
           </div>
-          <button class="btn-primary" id="connectBtn">Connect →</button>
-          <button class="btn-ghost" id="tokenBackBtn">← Back</button>
-          <p class="connect-note">Recommended scopes: <code>read_products write_products read_inventory write_inventory</code>.</p>
+          <button class="btn-cta" id="c-token-go">Connect →</button>
+          <button class="btn-ghost c-back">← Back</button>
+          <p class="fine-print">Scopes: <code>read_products write_products read_inventory write_inventory</code></p>
         </div>
-
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- WORKSPACE -->
-  <section id="screen-workspace" class="screen">
+  <!-- ════════════════════════════
+       SCREEN: LOADING
+  ════════════════════════════ -->
+  <div id="s-loading" class="screen">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <p id="loading-msg">Connecting…</p>
+    </div>
+  </div>
 
+  <!-- ════════════════════════════
+       SCREEN: APP
+  ════════════════════════════ -->
+  <div id="s-app" class="screen">
+
+    <!-- TOPBAR -->
     <header class="topbar">
-      <div class="topbar-left">
-        <div class="topbar-brand">
-          <span class="brand-mark sm">BE</span>
-        </div>
-        <div class="store-info">
-          <span id="shopName" class="store-name">—</span>
-          <span class="session-pill" id="session-pill">session only</span>
-          <span class="demo-pill" id="demo-pill" style="display:none">demo</span>
-        </div>
-        <div class="search-wrap">
-          <span class="search-ico">⌕</span>
-          <input id="search" type="text" placeholder="Search products, SKU, tags…" autocomplete="off" spellcheck="false" />
-          <div id="suggestions" class="suggestions"></div>
+      <div class="topbar-l">
+        <span class="logo-mark sm">BE</span>
+        <span id="store-name" class="store-name"></span>
+        <span id="demo-badge" class="badge-demo hidden">demo</span>
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input id="search" type="text" placeholder="Search products, SKU, tags…" autocomplete="off" spellcheck="false"/>
+          <div id="search-suggest" class="suggest-list"></div>
         </div>
       </div>
-      <div class="topbar-right">
-        <button class="btn-icon" id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩</button>
-        <button class="btn-icon" id="btn-redo" title="Redo (Ctrl+Y)" disabled>↪</button>
-        <button class="btn-ghost sm" id="disconnectBtn">Disconnect</button>
-        <button class="btn-publish" id="publishBtn" disabled onclick="App.openReviewModal()">
-          Review &amp; publish <span class="pub-count" id="changeCount">0</span>
+      <div class="topbar-r">
+        <button class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩</button>
+        <button class="icon-btn" id="btn-redo" title="Redo (Ctrl+Y)" disabled>↪</button>
+        <button class="btn-ghost sm" id="btn-disconnect">Disconnect</button>
+        <button class="btn-save" id="btn-save" disabled>
+          Save changes <span id="save-count" class="save-badge">0</span>
         </button>
       </div>
     </header>
 
-    <!-- Demo banner -->
-    <div class="demo-banner" id="demo-banner">
-      <span><strong>Demo mode</strong> — changes won't be sent to Shopify. Connect your store to save for real.</span>
-      <button class="btn-ghost sm" onclick="App.goConnect()">Connect store →</button>
+    <!-- DEMO BANNER -->
+    <div id="demo-banner" class="demo-banner hidden">
+      <span><strong>Demo mode</strong> — changes won't be saved to Shopify.</span>
+      <button class="btn-ghost sm" id="btn-demo-exit">Connect real store →</button>
     </div>
 
+    <!-- TABS -->
     <nav class="tabs">
       <button class="tab active" data-tab="products">Products</button>
-      <button class="tab" data-tab="schedule">Scheduled <span class="tab-badge" id="tab-sched-count" style="display:none">0</span></button>
-      <button class="tab" data-tab="audit">Change log</button>
+      <button class="tab" data-tab="schedule">
+        Schedule <span id="sched-count" class="tab-count hidden">0</span>
+      </button>
       <button class="tab" data-tab="export">Export</button>
     </nav>
 
-    <!-- PRODUCTS -->
-    <section id="tab-products" class="panel active">
-      <div class="panel-toolbar">
-        <div class="filter-group">
+    <!-- ── TAB: PRODUCTS ── -->
+    <div id="tab-products" class="tab-panel active">
+
+      <div class="toolbar">
+        <div class="filters">
           <span class="filter-label">Status</span>
-          <button class="filter-chip active" data-filter="all">All</button>
-          <button class="filter-chip" data-filter="ACTIVE">Active</button>
-          <button class="filter-chip" data-filter="DRAFT">Draft</button>
-          <button class="filter-chip" data-filter="ARCHIVED">Archived</button>
-          <span class="filter-sep"></span>
-          <button class="filter-chip" data-filter="changed">Modified</button>
-          <button class="filter-chip" data-filter="scheduled">Scheduled</button>
+          <button class="filter active" data-f="all">All</button>
+          <button class="filter" data-f="ACTIVE">Active</button>
+          <button class="filter" data-f="DRAFT">Draft</button>
+          <button class="filter" data-f="ARCHIVED">Archived</button>
+          <span class="filter-divider"></span>
+          <button class="filter" data-f="changed">Modified</button>
         </div>
-        <div class="bulk-actions" id="bulk-actions">
-          <span class="bulk-label" id="bulk-label">0 selected</span>
-          <button class="btn-ghost xs" onclick="App.bulkStatus('ACTIVE')">● Activate</button>
-          <button class="btn-ghost xs" onclick="App.bulkStatus('DRAFT')">○ Draft</button>
-          <button class="btn-ghost xs" onclick="App.bulkStatus('ARCHIVED')">⊘ Archive</button>
-          <button class="btn-ghost xs" onclick="App.bulkAddTag()">+ Tag</button>
-          <button class="btn-ghost xs danger" onclick="App.bulkRemoveTag()">− Tag</button>
-          <button class="btn-ghost xs amber" onclick="App.bulkSetPrice()">€ Set price</button>
-          <button class="btn-ghost xs amber" onclick="App.openScheduleModal('bulk')">⏱ Schedule</button>
+        <div id="bulk-bar" class="bulk-bar hidden">
+          <span id="bulk-count" class="bulk-count">0 selected</span>
+          <button class="chip-btn" id="bulk-status-btn">● Status</button>
+          <button class="chip-btn" id="bulk-price-btn">€ Price</button>
+          <button class="chip-btn" id="bulk-tags-btn">⌗ Tags</button>
+          <button class="chip-btn amber" id="bulk-sched-btn">⏱ Schedule</button>
         </div>
       </div>
-      <div class="undo-bar" id="undo-bar">
-        <span id="undo-bar-msg"></span>
-        <button class="btn-ghost xs" onclick="App.undo()">↩ Undo</button>
-        <button class="btn-ghost xs" onclick="App.redo()">↪ Redo</button>
+
+      <div id="undo-hint" class="undo-hint hidden">
+        <span id="undo-hint-msg"></span>
+        <button class="link-btn" id="undo-hint-undo">↩ Undo</button>
+        <button class="link-btn" id="undo-hint-redo">↪ Redo</button>
       </div>
-      <div class="table-wrap">
-        <table>
+
+      <div class="table-scroll">
+        <table id="products-table">
           <thead>
             <tr>
-              <th class="col-check"><input type="checkbox" id="chk-all" /></th>
-              <th class="col-img"></th>
-              <th class="col-product">Product</th>
-              <th class="col-status">Status</th>
-              <th class="col-vendor">Vendor</th>
-              <th class="col-tags">Tags</th>
-              <th class="col-variant">Variant</th>
-              <th class="col-sku">SKU</th>
-              <th class="col-price">Price</th>
-              <th class="col-compare">Compare at</th>
-              <th class="col-meta">Variant metafields</th>
-              <th class="col-sched">Scheduled</th>
+              <th class="th-check"><input type="checkbox" id="chk-all"/></th>
+              <th class="th-img"></th>
+              <th>Product</th>
+              <th>Status</th>
+              <th>Vendor</th>
+              <th>Tags</th>
+              <th>Variant</th>
+              <th>SKU</th>
+              <th>Price</th>
+              <th>Compare at</th>
+              <th>Variant metafields</th>
+              <th>Scheduled</th>
             </tr>
           </thead>
-          <tbody id="rows"></tbody>
+          <tbody id="tbody"></tbody>
         </table>
       </div>
-    </section>
 
-    <!-- SCHEDULE -->
-    <section id="tab-schedule" class="panel">
-      <div class="panel-split">
-        <div class="panel-card">
-          <h2>Session scheduler</h2>
-          <p class="panel-sub">Schedules run only while this browser tab is open. Nothing stored on the server.</p>
-          <div class="sched-io-btns">
-            <button class="btn-ghost sm" id="exportSchedule">↓ Export JSON</button>
-            <button class="btn-ghost sm" id="importScheduleBtn">↑ Import JSON</button>
-            <input id="importSchedule" type="file" accept="application/json" hidden />
+    </div>
+
+    <!-- ── TAB: SCHEDULE ── -->
+    <div id="tab-schedule" class="tab-panel">
+      <div class="two-col">
+        <div class="card">
+          <h3>Session scheduler</h3>
+          <p class="text-muted">Tasks run only while this tab is open. Nothing is stored on the server.</p>
+          <div class="btn-row mt-12">
+            <button class="btn-ghost sm" id="btn-export-sched">↓ Export JSON</button>
+            <button class="btn-ghost sm" id="btn-import-sched-trigger">↑ Import JSON</button>
+            <input id="btn-import-sched" type="file" accept="application/json" class="hidden"/>
           </div>
         </div>
-        <div class="panel-card grow">
-          <div class="sched-list-header">
-            <h2>Queued actions</h2>
-            <button class="btn-amber sm" onclick="App.openScheduleModal('new')">+ New task</button>
+        <div class="card grow">
+          <div class="card-header">
+            <h3>Queued tasks</h3>
+            <button class="btn-amber sm" id="btn-new-sched">+ New task</button>
           </div>
-          <div id="scheduleList" class="sched-list empty">No scheduled actions yet.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CHANGE LOG -->
-    <section id="tab-audit" class="panel">
-      <div class="audit-card">
-        <div class="audit-header">
-          <div>
-            <h2>Change log</h2>
-            <p class="panel-sub">All pending changes. Click "Review &amp; publish" to confirm and send to Shopify.</p>
+          <div id="sched-list" class="sched-list">
+            <p class="empty-msg">No scheduled tasks yet.</p>
           </div>
-          <button class="btn-ghost sm danger" onclick="App.clearChanges()">Clear all</button>
         </div>
-        <pre id="audit">No pending changes.</pre>
       </div>
-    </section>
+    </div>
 
-    <!-- EXPORT -->
-    <section id="tab-export" class="panel">
-      <div class="export-wrap">
-        <div class="panel-card">
-          <h2>Fields to export</h2>
-          <div class="export-fields" id="export-fields"></div>
+    <!-- ── TAB: EXPORT ── -->
+    <div id="tab-export" class="tab-panel">
+      <div class="export-layout">
+        <div class="card">
+          <h3>Fields to export</h3>
+          <div id="export-field-list" class="field-chips mt-12"></div>
         </div>
-        <div class="panel-card">
-          <h2>Preview <span class="panel-sub">(first 3 rows)</span></h2>
-          <pre id="export-preview">Select fields above…</pre>
+        <div class="card">
+          <h3>Preview <span class="text-muted">(first 3 rows)</span></h3>
+          <pre id="export-preview" class="code-preview">Select fields above…</pre>
         </div>
-        <div class="export-actions">
-          <button class="btn-primary sm" onclick="App.doExport('csv')">↓ Download CSV</button>
-          <button class="btn-ghost sm" onclick="App.doExport('json')">↓ Download JSON</button>
-          <button class="btn-ghost sm" onclick="App.copyExport()">⎘ Copy CSV</button>
+        <div class="btn-row">
+          <button class="btn-cta sm" id="btn-dl-csv">↓ Download CSV</button>
+          <button class="btn-ghost sm" id="btn-dl-json">↓ Download JSON</button>
+          <button class="btn-ghost sm" id="btn-copy-csv">⎘ Copy CSV</button>
         </div>
       </div>
-    </section>
+    </div>
 
     <footer class="statusbar">
-      <span class="status-msg" id="status-msg">Ready</span>
-      <span class="status-hint">Changes are staged locally — use Review &amp; publish to save to Shopify</span>
+      <span id="status-msg" class="status-text">Ready</span>
+      <span class="status-hint">Changes are staged — click "Save changes" to send to Shopify</span>
     </footer>
 
-  </section>
+  </div><!-- /s-app -->
 
-</div>
+</div><!-- /app -->
 
-<!-- REVIEW MODAL -->
-<div class="modal-overlay" id="modal-review" onclick="if(event.target===this)App.closeReviewModal()">
+<!-- ════════════════════════════
+     MODAL: BULK ACTION
+════════════════════════════ -->
+<div id="m-bulk" class="overlay hidden">
   <div class="modal">
-    <div class="modal-header">
+    <div class="modal-head">
       <div>
-        <h3>Review &amp; publish</h3>
-        <p class="modal-sub" id="review-sub">Review all changes before saving to Shopify</p>
+        <h2 id="m-bulk-title">Bulk action</h2>
+        <p id="m-bulk-sub" class="modal-sub"></p>
       </div>
-      <button class="modal-close" onclick="App.closeReviewModal()">✕</button>
+      <button class="close-btn" data-close="m-bulk">✕</button>
     </div>
-    <div class="modal-body">
-      <div class="review-list" id="review-list"></div>
-      <div class="review-commit-field">
-        <label>Commit message <span class="label-hint">(optional — for your records)</span></label>
-        <input class="review-commit-input" id="review-commit-msg" type="text" placeholder="e.g. Black Friday price update, Q4 inventory refresh…" />
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-ghost sm" onclick="App.closeReviewModal()">Cancel</button>
-      <button class="btn-primary sm" id="confirm-publish-btn" onclick="App.confirmPublish()">Confirm &amp; publish →</button>
+    <div id="m-bulk-body" class="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost sm" data-close="m-bulk">Cancel</button>
+      <button class="btn-cta sm" id="m-bulk-apply">Apply →</button>
     </div>
   </div>
 </div>
 
-<!-- SCHEDULE MODAL -->
-<div class="modal-overlay" id="modal-schedule" onclick="if(event.target===this)App.closeScheduleModal()">
-  <div class="modal">
-    <div class="modal-header">
+<!-- ════════════════════════════
+     MODAL: SAVE / REVIEW
+════════════════════════════ -->
+<div id="m-save" class="overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-head">
       <div>
-        <h3>Schedule a change</h3>
-        <p class="modal-sub" id="modal-sched-sub">Configure the task below</p>
+        <h2>Save changes</h2>
+        <p id="m-save-sub" class="modal-sub"></p>
       </div>
-      <button class="modal-close" onclick="App.closeScheduleModal()">✕</button>
+      <button class="close-btn" data-close="m-save">✕</button>
+    </div>
+    <div id="m-save-diff" class="modal-body diff-list"></div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <button class="btn-ghost sm" id="btn-dl-recap">↓ Download recap</button>
+      <div class="btn-row">
+        <button class="btn-ghost sm" data-close="m-save">Cancel</button>
+        <button class="btn-cta sm" id="m-save-confirm">Save to Shopify →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════
+     MODAL: SCHEDULE
+════════════════════════════ -->
+<div id="m-sched" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>Schedule a change</h2>
+        <p id="m-sched-sub" class="modal-sub"></p>
+      </div>
+      <button class="close-btn" data-close="m-sched">✕</button>
     </div>
     <div class="modal-body">
-      <div class="modal-field">
+      <div class="field">
         <label>Task name</label>
-        <input id="sched-name" type="text" placeholder="e.g. Black Friday sale" />
+        <input id="sched-name" type="text" placeholder="e.g. Black Friday sale"/>
       </div>
-      <div class="modal-row">
-        <div class="modal-field">
-          <label>Activate at — date</label>
-          <input id="sched-date" type="date" />
+      <div class="field-row">
+        <div class="field">
+          <label>Date</label>
+          <input id="sched-date" type="date"/>
         </div>
-        <div class="modal-field">
+        <div class="field">
           <label>Time</label>
-          <input id="sched-time" type="time" value="09:00" />
+          <input id="sched-time" type="time" value="09:00"/>
         </div>
       </div>
-      <div class="modal-field">
+      <div class="field">
         <label>Change type</label>
-        <select id="sched-type" onchange="App.renderSchedTypeFields()">
+        <select id="sched-type">
           <option value="price">Price change</option>
           <option value="status">Status change</option>
           <option value="tags_add">Add tags</option>
           <option value="tags_remove">Remove tags</option>
         </select>
       </div>
-      <div id="sched-type-fields"></div>
-      <div class="modal-field" id="sched-products-wrap">
-        <label>Products <span id="sched-prod-count" class="label-hint"></span></label>
+      <div id="sched-value-wrap"></div>
+      <div class="field">
+        <label>Products <span id="sched-prod-count" class="text-muted"></span></label>
         <div id="sched-prod-list" class="sched-prod-list"></div>
       </div>
-      <div class="modal-field">
-        <label class="toggle-label">
-          <input type="checkbox" id="sched-revert" onchange="App.toggleRevert()" />
-          <span>Auto-revert after end time<small>Restores original values automatically</small></span>
-        </label>
-      </div>
-      <div id="sched-revert-fields" class="modal-row hidden">
-        <div class="modal-field">
-          <label>Revert date</label>
-          <input id="sched-revert-date" type="date" />
+      <label class="toggle-row">
+        <input type="checkbox" id="sched-revert"/>
+        <div>
+          <span>Auto-revert after end time</span>
+          <small>Restores original values automatically</small>
         </div>
-        <div class="modal-field">
-          <label>Revert time</label>
-          <input id="sched-revert-time" type="time" value="23:59" />
-        </div>
+      </label>
+      <div id="sched-revert-wrap" class="field-row hidden">
+        <div class="field"><label>Revert date</label><input id="sched-rv-date" type="date"/></div>
+        <div class="field"><label>Revert time</label><input id="sched-rv-time" type="time" value="23:59"/></div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-ghost sm" onclick="App.closeScheduleModal()">Cancel</button>
-      <button class="btn-amber sm" onclick="App.confirmSchedule()">Schedule task →</button>
+    <div class="modal-foot">
+      <button class="btn-ghost sm" data-close="m-sched">Cancel</button>
+      <button class="btn-amber sm" id="m-sched-confirm">Schedule →</button>
     </div>
   </div>
 </div>

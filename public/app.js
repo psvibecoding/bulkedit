@@ -1,797 +1,882 @@
-/* ═══════════════════════════════════════════════════════
-   BulkEdit — app.js v2
-   Light mode · Product images · Bulk price · Review & Publish
-═══════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   BulkEdit — app.js v4
+   Clean event delegation · No inline handlers
+   OAuth · Bulk modal · Review & Save · Recap
+═══════════════════════════════════════════════ */
+'use strict';
 
-const App = (() => {
+/* ─── HELPERS ─────────────────────────────── */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
+const delay = ms => new Promise(r => setTimeout(r, ms));
+const fmt   = iso => new Date(iso).toLocaleString();
+const clone = obj => JSON.parse(JSON.stringify(obj));
 
-  /* ─── STATE ──────────────────────────────────────── */
-  let session   = { shop: '', token: '', demo: false };
-  let products  = [];
-  let originals = {};   // snapshot of products at load time for diff
-  let changes   = {};   // staged changes, NOT yet saved
-  let schedules = [];
-  let timers    = new Map();
-  let past = [], future = [];
-  const MAX_HISTORY = 80;
+/* ─── STATE ───────────────────────────────── */
+let S = {
+  shop: '', token: '', demo: false,
+  products: [],
+  originals: [],   // snapshot at load time — used for diff
+  changes: {},     // { productId: { productId, product:{}, variants:{}, metafields:[] } }
+  schedules: [],
+  timers: new Map(),
+  past: [], future: [],
+  filter: 'all',
+  searchQ: '',
+  selectedVids: new Set(),
+  exportFields: ['title','status','vendor','tags','variant','sku','price','compareAtPrice'],
+  bulkModalType: null,
+  schedCtx: null,
+};
+const MAX_HIST = 80;
 
-  let activeFilter = 'all', searchQuery = '';
-  let selectedRows = new Set();
-  let schedModalCtx = null;
-  let exportFields = ['title','status','vendor','tags','sku','price','compareAtPrice'];
+/* ─── DEMO DATA ───────────────────────────── */
+const DEMO_PRODUCTS = [
+  { id:'gid://shopify/Product/1', title:'Merino Wool Crew Neck Sweater', status:'ACTIVE', vendor:'NordWear', tags:['knitwear','winter','new-arrivals'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, metafields:{ nodes:[{ namespace:'custom', key:'material', type:'single_line_text_field', value:'100% Merino Wool' }] } },
+      { id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28, metafields:{ nodes:[] } },
+    ]}},
+  { id:'gid://shopify/Product/2', title:'Leather Crossbody Bag — Tan', status:'ACTIVE', vendor:'StudioLeather', tags:['bags','accessories','sale'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, metafields:{ nodes:[{ namespace:'custom', key:'campaign_label', type:'single_line_text_field', value:'Summer Sale' }] } },
+    ]}},
+  { id:'gid://shopify/Product/3', title:'Organic Cotton Oversized Tee', status:'ACTIVE', vendor:'EarthBasics', tags:['apparel','sustainable','basics'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,  metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/32', title:'S / White',  sku:'EB-TEE-S-WHT',  price:'34.00', compareAtPrice:'', inventoryQuantity:55, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/33', title:'M / Black',  sku:'EB-TEE-M-BLK',  price:'34.00', compareAtPrice:'', inventoryQuantity:40, metafields:{ nodes:[] } },
+    ]}},
+  { id:'gid://shopify/Product/4', title:'Ceramic Pour-Over Coffee Set', status:'DRAFT', vendor:'KitchenStudio', tags:['kitchen','coffee','gifts'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/41', title:'White',      sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, metafields:{ nodes:[{ namespace:'seo', key:'custom_title', type:'single_line_text_field', value:'' }] } },
+      { id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, metafields:{ nodes:[] } },
+    ]}},
+  { id:'gid://shopify/Product/5', title:'Natural Rubber Yoga Mat 6mm', status:'ACTIVE', vendor:'MoveWell', tags:['fitness','yoga','eco'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, metafields:{ nodes:[{ namespace:'custom', key:'thickness_mm', type:'number_integer', value:'6' }] } },
+    ]}},
+  { id:'gid://shopify/Product/6', title:'Linen Duvet Cover Set — King', status:'ARCHIVED', vendor:'HomeTextile', tags:['bedding','linen','home'],
+    featuredImage: null,
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, metafields:{ nodes:[] } },
+    ]}},
+];
 
-  /* ─── DEMO DATA ──────────────────────────────────── */
-  const DEMO = [
-    { id:'gid://shopify/Product/1', title:'Merino Wool Crew Neck Sweater', status:'ACTIVE', vendor:'NordWear', tags:['knitwear','winter','new-arrivals'],
-      images:{nodes:[{src:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=80&q=70'}]},
-      variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, metafields:{nodes:[{namespace:'custom',key:'material',type:'single_line_text_field',value:'100% Merino Wool'}]}},
-        {id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, metafields:{nodes:[]}},
-        {id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28, metafields:{nodes:[]}}
-      ]}},
-    { id:'gid://shopify/Product/2', title:'Leather Crossbody Bag — Tan', status:'ACTIVE', vendor:'StudioLeather', tags:['bags','accessories','sale'],
-      images:{nodes:[{src:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=80&q=70'}]},
-      variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, metafields:{nodes:[{namespace:'custom',key:'campaign_label',type:'single_line_text_field',value:'Summer Sale'}]}}
-      ]}},
-    { id:'gid://shopify/Product/3', title:'Organic Cotton Oversized Tee', status:'ACTIVE', vendor:'EarthBasics', tags:['apparel','sustainable','basics'],
-      images:{nodes:[{src:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&q=70'}]},
-      variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0, metafields:{nodes:[]}},
-        {id:'gid://shopify/ProductVariant/32', title:'S / White', sku:'EB-TEE-S-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:55, metafields:{nodes:[]}},
-        {id:'gid://shopify/ProductVariant/33', title:'M / Black', sku:'EB-TEE-M-BLK', price:'34.00', compareAtPrice:'', inventoryQuantity:40, metafields:{nodes:[]}}
-      ]}},
-    { id:'gid://shopify/Product/4', title:'Ceramic Pour-Over Coffee Set', status:'DRAFT', vendor:'KitchenStudio', tags:['kitchen','coffee','gifts'],
-      images:{nodes:[{src:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=80&q=70'}]},
-      variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/41', title:'White', sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, metafields:{nodes:[{namespace:'seo',key:'custom_title',type:'single_line_text_field',value:''}]}},
-        {id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, metafields:{nodes:[]}}
-      ]}},
-    { id:'gid://shopify/Product/5', title:'Natural Rubber Yoga Mat 6mm', status:'ACTIVE', vendor:'MoveWell', tags:['fitness','yoga','eco'],
-      images:{nodes:[{src:'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=80&q=70'}]},
-      variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, metafields:{nodes:[{namespace:'custom',key:'thickness_mm',type:'number_integer',value:'6'}]}}
-      ]}},
-    { id:'gid://shopify/Product/6', title:'Linen Duvet Cover Set — King', status:'ARCHIVED', vendor:'HomeTextile', tags:['bedding','linen','home'],
-      images:{nodes:[]},
-      variants:{nodes:[
-        {id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, metafields:{nodes:[]}}
-      ]}},
-  ];
+/* ─── NORMALISE PRODUCT FROM API ─────────── */
+function normProd(p) {
+  return {
+    ...p,
+    featuredImage: p.featuredImage || null,
+    variants: { nodes: (p.variants?.nodes || []).map(v => ({
+      ...v, metafields: { nodes: v.metafields?.nodes || [] }
+    }))}
+  };
+}
 
-  /* ─── HELPERS ────────────────────────────────────── */
-  const $  = id => document.getElementById(id);
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-  const escAttr = s => String(s ?? '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ');
-  const cloneState = () => JSON.parse(JSON.stringify({ products, changes }));
-  const delay = ms => new Promise(r => setTimeout(r, ms));
-  const fmt = iso => new Date(iso).toLocaleString();
+/* ─── LOOKUPS ─────────────────────────────── */
+function getProd(id) { return S.products.find(p => p.id === id); }
+function getVar(vid) {
+  for (const p of S.products) {
+    const v = p.variants.nodes.find(v => v.id === vid);
+    if (v) return { p, v };
+  }
+  return {};
+}
+function ensureChange(pid) {
+  if (!S.changes[pid]) S.changes[pid] = { productId:pid, product:{}, variants:{}, metafields:[] };
+  return S.changes[pid];
+}
+function prodImg(p) { return p.featuredImage?.url || null; }
 
-  function normalizeProduct(p) {
-    return {
-      ...p,
-      images: { nodes: p.images?.nodes || p.featuredImage ? [p.featuredImage] : [] },
-      variants: {
-        nodes: (p.variants?.nodes || []).map(v => ({
-          ...v,
-          metafields: { nodes: v.metafields?.nodes || [] }
-        }))
-      }
-    };
-  }
+/* ─── TOAST ───────────────────────────────── */
+let _toastTmr;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_toastTmr);
+  _toastTmr = setTimeout(() => el.classList.remove('show'), 3200);
+}
 
-  function getProduct(id) { return products.find(p => p.id === id); }
-  function getVariantById(variantId) {
-    for (const p of products) {
-      const v = p.variants.nodes.find(v => v.id === variantId);
-      if (v) return { p, v };
-    }
-    return {};
-  }
-  function ensureChange(productId) {
-    if (!changes[productId]) changes[productId] = { productId, product: {}, variants: {}, metafields: [] };
-    return changes[productId];
-  }
-  function getProductImage(p) {
-    return p.images?.nodes?.[0]?.src || p.featuredImage?.url || null;
-  }
+/* ─── STATUS ──────────────────────────────── */
+function setStatus(msg, cls = '') {
+  const el = $('status-msg');
+  el.textContent = msg;
+  el.className = 'status-text' + (cls ? ' ' + cls : '');
+}
 
-  /* ─── TOAST ──────────────────────────────────────── */
-  let toastTimer;
-  function toast(msg) {
-    const el = $('toast'); el.textContent = msg; el.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
-  }
-
-  function setStatus(msg, cls = '') {
-    const el = $('status-msg'); el.textContent = msg;
-    el.className = 'status-msg' + (cls ? ' ' + cls : '');
-  }
-
-  /* ─── SCREENS ────────────────────────────────────── */
-  function showScreen(name) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    $('screen-' + name).classList.add('active');
-  }
-  function goConnect() { showScreen('connect'); }
-
-  /* ─── API ────────────────────────────────────────── */
-  function apiHeaders() {
-    return { 'Content-Type': 'application/json', 'X-Shopify-Shop': session.shop, 'X-Shopify-Token': session.token };
-  }
-  async function apiPost(path, body = {}) {
-    const r = await fetch(path, { method: 'POST', headers: apiHeaders(), body: JSON.stringify(body) });
-    const json = await r.json();
-    if (!json.ok) throw new Error(json.error || 'Request failed');
-    return json;
-  }
-
-  /* ─── CONNECT ────────────────────────────────────── */
-  async function connect() {
-    session.shop  = $('inp-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
-    session.token = $('inp-token').value.trim();
-    session.demo  = false;
-    if (!session.shop || !session.token) return toast('Enter store domain and access token.');
-    $('connectBtn').disabled = true;
-    setStatus('Connecting…');
-    try {
-      const test = await apiPost('/api/test');
-      $('shopName').textContent = test.shop.name;
-      await loadProducts();
-      showScreen('workspace');
-      $('demo-pill').style.display = 'none';
-      $('session-pill').style.display = '';
-      $('demo-banner').classList.remove('show');
-      toast('Connected. Token is session-only.');
-    } catch (e) {
-      toast(e.message); setStatus('Connection failed', 'dirty');
-    } finally { $('connectBtn').disabled = false; }
-  }
-
-  function loadDemo() {
-    session = { shop: 'demo.myshopify.com', token: 'demo', demo: true };
-    products = DEMO.map(normalizeProduct);
-    originals = JSON.parse(JSON.stringify(products));
-    $('shopName').textContent = 'Demo store';
-    showScreen('workspace');
-    $('demo-pill').style.display = '';
-    $('session-pill').style.display = 'none';
-    $('demo-banner').classList.add('show');
-    render(); initExportFields();
-    toast('Demo loaded. Connect your store to save real changes.');
-  }
-
-  async function loadProducts(query = '') {
-    setStatus('Loading…');
-    try {
-      const res = await apiPost('/api/products', { query, first: 50 });
-      products = res.products.map(normalizeProduct);
-      originals = JSON.parse(JSON.stringify(products));
-      render(); initExportFields();
-      setStatus(`${products.length} products loaded`);
-    } catch (e) { toast(e.message); setStatus('Load failed', 'dirty'); }
-  }
-
-  function disconnect() {
-    session = { shop: '', token: '', demo: false };
-    products = []; originals = {}; changes = {}; schedules = [];
-    past = []; future = []; selectedRows.clear();
-    timers.forEach(t => clearTimeout(t)); timers.clear();
-    $('inp-token').value = '';
-    showScreen('connect');
-    updateUndoUI(); updatePublishBtn();
-    toast('Disconnected.');
-  }
-
-  /* ─── UNDO / REDO ────────────────────────────────── */
-  function pushHistory(label) {
-    past.push({ label, state: cloneState() });
-    if (past.length > MAX_HISTORY) past.shift();
-    future = []; updateUndoUI();
-  }
-  function undo() {
-    if (!past.length) return;
-    future.push({ label: 'redo', state: cloneState() });
-    const h = past.pop(); applyState(h.state);
-    render(); updateUndoUI(); updatePublishBtn();
-    toast('Undone: ' + h.label);
-  }
-  function redo() {
-    if (!future.length) return;
-    past.push({ label: 'undo', state: cloneState() });
-    const f = future.pop(); applyState(f.state);
-    render(); updateUndoUI(); updatePublishBtn();
-    toast('Redone');
-  }
-  function applyState(s) {
-    products = JSON.parse(JSON.stringify(s.products));
-    changes  = JSON.parse(JSON.stringify(s.changes));
-  }
-  function updateUndoUI() {
-    $('btn-undo').disabled = !past.length;
-    $('btn-redo').disabled = !future.length;
-    const bar = $('undo-bar');
-    if (past.length || future.length) {
-      bar.classList.add('visible');
-      $('undo-bar-msg').textContent = `${past.length} action${past.length !== 1 ? 's' : ''} in history${future.length ? ' · ' + future.length + ' redo' : ''}`;
-    } else { bar.classList.remove('visible'); }
-  }
-  document.addEventListener('keydown', e => {
-    const mod = e.ctrlKey || e.metaKey;
-    if (mod && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); }
-    if (mod && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redo(); }
+/* ─── SCREENS ─────────────────────────────── */
+function showScreen(name) {
+  ['s-connect','s-loading','s-app'].forEach(id => {
+    const el = $(id);
+    el.classList.remove('active');
+    el.style.display = '';
   });
+  const target = $(name);
+  target.classList.add('active');
+  if (name === 's-loading' || name === 's-connect') target.style.display = 'flex';
+}
 
-  /* ─── FILTER / SEARCH ────────────────────────────── */
-  function flatRows() { return products.flatMap(p => p.variants.nodes.map(v => ({ p, v }))); }
+/* ─── CONNECT SCREEN STEPS ───────────────── */
+function showStep(step) {
+  ['c-choose','c-oauth','c-token'].forEach(id => $(id).classList.add('hidden'));
+  $(step).classList.remove('hidden');
+}
 
-  function getFiltered() {
-    const q = searchQuery.toLowerCase();
-    return flatRows().filter(({ p, v }) => {
-      const ms = !q || [p.title, p.vendor, (p.tags||[]).join(' '), v.title, v.sku].join(' ').toLowerCase().includes(q);
-      const hasSched = schedules.some(s => s.variantId === v.id && s.state === 'queued');
-      const mf =
-        activeFilter === 'all'       ? true :
-        activeFilter === 'changed'   ? !!changes[p.id] :
-        activeFilter === 'scheduled' ? hasSched :
-        p.status === activeFilter;
-      return ms && mf;
-    });
-  }
+/* ─── MODALS ──────────────────────────────── */
+function openModal(id) { const el = $(id); el.classList.remove('hidden'); el.classList.add('open'); }
+function closeModal(id) { const el = $(id); el.classList.remove('open'); el.classList.add('hidden'); }
 
-  /* ─── RENDER ─────────────────────────────────────── */
-  function render() {
-    const rows = getFiltered();
-    const tbody = $('rows');
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--t3)">No products match.</td></tr>';
-    } else {
-      tbody.innerHTML = rows.map(({ p, v }) => rowHTML(p, v)).join('');
-    }
-    renderScheduleTab(); renderAudit(); updatePublishBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview();
-  }
+/* ─── API ─────────────────────────────────── */
+function apiHeaders() {
+  return { 'Content-Type':'application/json', 'X-Shopify-Shop':S.shop, 'X-Shopify-Token':S.token };
+}
+async function apiPost(path, body = {}) {
+  const r = await fetch(path, { method:'POST', headers:apiHeaders(), body:JSON.stringify(body) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Request failed');
+  return j;
+}
 
-  function rowHTML(p, v) {
-    const isChanged  = !!changes[p.id];
-    const hasSched   = schedules.some(s => s.variantId === v.id && s.state === 'queued');
-    const isSelected = selectedRows.has(v.id);
-    const rowClass = [isChanged?'row-changed':'', hasSched?'row-scheduled':'', isSelected?'row-selected':''].filter(Boolean).join(' ');
+/* ─── CONNECT: OAuth ─────────────────────── */
+function startOAuth() { window.location.href = '/auth/start'; }
 
-    const imgSrc = getProductImage(p);
-    const imgCell = imgSrc
-      ? `<img class="prod-img" src="${esc(imgSrc)}" alt="${esc(p.title)}" loading="lazy" />`
-      : `<div class="prod-img-placeholder">□</div>`;
+/* ─── CONNECT: Token ─────────────────────── */
+async function connectWithToken() {
+  S.shop  = $('f-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
+  S.token = $('f-token').value.trim();
+  S.demo  = false;
+  if (!S.shop || !S.token) return toast('Enter store domain and access token.');
+  showScreen('s-loading'); $('loading-msg').textContent = 'Connecting…';
+  try {
+    const t = await apiPost('/api/test');
+    await afterConnect(t.shop.name, false);
+  } catch(e) { showScreen('s-connect'); toast(e.message); }
+}
 
-    const statusCls = { ACTIVE: 'ACTIVE', DRAFT: 'DRAFT', ARCHIVED: 'ARCHIVED' }[p.status] || 'DRAFT';
-    const statusLabel = { ACTIVE: '● Active', DRAFT: '○ Draft', ARCHIVED: '⊘ Archived' }[p.status] || p.status;
+async function afterConnect(storeName, isDemo) {
+  $('store-name').textContent = storeName;
+  $('demo-badge').classList.toggle('hidden', !isDemo);
+  $('demo-banner').classList.toggle('hidden', !isDemo);
+  if (isDemo) { S.products = DEMO_PRODUCTS.map(normProd); S.originals = clone(S.products); renderTable(); initExportFields(); showScreen('s-app'); toast('Demo loaded.'); return; }
+  $('loading-msg').textContent = 'Loading products…';
+  await loadProducts();
+  showScreen('s-app');
+  toast('Connected. Token is session-only.');
+}
 
-    const tagsHTML = (p.tags||[]).map(t =>
-      `<span class="tag-chip">${esc(t)}<span class="tag-del" onclick="App.removeTag('${esc(p.id)}','${escAttr(t)}')">×</span></span>`
-    ).join('') + `<span class="tag-add" onclick="App.addTag('${esc(p.id)}')">+</span>`;
+function loadDemoMode() {
+  S.shop = 'demo.myshopify.com'; S.token = 'demo'; S.demo = true;
+  afterConnect('Demo store', true);
+}
 
-    const metaHTML = v.metafields.nodes.map((m,i) => metaRowHTML(v.id, m, i)).join('') +
-      `<button class="meta-add-btn" onclick="App.addMetafield('${esc(v.id)}')">+ metafield</button>`;
+async function loadProducts(q = '') {
+  setStatus('Loading…');
+  try {
+    const r = await apiPost('/api/products', { query:q, first:50 });
+    S.products  = r.products.map(normProd);
+    S.originals = clone(S.products);
+    renderTable(); initExportFields();
+    setStatus(`${S.products.length} products loaded`);
+  } catch(e) { toast(e.message); setStatus('Load failed','dirty'); }
+}
 
-    const schedSched = schedules.find(s => s.variantId === v.id && s.state === 'queued');
-    const schedCell = schedSched
-      ? `<div class="sched-pill" onclick="App.switchTab('schedule')" title="${esc(schedSched.name)}">⏱ ${esc(schedSched.name)}</div>`
-      : `<button class="sched-add-btn" onclick="App.openScheduleModal({productId:'${esc(p.id)}',variantId:'${esc(v.id)}'})">+ schedule</button>`;
+function disconnect() {
+  Object.assign(S, { shop:'', token:'', demo:false, products:[], originals:[], changes:{}, schedules:[], past:[], future:[], filter:'all', searchQ:'', selectedVids:new Set(), bulkModalType:null, schedCtx:null });
+  S.timers.forEach(t => clearTimeout(t)); S.timers.clear();
+  $('f-token').value = '';
+  showStep('c-choose');
+  showScreen('s-connect');
+  updateUndoUI(); updateSaveBtn();
+  toast('Disconnected.');
+}
 
-    return `<tr class="${rowClass}" data-product="${esc(p.id)}" data-variant="${esc(v.id)}">
-<td><input type="checkbox" class="row-check" data-variant="${esc(v.id)}" ${isSelected?'checked':''} onchange="App.toggleRow('${esc(v.id)}',this.checked)" /></td>
+/* ─── UNDO / REDO ─────────────────────────── */
+function snapState() { return clone({ products:S.products, changes:S.changes }); }
+function pushHist(label) {
+  S.past.push({ label, snap:snapState() });
+  if (S.past.length > MAX_HIST) S.past.shift();
+  S.future = []; updateUndoUI();
+}
+function applySnap(snap) { S.products = clone(snap.products); S.changes = clone(snap.changes); }
+
+function undo() {
+  if (!S.past.length) return;
+  S.future.push({ label:'redo', snap:snapState() });
+  const h = S.past.pop(); applySnap(h.snap);
+  renderTable(); updateUndoUI(); updateSaveBtn();
+  toast('Undone: ' + h.label);
+}
+function redo() {
+  if (!S.future.length) return;
+  S.past.push({ label:'undo', snap:snapState() });
+  const f = S.future.pop(); applySnap(f.snap);
+  renderTable(); updateUndoUI(); updateSaveBtn();
+  toast('Redone');
+}
+function updateUndoUI() {
+  $('btn-undo').disabled = !S.past.length;
+  $('btn-redo').disabled = !S.future.length;
+  const hint = $('undo-hint');
+  if (S.past.length || S.future.length) {
+    hint.classList.remove('hidden');
+    $('undo-hint-msg').textContent = `${S.past.length} action${S.past.length !== 1 ? 's' : ''} in history${S.future.length ? ' · ' + S.future.length + ' redo' : ''}`;
+  } else hint.classList.add('hidden');
+}
+document.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); }
+  if (mod && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redo(); }
+});
+
+/* ─── RENDER TABLE ────────────────────────── */
+function flatRows() { return S.products.flatMap(p => p.variants.nodes.map(v => ({ p, v }))); }
+
+function getFiltered() {
+  const q = S.searchQ.toLowerCase();
+  return flatRows().filter(({ p, v }) => {
+    const ms = !q || [p.title, p.vendor, (p.tags||[]).join(' '), v.title, v.sku].join(' ').toLowerCase().includes(q);
+    const mf = S.filter === 'all'     ? true
+             : S.filter === 'changed' ? !!S.changes[p.id]
+             : p.status === S.filter;
+    return ms && mf;
+  });
+}
+
+function renderTable() {
+  const rows = getFiltered();
+  const tbody = $('tbody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; }
+  else tbody.innerHTML = rows.map(({ p, v }) => rowHTML(p, v)).join('');
+  updateSaveBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview();
+}
+
+function rowHTML(p, v) {
+  const dirty = !!S.changes[p.id];
+  const sel   = S.selectedVids.has(v.id);
+  const hasSched = S.schedules.some(s => s.variantId === v.id && s.state === 'queued');
+  const cls = [dirty?'r-changed':'', sel?'r-selected':''].filter(Boolean).join(' ');
+  const imgSrc = prodImg(p);
+  const imgCell = imgSrc
+    ? `<img class="prod-thumb" src="${esc(imgSrc)}" alt="" loading="lazy">`
+    : `<div class="prod-thumb-ph">□</div>`;
+  const stCls = { ACTIVE:'ACTIVE', DRAFT:'DRAFT', ARCHIVED:'ARCHIVED' }[p.status] || 'DRAFT';
+  const stLbl = { ACTIVE:'● Active', DRAFT:'○ Draft', ARCHIVED:'⊘ Archived' }[p.status] || p.status;
+  const tagsHTML = (p.tags||[]).map(t =>
+    `<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`
+  ).join('') + `<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
+  const mfHTML = v.metafields.nodes.map((m,i) => mfRowHTML(v.id, m, i)).join('')
+    + `<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
+  const schedSched = S.schedules.find(s => s.variantId === v.id && s.state === 'queued');
+  const schedCell = schedSched
+    ? `<span class="sched-pill" data-switchtab="schedule" title="${esc(schedSched.name)}">⏱ ${esc(schedSched.name)}</span>`
+    : `<button class="sched-add" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">+ schedule</button>`;
+  return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
+<td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
-<td style="min-width:160px"><input class="ce${isChanged?' changed':''}" value="${esc(p.title)}" oninput="App.markProduct('${esc(p.id)}','title',this.value,this)" /></td>
-<td><div class="status-badge ${statusCls}" onclick="App.cycleStatus('${esc(p.id)}')">${statusLabel}</div></td>
-<td><input class="ce" value="${esc(p.vendor||'')}" oninput="App.markProduct('${esc(p.id)}','vendor',this.value,this)" /></td>
-<td style="min-width:140px"><div class="tags-cell" id="tags-${esc(p.id)}">${tagsHTML}</div></td>
+<td><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"></td>
+<td><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span></td>
+<td><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></td>
+<td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div></td>
 <td style="color:var(--t2);font-size:12px">${esc(v.title||'Default')}</td>
-<td><input class="ce" value="${esc(v.sku||'')}" oninput="App.markVariant('${esc(v.id)}','sku',this.value,this)" /></td>
-<td><input class="ce num" type="number" step=".01" min="0" value="${esc(v.price||'')}" oninput="App.markVariant('${esc(v.id)}','price',this.value,this)" /></td>
-<td><input class="ce num" type="number" step=".01" min="0" value="${esc(v.compareAtPrice||'')}" placeholder="—" oninput="App.markVariant('${esc(v.id)}','compareAtPrice',this.value,this)" /></td>
-<td><div class="meta-cell" id="meta-${esc(v.id)}">${metaHTML}</div></td>
+<td><input class="ce" data-vid="${esc(v.id)}" data-vfield="sku" value="${esc(v.sku||'')}"></td>
+<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vfield="price" value="${esc(v.price||'')}"></td>
+<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vfield="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"></td>
+<td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
 <td>${schedCell}</td>
 </tr>`;
-  }
+}
 
-  function metaRowHTML(variantId, m, i) {
-    return `<div class="meta-row">
-<input class="meta-input" placeholder="ns" value="${esc(m.namespace||'custom')}" oninput="App.markMetafield('${esc(variantId)}',${i},'namespace',this.value,this)" />
-<input class="meta-input" placeholder="key" value="${esc(m.key||'')}" oninput="App.markMetafield('${esc(variantId)}',${i},'key',this.value,this)" />
-<input class="meta-input" placeholder="value" value="${esc(m.value||'')}" oninput="App.markMetafield('${esc(variantId)}',${i},'value',this.value,this)" />
-<button class="meta-del" onclick="App.removeMetafield('${esc(variantId)}',${i})">×</button>
+function mfRowHTML(vid, m, i) {
+  return `<div class="mf-row" data-vidx="${esc(vid)}" data-midx="${i}">
+<input class="mf-inp" placeholder="ns"    data-vid="${esc(vid)}" data-idx="${i}" data-mf="namespace" value="${esc(m.namespace||'custom')}">
+<input class="mf-inp" placeholder="key"   data-vid="${esc(vid)}" data-idx="${i}" data-mf="key"       value="${esc(m.key||'')}">
+<input class="mf-inp" placeholder="value" data-vid="${esc(vid)}" data-idx="${i}" data-mf="value"     value="${esc(m.value||'')}">
+<button class="mf-del" data-vid="${esc(vid)}" data-idx="${i}">×</button>
 </div>`;
-  }
+}
 
-  /* ─── MARK CHANGES ───────────────────────────────── */
-  function markProduct(productId, field, value, el) {
-    pushHistory(`Edit ${field} on "${getProduct(productId)?.title||productId}"`);
-    const p = getProduct(productId); if (!p) return;
-    p[field] = field === 'tags' ? value.split(',').map(x=>x.trim()).filter(Boolean) : value;
-    ensureChange(productId).product[field] = p[field];
-    if (el) el.classList.add('changed');
-    updatePublishBtn(); renderAudit();
-  }
+/* ─── TABLE EVENT DELEGATION ─────────────── */
+function bindTableEvents() {
+  const tbody = $('tbody');
+  tbody.addEventListener('change', e => {
+    if (e.target.classList.contains('row-chk')) toggleRowSel(e.target.dataset.vid, e.target.checked);
+  });
+  tbody.addEventListener('input', e => {
+    const el = e.target;
+    if (el.dataset.field)  { markProd(el.dataset.pid, el.dataset.field, el.value, el); return; }
+    if (el.dataset.vfield) { markVar(el.dataset.vid, el.dataset.vfield, el.value, el); return; }
+    if (el.dataset.mf)     { markMf(el.dataset.vid, +el.dataset.idx, el.dataset.mf, el.value, el); return; }
+  });
+  tbody.addEventListener('click', e => {
+    const el = e.target;
+    if (el.classList.contains('status-pill')) { cycleStatus(el.dataset.pid); return; }
+    if (el.classList.contains('tag-rm'))      { removeTag(el.dataset.pid, el.dataset.tag); return; }
+    if (el.classList.contains('tag-add'))     { addTagPrompt(el.dataset.pid); return; }
+    if (el.classList.contains('mf-add'))      { addMf(el.dataset.vid); return; }
+    if (el.classList.contains('mf-del'))      { removeMf(el.dataset.vid, +el.dataset.idx); return; }
+    if (el.classList.contains('sched-add'))   { openSchedModal({ productId:el.dataset.pid, variantId:el.dataset.vid }); return; }
+    if (el.dataset.switchtab)                 { switchTab(el.dataset.switchtab); return; }
+  });
+}
 
-  function markVariant(variantId, field, value, el) {
-    const { p, v } = getVariantById(variantId); if (!p||!v) return;
-    pushHistory(`Edit ${field} on variant "${v.title||'Default'}"`);
-    v[field] = value;
-    const c = ensureChange(p.id);
-    if (!c.variants[variantId]) c.variants[variantId] = { id: variantId };
-    c.variants[variantId][field] = value;
-    if (el) el.classList.add('changed');
-    updatePublishBtn(); renderAudit();
-  }
+/* ─── MARK CHANGES ────────────────────────── */
+function markProd(pid, field, value, el) {
+  pushHist(`Edit ${field} on "${getProd(pid)?.title || pid}"`);
+  const p = getProd(pid); if (!p) return;
+  p[field] = field === 'tags' ? value.split(',').map(x => x.trim()).filter(Boolean) : value;
+  ensureChange(pid).product[field] = p[field];
+  if (el) el.classList.add('dirty');
+  updateSaveBtn();
+}
+function markVar(vid, field, value, el) {
+  const { p, v } = getVar(vid); if (!p || !v) return;
+  pushHist(`Edit ${field} on "${v.title||'Default'}"`);
+  v[field] = value;
+  const c = ensureChange(p.id);
+  if (!c.variants[vid]) c.variants[vid] = { id:vid };
+  c.variants[vid][field] = value;
+  if (el) el.classList.add('dirty');
+  updateSaveBtn();
+}
+function markMf(vid, idx, field, value, el) {
+  const { p, v } = getVar(vid); if (!p || !v) return;
+  pushHist('Edit metafield');
+  v.metafields.nodes[idx][field] = value;
+  const m = v.metafields.nodes[idx];
+  const c = ensureChange(p.id);
+  c.metafields = c.metafields.filter(x => !(x.ownerId === vid && x._idx === idx));
+  if (m.namespace && m.key) c.metafields.push({ ownerId:vid, namespace:m.namespace, key:m.key, type:m.type||'single_line_text_field', value:String(m.value??''), _idx:idx });
+  if (el) el.classList.add('dirty');
+  updateSaveBtn();
+}
+function cycleStatus(pid) {
+  const p = getProd(pid); if (!p) return;
+  pushHist(`Cycle status on "${p.title}"`);
+  const cyc = { ACTIVE:'DRAFT', DRAFT:'ARCHIVED', ARCHIVED:'ACTIVE' };
+  p.status = cyc[p.status] || 'ACTIVE';
+  ensureChange(pid).product.status = p.status;
+  renderTable(); updateSaveBtn();
+}
+function removeTag(pid, tag) {
+  const p = getProd(pid); if (!p) return;
+  pushHist(`Remove tag "${tag}"`);
+  p.tags = (p.tags||[]).filter(t => t !== tag);
+  ensureChange(pid).product.tags = [...p.tags];
+  rerenderTagCell(pid, p.tags); updateSaveBtn();
+}
+function addTagPrompt(pid) {
+  const tag = prompt('New tag:'); if (!tag?.trim()) return;
+  const p = getProd(pid); if (!p) return;
+  if (p.tags.includes(tag.trim())) return toast('Tag already exists.');
+  pushHist(`Add tag "${tag.trim()}"`);
+  p.tags.push(tag.trim());
+  ensureChange(pid).product.tags = [...p.tags];
+  rerenderTagCell(pid, p.tags); updateSaveBtn();
+}
+function rerenderTagCell(pid, tags) {
+  const cell = $(`tw-${pid}`); if (!cell) return;
+  cell.innerHTML = tags.map(t =>
+    `<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(pid)}" data-tag="${esc(t)}">×</span></span>`
+  ).join('') + `<span class="tag-add" data-pid="${esc(pid)}">+</span>`;
+}
+function addMf(vid) {
+  const { v } = getVar(vid); if (!v) return;
+  pushHist('Add metafield');
+  v.metafields.nodes.push({ namespace:'custom', key:'', type:'single_line_text_field', value:'' });
+  rerenderMfCell(vid, v);
+}
+function removeMf(vid, idx) {
+  const { p, v } = getVar(vid); if (!p || !v) return;
+  pushHist('Remove metafield');
+  v.metafields.nodes.splice(idx, 1);
+  const c = ensureChange(p.id);
+  c.metafields = c.metafields.filter(x => !(x.ownerId === vid && x._idx === idx));
+  rerenderMfCell(vid, v); updateSaveBtn();
+}
+function rerenderMfCell(vid, v) {
+  const cell = $(`mf-${vid}`); if (!cell) return;
+  cell.innerHTML = v.metafields.nodes.map((m,i) => mfRowHTML(vid, m, i)).join('')
+    + `<button class="mf-add" data-vid="${esc(vid)}">+ metafield</button>`;
+}
 
-  function markMetafield(variantId, index, field, value, el) {
-    const { p, v } = getVariantById(variantId); if (!p||!v) return;
-    pushHistory(`Edit metafield on "${v.title||'Default'}"`);
-    v.metafields.nodes[index][field] = value;
-    const m = v.metafields.nodes[index];
-    const c = ensureChange(p.id);
-    c.metafields = c.metafields.filter(x => !(x.ownerId === variantId && x._idx === index));
-    if (m.namespace && m.key) c.metafields.push({ ownerId: variantId, namespace: m.namespace, key: m.key, type: m.type||'single_line_text_field', value: String(m.value??''), _idx: index });
-    if (el) el.classList.add('changed');
-    updatePublishBtn(); renderAudit();
-  }
+/* ─── ROW SELECTION ───────────────────────── */
+function toggleRowSel(vid, checked) {
+  checked ? S.selectedVids.add(vid) : S.selectedVids.delete(vid);
+  updateBulkBar();
+  const row = document.querySelector(`tr[data-vid="${vid}"]`);
+  if (row) row.classList.toggle('r-selected', checked);
+}
+function toggleAllRows(checked) {
+  document.querySelectorAll('.row-chk').forEach(cb => { cb.checked = checked; toggleRowSel(cb.dataset.vid, checked); });
+}
+function updateBulkBar() {
+  const n = S.selectedVids.size;
+  $('bulk-bar').classList.toggle('hidden', n === 0);
+  $('bulk-count').textContent = `${n} selected`;
+}
+function getSelPids() {
+  const ids = new Set();
+  S.selectedVids.forEach(vid => { const { p } = getVar(vid); if (p) ids.add(p.id); });
+  return [...ids];
+}
 
-  function cycleStatus(productId) {
-    const p = getProduct(productId); if (!p) return;
-    pushHistory(`Cycle status on "${p.title}"`);
-    const cycle = { ACTIVE:'DRAFT', DRAFT:'ARCHIVED', ARCHIVED:'ACTIVE' };
-    p.status = cycle[p.status] || 'ACTIVE';
-    ensureChange(productId).product.status = p.status;
-    render(); updatePublishBtn();
-  }
+/* ─── SAVE BUTTON ─────────────────────────── */
+function updateSaveBtn() {
+  const n = Object.keys(S.changes).length;
+  $('btn-save').disabled = !n;
+  $('save-count').textContent = n;
+  if (n) setStatus(`${n} unsaved change${n!==1?'s':''}`, 'dirty');
+  else   setStatus('No pending changes', 'ok');
+}
 
-  function removeTag(productId, tag) {
-    const p = getProduct(productId); if (!p) return;
-    pushHistory(`Remove tag "${tag}" from "${p.title}"`);
-    p.tags = (p.tags||[]).filter(t => t !== tag);
-    ensureChange(productId).product.tags = [...p.tags];
-    const cell = $(`tags-${productId}`);
-    if (cell) cell.innerHTML = p.tags.map(t=>`<span class="tag-chip">${esc(t)}<span class="tag-del" onclick="App.removeTag('${esc(productId)}','${escAttr(t)}')">×</span></span>`).join('')+`<span class="tag-add" onclick="App.addTag('${esc(productId)}')">+</span>`;
-    updatePublishBtn(); renderAudit();
+/* ─── BULK MODAL ──────────────────────────── */
+function openBulkModal(type) {
+  S.bulkModalType = type;
+  const n = S.selectedVids.size;
+  $('m-bulk-title').textContent = { status:'Change status', price:'Set price', tags:'Add or remove tags' }[type] || 'Bulk action';
+  $('m-bulk-sub').textContent   = `Applied to ${n} selected variant${n!==1?'s':''}`;
+  const body = $('m-bulk-body');
+  if (type === 'status') {
+    body.innerHTML = `<div class="bulk-field"><label>New status</label><select id="bv-status"><option value="ACTIVE">● Active</option><option value="DRAFT">○ Draft</option><option value="ARCHIVED">⊘ Archived</option></select></div>`;
+  } else if (type === 'price') {
+    body.innerHTML = `<div class="bulk-field"><label>New price</label><input id="bv-price" type="number" step=".01" min="0" placeholder="0.00" autofocus></div>`;
+  } else if (type === 'tags') {
+    body.innerHTML = `<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
   }
+  openModal('m-bulk');
+  setTimeout(() => body.querySelector('input,select')?.focus(), 60);
+}
 
-  function addTag(productId) {
-    const tag = prompt('New tag:'); if (!tag?.trim()) return;
-    const p = getProduct(productId); if (!p||p.tags.includes(tag.trim())) return;
-    pushHistory(`Add tag "${tag.trim()}" to "${p.title}"`);
-    p.tags.push(tag.trim());
-    ensureChange(productId).product.tags = [...p.tags];
-    const cell = $(`tags-${productId}`);
-    if (cell) cell.innerHTML = p.tags.map(t=>`<span class="tag-chip">${esc(t)}<span class="tag-del" onclick="App.removeTag('${esc(productId)}','${escAttr(t)}')">×</span></span>`).join('')+`<span class="tag-add" onclick="App.addTag('${esc(productId)}')">+</span>`;
-    updatePublishBtn(); renderAudit();
-  }
-
-  function addMetafield(variantId) {
-    const { v } = getVariantById(variantId); if (!v) return;
-    pushHistory('Add metafield');
-    v.metafields.nodes.push({ namespace:'custom', key:'', type:'single_line_text_field', value:'' });
-    const cell = $(`meta-${variantId}`);
-    if (cell) cell.innerHTML = v.metafields.nodes.map((m,i)=>metaRowHTML(variantId,m,i)).join('')+`<button class="meta-add-btn" onclick="App.addMetafield('${esc(variantId)}')">+ metafield</button>`;
-  }
-
-  function removeMetafield(variantId, index) {
-    const { p, v } = getVariantById(variantId); if (!p||!v) return;
-    pushHistory('Remove metafield');
-    v.metafields.nodes.splice(index, 1);
-    const c = ensureChange(p.id);
-    c.metafields = c.metafields.filter(x => !(x.ownerId === variantId && x._idx === index));
-    const cell = $(`meta-${variantId}`);
-    if (cell) cell.innerHTML = v.metafields.nodes.map((m,i)=>metaRowHTML(variantId,m,i)).join('')+`<button class="meta-add-btn" onclick="App.addMetafield('${esc(variantId)}')">+ metafield</button>`;
-    updatePublishBtn();
-  }
-
-  /* ─── BULK ACTIONS ───────────────────────────────── */
-  function toggleRow(variantId, checked) {
-    checked ? selectedRows.add(variantId) : selectedRows.delete(variantId);
-    updateBulkBar();
-    const row = document.querySelector(`tr[data-variant="${variantId}"]`);
-    if (row) row.classList.toggle('row-selected', checked);
-  }
-  function toggleAllRows(checked) { document.querySelectorAll('.row-check').forEach(cb => { cb.checked = checked; toggleRow(cb.dataset.variant, checked); }); }
-  function updateBulkBar() {
-    const n = selectedRows.size;
-    $('bulk-actions').classList.toggle('visible', n > 0);
-    $('bulk-label').textContent = `${n} selected`;
-  }
-  function getSelectedProductIds() {
-    const ids = new Set();
-    for (const vid of selectedRows) { const { p } = getVariantById(vid); if (p) ids.add(p.id); }
-    return [...ids];
-  }
-
-  function bulkStatus(status) {
-    const pids = getSelectedProductIds(); if (!pids.length) return;
-    pushHistory(`Bulk set status → ${status}`);
-    pids.forEach(id => { const p = getProduct(id); if (!p) return; p.status = status; ensureChange(id).product.status = status; });
-    render(); updatePublishBtn(); toast(`Status set to ${status} on ${pids.length} product${pids.length!==1?'s':''}.`);
-  }
-
-  function bulkAddTag() {
-    const tag = prompt('Tag to add:'); if (!tag?.trim()) return;
-    const pids = getSelectedProductIds(); if (!pids.length) return;
-    pushHistory(`Bulk add tag "${tag.trim()}"`);
-    pids.forEach(id => { const p = getProduct(id); if (!p) return; if (!p.tags.includes(tag.trim())) p.tags.push(tag.trim()); ensureChange(id).product.tags = [...p.tags]; });
-    render(); updatePublishBtn(); toast(`Tag "${tag.trim()}" added to ${pids.length} products.`);
-  }
-
-  function bulkRemoveTag() {
-    const tag = prompt('Tag to remove:'); if (!tag?.trim()) return;
-    const pids = getSelectedProductIds(); if (!pids.length) return;
-    pushHistory(`Bulk remove tag "${tag.trim()}"`);
-    pids.forEach(id => { const p = getProduct(id); if (!p) return; p.tags = p.tags.filter(t=>t!==tag.trim()); ensureChange(id).product.tags = [...p.tags]; });
-    render(); updatePublishBtn(); toast(`Tag "${tag.trim()}" removed from ${pids.length} products.`);
-  }
-
-  function bulkSetPrice() {
-    const price = prompt('Set price for all selected variants (e.g. 29.99):'); if (!price?.trim()) return;
-    const n = Number(price); if (isNaN(n) || n < 0) return toast('Invalid price.');
-    const vids = [...selectedRows]; if (!vids.length) return;
-    pushHistory(`Bulk set price → ${n}`);
-    vids.forEach(vid => {
-      const { p, v } = getVariantById(vid); if (!p||!v) return;
-      v.price = n.toFixed(2);
-      const c = ensureChange(p.id);
-      if (!c.variants[vid]) c.variants[vid] = { id: vid };
-      c.variants[vid].price = v.price;
+function applyBulkModal() {
+  const type = S.bulkModalType;
+  if (type === 'status') {
+    const val = $('bv-status').value;
+    const pids = getSelPids(); if (!pids.length) return;
+    pushHist(`Bulk status → ${val}`);
+    pids.forEach(pid => { const p = getProd(pid); if (!p) return; p.status = val; ensureChange(pid).product.status = val; });
+    renderTable(); updateSaveBtn(); toast(`Status set to ${val} on ${pids.length} products.`);
+  } else if (type === 'price') {
+    const val = $('bv-price')?.value; const n = Number(val);
+    if (!val || isNaN(n) || n < 0) return toast('Enter a valid price.');
+    const vids = [...S.selectedVids];
+    pushHist(`Bulk price → ${n.toFixed(2)}`);
+    vids.forEach(vid => { const { p, v } = getVar(vid); if (!p||!v) return; v.price = n.toFixed(2); const c = ensureChange(p.id); if (!c.variants[vid]) c.variants[vid] = { id:vid }; c.variants[vid].price = v.price; });
+    renderTable(); updateSaveBtn(); toast(`Price set to ${n.toFixed(2)} on ${vids.length} variants.`);
+  } else if (type === 'tags') {
+    const tag    = $('bv-tag')?.value.trim();
+    const action = $('bv-tag-action')?.value;
+    if (!tag) return toast('Enter a tag.');
+    const pids = getSelPids();
+    pushHist(`Bulk ${action} tag "${tag}"`);
+    pids.forEach(pid => {
+      const p = getProd(pid); if (!p) return;
+      if (action === 'add') { if (!p.tags.includes(tag)) p.tags.push(tag); }
+      else p.tags = p.tags.filter(t => t !== tag);
+      ensureChange(pid).product.tags = [...p.tags];
     });
-    render(); updatePublishBtn(); toast(`Price set to ${n.toFixed(2)} on ${vids.length} variant${vids.length!==1?'s':''}.`);
+    renderTable(); updateSaveBtn(); toast(`Tag "${tag}" ${action==='add'?'added to':'removed from'} ${pids.length} products.`);
   }
+  closeModal('m-bulk');
+}
 
-  /* ─── PUBLISH BUTTON ─────────────────────────────── */
-  function updatePublishBtn() {
-    const n = Object.keys(changes).length;
-    $('publishBtn').disabled = !n;
-    $('changeCount').textContent = n;
-    if (n) setStatus(`${n} unsaved change${n!==1?'s':''} — ready to review`, 'dirty');
-    else setStatus('No pending changes', 'ok');
-  }
+/* ─── REVIEW & SAVE MODAL ────────────────── */
+function openSaveModal() {
+  const payloads = Object.values(S.changes);
+  if (!payloads.length) return toast('No changes to save.');
+  $('m-save-sub').textContent = `${payloads.length} product${payloads.length!==1?'s':''} with pending changes`;
+  const list = $('m-save-diff');
+  list.innerHTML = payloads.map(c => {
+    const p = getProd(c.productId); if (!p) return '';
+    const imgSrc = prodImg(p);
+    const imgEl = imgSrc ? `<img class="diff-thumb" src="${esc(imgSrc)}" alt="">` : `<div class="diff-thumb-ph">□</div>`;
+    const orig = S.originals.find(x => x.id === c.productId);
+    const diffs = [];
+    Object.entries(c.product||{}).forEach(([field, newVal]) => {
+      const oldVal = orig ? orig[field] : '?';
+      const oldStr = Array.isArray(oldVal) ? oldVal.join(', ') : String(oldVal ?? '');
+      const newStr = Array.isArray(newVal) ? newVal.join(', ') : String(newVal ?? '');
+      if (oldStr !== newStr) diffs.push(`<div class="diff-row"><span class="diff-field">${esc(field)}</span><span class="diff-old">${esc(oldStr||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(newStr)}</span></div>`);
+    });
+    Object.values(c.variants||{}).forEach(v => {
+      let origV = null; if (orig) origV = orig.variants?.nodes?.find(x => x.id === v.id);
+      const vLbl = p.variants.nodes.find(x => x.id === v.id)?.title || 'variant';
+      ['price','compareAtPrice','sku'].forEach(field => {
+        if (v[field] !== undefined) { const old = origV ? String(origV[field]??'') : '?'; const nw = String(v[field]??''); if (old !== nw) diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} ${esc(field)}</span><span class="diff-old">${esc(old||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(nw)}</span></div>`); }
+      });
+    });
+    if ((c.metafields||[]).length) diffs.push(`<div class="diff-row"><span class="diff-field">metafields</span><span class="diff-new">${c.metafields.length} change${c.metafields.length!==1?'s':''}</span></div>`);
+    return `<div class="diff-item"><div class="diff-item-head">${imgEl}<span class="diff-title">${esc(p.title)}</span></div><div class="diff-rows">${diffs.length ? diffs.join('') : '<div style="font-size:12px;color:var(--t3)">Variant / metafield changes</div>'}</div></div>`;
+  }).join('');
+  openModal('m-save');
+}
 
-  /* ─── REVIEW MODAL ───────────────────────────────── */
-  function openReviewModal() {
-    const payloads = Object.values(changes);
-    if (!payloads.length) return toast('No changes to review.');
-    const list = $('review-list');
-    $('review-sub').textContent = `${payloads.length} product${payloads.length!==1?'s':''} with changes`;
-    $('review-commit-msg').value = '';
-
-    if (!payloads.length) { list.innerHTML = '<div class="review-empty">No changes.</div>'; }
+async function confirmSave() {
+  const payloads = Object.values(S.changes); if (!payloads.length) return;
+  const btn = $('m-save-confirm'); btn.disabled = true;
+  setStatus('Saving…', 'saving');
+  try {
+    if (S.demo) { await delay(600); }
     else {
-      list.innerHTML = payloads.map(c => {
-        const p = getProduct(c.productId);
-        if (!p) return '';
-        const imgSrc = getProductImage(p);
-        const imgEl = imgSrc
-          ? `<img class="review-item-img" src="${esc(imgSrc)}" alt="" />`
-          : `<div class="review-item-img-ph">□</div>`;
-
-        // build diff lines
-        const orig = originals.find ? originals.find(x=>x.id===c.productId) : null;
-        const diffs = [];
-
-        Object.entries(c.product||{}).forEach(([field, newVal]) => {
-          const oldVal = orig ? orig[field] : '?';
-          const oldStr = Array.isArray(oldVal) ? oldVal.join(', ') : String(oldVal??'');
-          const newStr = Array.isArray(newVal) ? newVal.join(', ') : String(newVal??'');
-          if (oldStr !== newStr) {
-            diffs.push(`<div class="review-change">
-              <span class="review-field">${esc(field)}</span>
-              <span class="review-from">${esc(oldStr||'—')}</span>
-              <span class="review-arrow">→</span>
-              <span class="review-to">${esc(newStr)}</span>
-            </div>`);
-          }
-        });
-
-        Object.values(c.variants||{}).forEach(v => {
-          const vid = v.id;
-          let origV = null;
-          if (orig) { for (const ov of orig.variants?.nodes||[]) { if (ov.id === vid) { origV = ov; break; } } }
-          ['price','compareAtPrice','sku'].forEach(field => {
-            if (v[field] !== undefined) {
-              const oldStr = origV ? String(origV[field]??'') : '?';
-              const newStr = String(v[field]??'');
-              if (oldStr !== newStr) {
-                const vLabel = p.variants.nodes.find(x=>x.id===vid)?.title || 'variant';
-                diffs.push(`<div class="review-change">
-                  <span class="review-field">${esc(vLabel)} ${esc(field)}</span>
-                  <span class="review-from">${esc(oldStr||'—')}</span>
-                  <span class="review-arrow">→</span>
-                  <span class="review-to">${esc(newStr)}</span>
-                </div>`);
-              }
-            }
-          });
-        });
-
-        if ((c.metafields||[]).length) {
-          diffs.push(`<div class="review-change"><span class="review-field">metafields</span><span class="review-to">${c.metafields.length} change${c.metafields.length!==1?'s':''}</span></div>`);
-        }
-
-        return `<div class="review-item">
-          <div class="review-item-header">${imgEl}<span class="review-item-title">${esc(p.title)}</span></div>
-          <div class="review-changes">${diffs.length ? diffs.join('') : '<div style="font-size:12px;color:var(--t3)">Metafields or variant changes</div>'}</div>
-        </div>`;
-      }).join('');
-    }
-
-    $('modal-review').classList.add('open');
-  }
-
-  function closeReviewModal() { $('modal-review').classList.remove('open'); }
-
-  async function confirmPublish() {
-    const payloads = Object.values(changes);
-    if (!payloads.length) return;
-    $('confirm-publish-btn').disabled = true;
-    setStatus('Publishing…', 'saving');
-
-    try {
-      if (session.demo) {
-        await delay(600);
-      } else {
-        for (const c of payloads) {
-          const mf = (c.metafields||[]).map(({ _idx, ...rest }) => rest);
-          await apiPost('/api/save-product', { productId: c.productId, product: c.product, variants: Object.values(c.variants||{}), metafields: mf });
-        }
+      for (const c of payloads) {
+        const mf = (c.metafields||[]).map(({ _idx, ...rest }) => rest);
+        await apiPost('/api/save-product', { productId:c.productId, product:c.product, variants:Object.values(c.variants||{}), metafields:mf });
       }
-      const n = payloads.length;
-      changes = {}; past = []; future = [];
-      originals = JSON.parse(JSON.stringify(products));
-      document.querySelectorAll('.changed').forEach(el => el.classList.remove('changed'));
-      closeReviewModal();
-      render();
-      toast(`${n} product${n!==1?'s':''} published successfully.`);
-      setStatus('All changes published', 'ok');
-    } catch (e) {
-      toast(e.message); setStatus('Publish failed', 'dirty');
-    } finally {
-      $('confirm-publish-btn').disabled = false;
-      updatePublishBtn();
     }
-  }
+    const recap = buildRecap(payloads);
+    const n = payloads.length;
+    S.changes = {}; S.past = []; S.future = [];
+    S.originals = clone(S.products);
+    document.querySelectorAll('.dirty').forEach(el => el.classList.remove('dirty'));
+    closeModal('m-save'); renderTable(); updateSaveBtn(); updateUndoUI();
+    toast(`${n} product${n!==1?'s':''} saved.`);
+    setStatus('All changes saved', 'ok');
+    downloadText(recap, `bulkedit-recap-${Date.now()}.txt`);
+  } catch(e) { toast(e.message); setStatus('Save failed', 'dirty'); }
+  finally { btn.disabled = false; }
+}
 
-  /* ─── AUDIT ──────────────────────────────────────── */
-  function renderAudit() {
-    const list = Object.values(changes).map(c => ({
-      product: getProduct(c.productId)?.title || c.productId,
-      fields: c.product,
-      variants: Object.values(c.variants||{}),
-      metafields: (c.metafields||[]).map(m=>({namespace:m.namespace,key:m.key,value:m.value}))
-    }));
-    $('audit').textContent = list.length ? JSON.stringify(list, null, 2) : 'No pending changes.';
-  }
+/* ─── RECAP ───────────────────────────────── */
+function buildRecap(payloads) {
+  const lines = ['BulkEdit — Change recap', `Generated: ${new Date().toLocaleString()}`, ''];
+  payloads.forEach(c => {
+    const p = getProd(c.productId); if (!p) return;
+    lines.push(`Product: ${p.title}`);
+    const orig = S.originals.find(x => x.id === c.productId);
+    Object.entries(c.product||{}).forEach(([field, newVal]) => {
+      const oldVal = orig ? orig[field] : '?';
+      const oldStr = Array.isArray(oldVal) ? oldVal.join(', ') : String(oldVal??'');
+      const newStr = Array.isArray(newVal) ? newVal.join(', ') : String(newVal??'');
+      if (oldStr !== newStr) lines.push(`  ${field}: "${oldStr}" → "${newStr}"`);
+    });
+    Object.values(c.variants||{}).forEach(v => {
+      const origV = orig?.variants?.nodes?.find(x => x.id === v.id);
+      const vLbl  = p.variants.nodes.find(x => x.id === v.id)?.title || v.id;
+      ['price','compareAtPrice','sku'].forEach(field => {
+        if (v[field] !== undefined) { const old = origV ? String(origV[field]??'') : '?'; const nw = String(v[field]??''); if (old !== nw) lines.push(`  ${vLbl} ${field}: "${old}" → "${nw}"`); }
+      });
+    });
+    if ((c.metafields||[]).length) lines.push(`  metafields: ${c.metafields.length} change${c.metafields.length!==1?'s':''}`);
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+function downloadText(text, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type:'text/plain' }));
+  a.download = filename; a.click();
+}
+function manualDownloadRecap() { downloadText(buildRecap(Object.values(S.changes)), `bulkedit-recap-${Date.now()}.txt`); }
 
-  function clearChanges() {
-    if (!Object.keys(changes).length) return toast('No changes to clear.');
-    if (!confirm('Clear all unsaved changes?')) return;
-    pushHistory('Clear all changes');
-    changes = {};
-    document.querySelectorAll('.changed').forEach(el => el.classList.remove('changed'));
-    render(); updatePublishBtn();
-    toast('All changes cleared.');
-  }
+/* ─── SEARCH ──────────────────────────────── */
+function buildSuggestions() {
+  const q = S.searchQ; const box = $('search-suggest');
+  if (!q) { box.classList.remove('open'); return; }
+  const all = [...new Set(flatRows().flatMap(({ p, v }) => [p.title, p.vendor, v.sku, ...(p.tags||[])]).filter(Boolean))];
+  const hits = all.filter(x => x.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+  if (!hits.length) { box.classList.remove('open'); return; }
+  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  box.innerHTML = hits.map(h => `<div class="suggest-item" data-val="${esc(h)}">${esc(h).replace(re,'<mark>$1</mark>')}</div>`).join('');
+  box.classList.add('open');
+}
 
-  /* ─── SEARCH ─────────────────────────────────────── */
-  function buildSuggestions() {
-    const q = searchQuery; const box = $('suggestions');
-    if (!q) { box.classList.remove('open'); return; }
-    const vals = [...new Set(flatRows().flatMap(({p,v})=>[p.title,p.vendor,v.sku,...(p.tags||[])]).filter(Boolean))].filter(x=>x.toLowerCase().includes(q.toLowerCase())).slice(0,8);
-    if (!vals.length) { box.classList.remove('open'); return; }
-    const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-    box.innerHTML = vals.map(v=>`<div class="sug-item" onmousedown="App.useSuggestion('${escAttr(v)}')"><span>${esc(v).replace(re,'<mark>$1</mark>')}</span></div>`).join('');
-    box.classList.add('open');
-  }
-  function useSuggestion(v) { $('search').value = v; searchQuery = v.toLowerCase(); $('suggestions').classList.remove('open'); render(); }
-  function setFilter(f) { activeFilter = f; document.querySelectorAll('.filter-chip').forEach(c=>c.classList.toggle('active',c.dataset.filter===f)); render(); }
+/* ─── FILTER ──────────────────────────────── */
+function setFilter(f) {
+  S.filter = f;
+  document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  renderTable();
+}
 
-  /* ─── TABS ───────────────────────────────────────── */
-  function switchTab(name) {
-    document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
-    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
-    if (name==='audit') renderAudit();
-    if (name==='export') updateExportPreview();
-  }
+/* ─── TABS ────────────────────────────────── */
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-'+name));
+  if (name === 'export') updateExportPreview();
+}
 
-  /* ─── SCHEDULE ───────────────────────────────────── */
-  function openScheduleModal(ctx) {
-    schedModalCtx = ctx;
-    const overlay = $('modal-schedule'); overlay.classList.add('open');
-    const tom = new Date(); tom.setDate(tom.getDate()+1);
-    $('sched-date').value = tom.toISOString().split('T')[0];
-    $('sched-time').value = '09:00';
-    $('sched-revert').checked = false;
-    $('sched-revert-fields').classList.add('hidden');
-    $('sched-name').value = '';
-    let targetRows;
-    if (ctx === 'bulk' || ctx === 'new') targetRows = ctx==='bulk' ? flatRows().filter(({v})=>selectedRows.has(v.id)) : flatRows().slice(0,20);
-    else if (ctx?.variantId) targetRows = flatRows().filter(({v})=>v.id===ctx.variantId);
-    else targetRows = flatRows().slice(0,20);
-    $('modal-sched-sub').textContent = ctx==='bulk' ? `${targetRows.length} selected variants` : ctx?.variantId ? `${targetRows[0]?.p.title||''} — ${targetRows[0]?.v.title||'Default'}` : `${targetRows.length} products`;
-    const list = $('sched-prod-list');
-    list.innerHTML = targetRows.map(({p,v})=>`<div class="sched-prod-item" data-vid="${esc(v.id)}" data-pid="${esc(p.id)}"><span class="spi-name">${esc(p.title)} — ${esc(v.title||'Default')}</span><div class="spi-price" id="sprice-${esc(v.id)}"></div></div>`).join('');
-    $('sched-prod-count').textContent = `(${targetRows.length})`;
-    renderSchedTypeFields();
+/* ─── SCHEDULE ────────────────────────────── */
+function openSchedModal(ctx) {
+  S.schedCtx = ctx;
+  const modal = $('m-sched');
+  const tom = new Date(); tom.setDate(tom.getDate() + 1);
+  $('sched-date').value    = tom.toISOString().split('T')[0];
+  $('sched-time').value    = '09:00';
+  $('sched-name').value    = '';
+  $('sched-revert').checked = false;
+  $('sched-revert-wrap').classList.add('hidden');
+  let rows;
+  if (ctx === 'bulk' || ctx === 'new') rows = ctx === 'bulk' ? flatRows().filter(({ v }) => S.selectedVids.has(v.id)) : flatRows().slice(0, 20);
+  else if (ctx?.variantId) rows = flatRows().filter(({ v }) => v.id === ctx.variantId);
+  else rows = flatRows().slice(0, 20);
+  $('m-sched-sub').textContent   = ctx === 'bulk' ? `${rows.length} selected variants` : ctx?.variantId ? `${rows[0]?.p.title||''} — ${rows[0]?.v.title||'Default'}` : `${rows.length} products`;
+  $('sched-prod-count').textContent = `(${rows.length})`;
+  $('sched-prod-list').innerHTML = rows.map(({ p, v }) =>
+    `<div class="sched-prod-item" data-vid="${esc(v.id)}" data-pid="${esc(p.id)}"><span class="spi-name">${esc(p.title)} — ${esc(v.title||'Default')}</span><div id="spwrap-${esc(v.id)}"></div></div>`
+  ).join('');
+  renderSchedValueFields();
+  openModal('m-sched');
+}
+
+function renderSchedValueFields() {
+  const type = $('sched-type').value;
+  const wrap = $('sched-value-wrap');
+  const items = document.querySelectorAll('#sched-prod-list .sched-prod-item');
+  if (type === 'price') {
+    wrap.innerHTML = `<div class="field"><label>Default price <span class="text-muted">(override per-variant below)</span></label><input id="sched-default-price" type="number" step=".01" min="0" placeholder="0.00"></div>`;
+    items.forEach(item => {
+      const vid = item.dataset.vid; const { v } = getVar(vid);
+      const el = $(`spwrap-${vid}`); if (el) el.innerHTML = `<input class="spi-price-inp" id="sprice-${esc(vid)}" type="number" step=".01" min="0" placeholder="${esc(v?.price||'')}">`;
+    });
+  } else if (type === 'status') {
+    wrap.innerHTML = `<div class="field"><label>New status</label><select id="sched-status-val"><option value="ACTIVE">Active</option><option value="DRAFT">Draft</option><option value="ARCHIVED">Archived</option></select></div>`;
+    items.forEach(item => { const el = $(`spwrap-${item.dataset.vid}`); if (el) el.innerHTML = ''; });
+  } else {
+    wrap.innerHTML = `<div class="field"><label>${type==='tags_add'?'Tags to add':'Tags to remove'}</label><input id="sched-tags-val" type="text" placeholder="sale, promo"></div>`;
+    items.forEach(item => { const el = $(`spwrap-${item.dataset.vid}`); if (el) el.innerHTML = ''; });
   }
-  function closeScheduleModal() { $('modal-schedule').classList.remove('open'); schedModalCtx = null; }
-  function toggleRevert() { $('sched-revert-fields').classList.toggle('hidden', !$('sched-revert').checked); }
-  function renderSchedTypeFields() {
-    const type = $('sched-type').value; const wrap = $('sched-type-fields');
-    const prodItems = document.querySelectorAll('#sched-prod-list .sched-prod-item');
-    if (type==='price') {
-      wrap.innerHTML=`<div class="modal-field"><label>Default price <span class="label-hint">(override per-variant below)</span></label><input id="sched-default-price" type="number" step=".01" min="0" placeholder="0.00" oninput="App.applyDefaultSchedPrice(this.value)"/></div>`;
-      prodItems.forEach(item=>{const vid=item.dataset.vid;const{v}=getVariantById(vid);const el=item.querySelector('.spi-price');if(el)el.innerHTML=`<input id="spriceinp-${esc(vid)}" type="number" step=".01" min="0" placeholder="${esc(v?.price||'')}"/>`;});
-    } else if (type==='status') {
-      wrap.innerHTML=`<div class="modal-field"><label>New status</label><select id="sched-status-val"><option value="ACTIVE">Active</option><option value="DRAFT">Draft</option><option value="ARCHIVED">Archived</option></select></div>`;
-      prodItems.forEach(item=>{const el=item.querySelector('.spi-price');if(el)el.innerHTML='';});
-    } else {
-      wrap.innerHTML=`<div class="modal-field"><label>${type==='tags_add'?'Tags to add':'Tags to remove'}</label><input id="sched-tags-val" type="text" placeholder="sale, promo"/></div>`;
-      prodItems.forEach(item=>{const el=item.querySelector('.spi-price');if(el)el.innerHTML='';});
+}
+
+function confirmSched() {
+  const name    = $('sched-name').value.trim() || 'Scheduled task';
+  const date    = $('sched-date').value;
+  const time    = $('sched-time').value || '09:00';
+  const type    = $('sched-type').value;
+  if (!date) return toast('Please set a date.');
+  const runAt = new Date(`${date}T${time}`);
+  if (isNaN(runAt.getTime()) || runAt < new Date()) return toast('Date must be in the future.');
+  const revert    = $('sched-revert').checked;
+  const revertAt  = revert ? new Date(`${$('sched-rv-date').value}T${$('sched-rv-time').value}`) : null;
+  let defVal = null;
+  if (type === 'price')  defVal = $('sched-default-price')?.value || null;
+  if (type === 'status') defVal = $('sched-status-val')?.value || 'ACTIVE';
+  if (type.startsWith('tags')) defVal = $('sched-tags-val')?.value || '';
+  const items = [...document.querySelectorAll('#sched-prod-list .sched-prod-item')];
+  items.forEach(item => {
+    const { p, v } = getVar(item.dataset.vid); if (!p || !v) return;
+    const overPrice = $(`sprice-${item.dataset.vid}`)?.value || null;
+    S.schedules.push({ id:crypto.randomUUID(), name, productId:item.dataset.pid, variantId:item.dataset.vid, productTitle:p.title, variantTitle:v.title||'Default', runAt:runAt.toISOString(), revertAt:revert&&revertAt&&!isNaN(revertAt.getTime())?revertAt.toISOString():null, type, value:type==='price'?(overPrice||defVal):defVal, original:{ price:v.price, status:p.status, tags:clone(p.tags||[]) }, state:'queued' });
+    const task = S.schedules[S.schedules.length - 1];
+    armSchedTimer(task);
+  });
+  updateSchedBadge(); renderSchedList(); renderTable();
+  closeModal('m-sched');
+  toast(`"${name}" scheduled for ${date} ${time}.`);
+}
+
+function armSchedTimer(s) {
+  if (S.timers.has(s.id)) clearTimeout(S.timers.get(s.id));
+  const ms = new Date(s.runAt) - Date.now(); if (ms < 0) return;
+  S.timers.set(s.id, setTimeout(() => runSchedTask(s.id, false), ms));
+}
+
+async function runSchedTask(id, isRevert) {
+  const s = S.schedules.find(x => x.id === id); if (!s) return;
+  const { p, v } = getVar(s.variantId); if (!p || !v) return;
+  const product = {}, variants = {};
+  if (isRevert) { if (s.original.status) product.status = s.original.status; if (s.original.price) variants[s.variantId] = { id:s.variantId, price:s.original.price }; s.state = 'reverted'; }
+  else { if (s.type==='price'&&s.value) variants[s.variantId]={id:s.variantId,price:s.value}; if (s.type==='status'&&s.value) product.status=s.value; if (s.type==='tags_add'&&s.value){s.value.split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>{if(!p.tags.includes(t))p.tags.push(t);});product.tags=clone(p.tags);} if (s.type==='tags_remove'&&s.value){p.tags=p.tags.filter(t=>!s.value.split(',').map(x=>x.trim()).includes(t));product.tags=clone(p.tags);} s.state='running'; }
+  if (!S.demo) { try { await apiPost('/api/save-product',{productId:s.productId,product,variants,metafields:[]}); } catch(e) { toast('Schedule error: '+e.message); } }
+  if (!isRevert && s.revertAt) { const ms = new Date(s.revertAt) - Date.now(); if (ms > 0) setTimeout(() => runSchedTask(id, true), ms); }
+  else if (!isRevert) s.state = 'done';
+  renderSchedList(); renderTable();
+}
+
+function cancelSched(id) {
+  if (S.timers.has(id)) clearTimeout(S.timers.get(id));
+  S.schedules = S.schedules.filter(s => s.id !== id);
+  updateSchedBadge(); renderSchedList(); renderTable();
+  toast('Task cancelled.');
+}
+
+function updateSchedBadge() {
+  const n = S.schedules.filter(s => s.state === 'queued').length;
+  const b = $('sched-count'); b.textContent = n; b.classList.toggle('hidden', !n);
+}
+
+function renderSchedList() {
+  updateSchedBadge();
+  const el = $('sched-list');
+  if (!S.schedules.length) { el.innerHTML = '<p class="empty-msg">No scheduled tasks yet.</p>'; return; }
+  const sorted = clone(S.schedules).sort((a,b) => new Date(b.runAt) - new Date(a.runAt));
+  el.innerHTML = sorted.map(s => {
+    const past = new Date(s.runAt) < new Date();
+    const tl = { price:'Price change', status:'Status change', tags_add:'Add tags', tags_remove:'Remove tags' }[s.type] || s.type;
+    return `<div class="sched-card">
+<div class="sched-card-top">
+<div><div class="sched-card-name">${esc(s.name)}</div><div class="sched-card-meta"><span>${tl}</span>${s.value?`<span>· ${esc(String(s.value))}</span>`:''}<span>· ${esc(s.state)}</span>${s.revertAt?`<span class="revert-tag">↺ auto-revert</span>`:''}</div></div>
+<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="sched-card-time${past||s.state!=='queued'?' done':''}">${fmt(s.runAt)}</span><button class="btn-ghost sm sched-cancel" data-id="${s.id}">Cancel</button></div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:4px"><span style="padding:2px 8px;background:var(--s2);border:1px solid var(--b1);border-radius:3px;font-size:11px;color:var(--t2);font-family:var(--mono)">${esc(s.productTitle)} — ${esc(s.variantTitle)}</span></div>
+</div>`;
+  }).join('');
+  el.querySelectorAll('.sched-cancel').forEach(btn => btn.addEventListener('click', () => cancelSched(btn.dataset.id)));
+}
+
+function exportSchedJSON() {
+  downloadText(JSON.stringify(S.schedules, null, 2), `bulkedit-schedule-${Date.now()}.json`);
+  toast('Schedule exported.');
+}
+function importSchedFile(file) {
+  const r = new FileReader();
+  r.onload = () => { try { const imp = JSON.parse(r.result); if (!Array.isArray(imp)) throw 0; S.schedules = imp; S.schedules.forEach(s => { if (s.state==='queued') armSchedTimer(s); }); renderSchedList(); toast(`${imp.length} task${imp.length!==1?'s':''} imported.`); } catch { toast('Invalid JSON.'); } };
+  r.readAsText(file);
+}
+
+/* ─── EXPORT ──────────────────────────────── */
+const EX_FIELDS = ['id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
+const EX_LABELS = { id:'ID', title:'Title', status:'Status', vendor:'Vendor', tags:'Tags', variant:'Variant', sku:'SKU', price:'Price', compareAtPrice:'Compare at', inventoryQuantity:'Inventory' };
+
+function initExportFields() {
+  const el = $('export-field-list'); if (!el) return;
+  el.innerHTML = EX_FIELDS.map(f =>
+    `<label class="field-chip${S.exportFields.includes(f)?' on':''}"><input type="checkbox" data-ef="${f}" ${S.exportFields.includes(f)?'checked':''}>${EX_LABELS[f]||f}</label>`
+  ).join('');
+  el.querySelectorAll('input[data-ef]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const f = cb.dataset.ef;
+      if (cb.checked) { if (!S.exportFields.includes(f)) S.exportFields.push(f); }
+      else S.exportFields = S.exportFields.filter(x => x !== f);
+      cb.closest('.field-chip').classList.toggle('on', cb.checked);
+      updateExportPreview();
+    });
+  });
+  updateExportPreview();
+}
+
+function exVal(p, v, f) {
+  if (f==='tags') return (p.tags||[]).join('|');
+  if (f==='variant') return v.title||'Default';
+  if (f==='sku') return v.sku||'';
+  if (f==='price') return v.price||'';
+  if (f==='compareAtPrice') return v.compareAtPrice||'';
+  if (f==='inventoryQuantity') return String(v.inventoryQuantity??'');
+  return String(p[f]??'');
+}
+function buildCSV() {
+  const rows = flatRows();
+  return [S.exportFields.join(','), ...rows.map(({ p, v }) =>
+    S.exportFields.map(f => { const val = exVal(p,v,f); return val.includes(',')||val.includes('"') ? `"${val.replace(/"/g,'""')}"` : val; }).join(',')
+  )].join('\n');
+}
+function buildJSON() {
+  return JSON.stringify(flatRows().map(({ p, v }) => { const o={}; S.exportFields.forEach(f => o[f]=exVal(p,v,f)); return o; }), null, 2);
+}
+function updateExportPreview() {
+  const pre = $('export-preview'); if (!pre) return;
+  const rows = flatRows().slice(0,3);
+  pre.textContent = [S.exportFields.join(','), ...rows.map(({ p, v }) =>
+    S.exportFields.map(f => { const val = exVal(p,v,f); return val.includes(',')?`"${val}"`:val; }).join(',')
+  )].join('\n') + (flatRows().length > 3 ? `\n… (${flatRows().length} total rows)` : '');
+}
+
+/* ─── BOOT ────────────────────────────────── */
+function boot() {
+  /* Connect screen */
+  $('c-oauth-btn').addEventListener('click', () => showStep('c-oauth'));
+  $('c-token-btn').addEventListener('click', () => showStep('c-token'));
+  $('c-demo-btn').addEventListener('click',  loadDemoMode);
+  $('c-oauth-go').addEventListener('click',  startOAuth);
+  $('c-token-go').addEventListener('click',  connectWithToken);
+  document.querySelectorAll('.c-back').forEach(btn => btn.addEventListener('click', () => showStep('c-choose')));
+  $('f-shop').addEventListener('keydown',  e => { if (e.key==='Enter') connectWithToken(); });
+  $('f-token').addEventListener('keydown', e => { if (e.key==='Enter') connectWithToken(); });
+
+  /* Topbar */
+  $('btn-undo').addEventListener('click',       undo);
+  $('btn-redo').addEventListener('click',       redo);
+  $('btn-disconnect').addEventListener('click', disconnect);
+  $('btn-demo-exit').addEventListener('click',  disconnect);
+  $('btn-save').addEventListener('click',       openSaveModal);
+
+  /* Search */
+  $('search').addEventListener('input', e => {
+    S.searchQ = e.target.value.trim(); renderTable();
+    if (!S.demo && S.searchQ.length > 2) { clearTimeout(window._srt); window._srt = setTimeout(() => loadProducts(S.searchQ), 350); }
+  });
+  $('search').addEventListener('focus', () => { if (S.searchQ) buildSuggestions(); });
+  $('search-suggest').addEventListener('mousedown', e => {
+    const item = e.target.closest('.suggest-item'); if (!item) return;
+    $('search').value = item.dataset.val; S.searchQ = item.dataset.val.toLowerCase();
+    $('search-suggest').classList.remove('open'); renderTable();
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('.search-box')) $('search-suggest').classList.remove('open'); });
+
+  /* Filters */
+  document.querySelectorAll('.filter').forEach(btn => btn.addEventListener('click', () => setFilter(btn.dataset.f)));
+
+  /* Tabs */
+  document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+  /* Select all */
+  $('chk-all').addEventListener('change', e => toggleAllRows(e.target.checked));
+
+  /* Undo hint bar */
+  $('undo-hint-undo').addEventListener('click', undo);
+  $('undo-hint-redo').addEventListener('click', redo);
+
+  /* Bulk bar */
+  $('bulk-status-btn').addEventListener('click', () => openBulkModal('status'));
+  $('bulk-price-btn').addEventListener('click',  () => openBulkModal('price'));
+  $('bulk-tags-btn').addEventListener('click',   () => openBulkModal('tags'));
+  $('bulk-sched-btn').addEventListener('click',  () => openSchedModal('bulk'));
+
+  /* Bulk modal */
+  $('m-bulk-apply').addEventListener('click', applyBulkModal);
+
+  /* Save/review modal */
+  $('m-save-confirm').addEventListener('click',    confirmSave);
+  $('btn-dl-recap').addEventListener('click',      manualDownloadRecap);
+
+  /* Schedule modal */
+  $('btn-new-sched').addEventListener('click',         () => openSchedModal('new'));
+  $('btn-export-sched').addEventListener('click',      exportSchedJSON);
+  $('btn-import-sched-trigger').addEventListener('click', () => $('btn-import-sched').click());
+  $('btn-import-sched').addEventListener('change',     e => e.target.files[0] && importSchedFile(e.target.files[0]));
+  $('sched-type').addEventListener('change',           renderSchedValueFields);
+  $('sched-revert').addEventListener('change',         () => $('sched-revert-wrap').classList.toggle('hidden', !$('sched-revert').checked));
+  $('m-sched-confirm').addEventListener('click',       confirmSched);
+
+  /* Export */
+  $('btn-dl-csv').addEventListener('click',   () => { downloadText(buildCSV(), `shopify-export-${Date.now()}.csv`); toast('CSV downloaded.'); });
+  $('btn-dl-json').addEventListener('click',  () => { downloadText(buildJSON(), `shopify-export-${Date.now()}.json`); toast('JSON downloaded.'); });
+  $('btn-copy-csv').addEventListener('click', () => { navigator.clipboard?.writeText(buildCSV()).then(()=>toast('CSV copied.')).catch(()=>toast('Clipboard not available.')); });
+
+  /* Generic modal close — data-close attribute */
+  document.addEventListener('click', e => {
+    const closeId = e.target.closest('[data-close]')?.dataset.close;
+    if (closeId) { closeModal(closeId); return; }
+    // close if clicking overlay background
+    if (e.target.classList.contains('overlay')) closeModal(e.target.id);
+  });
+
+  /* Keyboard */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') ['m-bulk','m-save','m-sched'].forEach(id => closeModal(id));
+  });
+
+  /* Table events */
+  bindTableEvents();
+
+  /* OAuth callback — reads ?shop=&token= from URL */
+  (function checkOAuthCallback() {
+    const p = new URLSearchParams(window.location.search);
+    const shop = p.get('shop'), token = p.get('token');
+    if (shop && token) {
+      window.history.replaceState({}, '', '/');
+      S.shop  = decodeURIComponent(shop);
+      S.token = decodeURIComponent(token);
+      S.demo  = false;
+      showScreen('s-loading'); $('loading-msg').textContent = 'Connecting to your store…';
+      apiPost('/api/test').then(t => afterConnect(t.shop.name, false)).catch(e => { showScreen('s-connect'); toast(e.message); });
     }
-  }
-  function applyDefaultSchedPrice(v) { if(!v)return; document.querySelectorAll('[id^="spriceinp-"]').forEach(inp=>{if(!inp.value)inp.placeholder=v;}); }
-  function confirmSchedule() {
-    const name=$('sched-name').value.trim()||'Scheduled task';
-    const date=$('sched-date').value; const time=$('sched-time').value||'09:00';
-    const type=$('sched-type').value;
-    if(!date) return toast('Please set a date.');
-    const runAt=new Date(`${date}T${time}`);
-    if(isNaN(runAt.getTime())||runAt<new Date()) return toast('Date must be in the future.');
-    const items=[...document.querySelectorAll('#sched-prod-list .sched-prod-item')];
-    const targets=items.map(item=>({productId:item.dataset.pid,variantId:item.dataset.vid,overridePrice:document.getElementById(`spriceinp-${item.dataset.vid}`)?.value||null}));
-    const revert=$('sched-revert').checked;
-    const revertAt=revert?new Date(`${$('sched-revert-date').value}T${$('sched-revert-time').value}`):null;
-    let value=null;
-    if(type==='price') value=$('sched-default-price')?.value||null;
-    if(type==='status') value=$('sched-status-val')?.value||'ACTIVE';
-    if(type==='tags_add'||type==='tags_remove') value=$('sched-tags-val')?.value||'';
-    targets.forEach(({productId,variantId,overridePrice})=>{
-      const{p,v}=getVariantById(variantId);if(!p||!v)return;
-      const action={id:crypto.randomUUID(),name,productId,variantId,productTitle:p.title,variantTitle:v.title||'Default',runAt:runAt.toISOString(),revertAt:revert&&revertAt&&!isNaN(revertAt.getTime())?revertAt.toISOString():null,type,value:type==='price'?(overridePrice||value):value,original:{price:v.price,status:p.status,tags:[...(p.tags||[])]},state:'queued'};
-      schedules.push(action);armTimer(action);
-    });
-    updateSchedBadge();closeScheduleModal();render();toast(`"${name}" scheduled for ${date} ${time}.`);
-  }
-  function armTimer(s){if(timers.has(s.id))clearTimeout(timers.get(s.id));const ms=new Date(s.runAt)-new Date();if(ms<0)return;timers.set(s.id,setTimeout(()=>runSchedule(s.id,false),ms));}
-  async function runSchedule(id,isRevert){
-    const s=schedules.find(x=>x.id===id);if(!s)return;
-    const{p,v}=getVariantById(s.variantId);if(!p||!v)return;
-    const product={},variants={};
-    if(isRevert){if(s.original.status)product.status=s.original.status;if(s.original.price)variants[s.variantId]={id:s.variantId,price:s.original.price};s.state='reverted';}
-    else{if(s.type==='price'&&s.value)variants[s.variantId]={id:s.variantId,price:s.value};if(s.type==='status'&&s.value)product.status=s.value;if(s.type==='tags_add'&&s.value){s.value.split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>{if(!p.tags.includes(t))p.tags.push(t);});product.tags=[...p.tags];}if(s.type==='tags_remove'&&s.value){p.tags=p.tags.filter(t=>!s.value.split(',').map(x=>x.trim()).includes(t));product.tags=[...p.tags];}s.state='running';}
-    const c={productId:s.productId,product,variants,metafields:[]};
-    if(!session.demo){try{const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);await apiPost('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});}catch(e){toast('Schedule error: '+e.message);}}
-    if(!isRevert&&s.revertAt){const ms=new Date(s.revertAt)-new Date();if(ms>0)setTimeout(()=>runSchedule(id,true),ms);}else if(!isRevert)s.state='done';
-    renderScheduleTab();render();
-  }
-  function cancelSchedule(id){if(timers.has(id))clearTimeout(timers.get(id));schedules=schedules.filter(s=>s.id!==id);updateSchedBadge();renderScheduleTab();render();toast('Cancelled.');}
-  function updateSchedBadge(){const n=schedules.filter(s=>s.state==='queued').length;const b=$('tab-sched-count');b.textContent=n;b.style.display=n?'':'none';}
-  function renderScheduleTab(){
-    updateSchedBadge();const el=$('scheduleList');
-    if(!schedules.length){el.className='sched-list empty';el.textContent='No scheduled actions yet.';return;}
-    el.className='sched-list';
-    const sorted=[...schedules].sort((a,b)=>new Date(b.runAt)-new Date(a.runAt));
-    el.innerHTML=sorted.map(s=>{
-      const isPast=new Date(s.runAt)<new Date();
-      const typeLabel={price:'Price change',status:'Status change',tags_add:'Add tags',tags_remove:'Remove tags'}[s.type]||s.type;
-      return`<div class="sched-item"><div class="sched-item-top"><div><div class="sched-item-name">${esc(s.name)}</div><div class="sched-item-meta"><span>${typeLabel}</span>${s.value?`<span>· ${esc(String(s.value))}</span>`:''}<span>· ${esc(s.state)}</span>${s.revertAt?`<span class="revert-tag">↺ auto-revert ${new Date(s.revertAt).toLocaleDateString()}</span>`:''}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px"><span class="sched-item-time${isPast||s.state!=='queued'?' done':''}">${fmt(s.runAt)}</span><button class="btn-ghost xs danger" onclick="App.cancelSchedule('${s.id}')">Cancel</button></div></div><div class="sched-item-prods"><span class="sched-prod-tag">${esc(s.productTitle)} — ${esc(s.variantTitle)}</span></div></div>`;
-    }).join('');
-  }
-  function exportScheduleJSON(){const blob=new Blob([JSON.stringify(schedules,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`bulkedit-schedule-${Date.now()}.json`;a.click();toast('Exported.');}
-  function importScheduleFile(file){const r=new FileReader();r.onload=()=>{try{const imp=JSON.parse(r.result);if(!Array.isArray(imp))throw 0;schedules=imp;schedules.forEach(s=>{if(s.state==='queued')armTimer(s);});renderScheduleTab();toast(`${imp.length} schedule${imp.length!==1?'s':''} imported.`);}catch{toast('Invalid JSON.');}};r.readAsText(file);}
+  })();
+}
 
-  /* ─── EXPORT ─────────────────────────────────────── */
-  const EX_ALL=['id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
-  const EX_LABELS={id:'ID',title:'Title',status:'Status',vendor:'Vendor',tags:'Tags',variant:'Variant',sku:'SKU',price:'Price',compareAtPrice:'Compare at',inventoryQuantity:'Inventory'};
-  function initExportFields(){
-    const el=$('export-fields');if(!el)return;
-    el.innerHTML=EX_ALL.map(f=>`<label class="export-field${exportFields.includes(f)?' on':''}"><input type="checkbox" ${exportFields.includes(f)?'checked':''} value="${f}" onchange="App.toggleExportField('${f}',this.checked,this.closest('.export-field'))" />${EX_LABELS[f]||f}</label>`).join('');
-    updateExportPreview();
-  }
-  function toggleExportField(f,checked,el){if(checked){if(!exportFields.includes(f))exportFields.push(f);}else exportFields=exportFields.filter(x=>x!==f);el.classList.toggle('on',checked);updateExportPreview();}
-  function getExportValue(p,v,f){if(f==='tags')return(p.tags||[]).join('|');if(f==='variant')return v.title||'Default';if(f==='sku')return v.sku||'';if(f==='price')return v.price||'';if(f==='compareAtPrice')return v.compareAtPrice||'';if(f==='inventoryQuantity')return String(v.inventoryQuantity??'');return String(p[f]??'');}
-  function buildCSV(){return[exportFields.join(','),...flatRows().map(({p,v})=>exportFields.map(f=>{const val=getExportValue(p,v,f);return val.includes(',')||val.includes('"')?`"${val.replace(/"/g,'""')}"`:`${val}`;}).join(','))].join('\n');}
-  function buildJSON(){return JSON.stringify(flatRows().map(({p,v})=>{const o={};exportFields.forEach(f=>o[f]=getExportValue(p,v,f));return o;}),null,2);}
-  function updateExportPreview(){const pre=$('export-preview');if(!pre)return;const rows=flatRows().slice(0,3);pre.textContent=[exportFields.join(','),...rows.map(({p,v})=>exportFields.map(f=>{const val=getExportValue(p,v,f);return val.includes(',')?`"${val}"`:val;}).join(','))].join('\n')+(flatRows().length>3?`\n… (${flatRows().length} total rows)`:'');}
-  function doExport(fmt){const data=fmt==='csv'?buildCSV():buildJSON();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:fmt==='csv'?'text/csv':'application/json'}));a.download=`shopify-products-${Date.now()}.${fmt}`;a.click();toast(`${fmt.toUpperCase()} downloaded.`);}
-  function copyExport(){navigator.clipboard?.writeText(buildCSV()).then(()=>toast('CSV copied.')).catch(()=>toast('Clipboard not available.'));}
-
-  /* ─── BOOT ───────────────────────────────────────── */
-  function boot() {
-    // Connect screen
-    $('oauthBtn').onclick      = showOAuthForm;
-    $('tokenModeBtn').onclick  = showTokenForm;
-    $('demoBtn').onclick       = loadDemo;
-    $('oauthSubmitBtn').onclick = startOAuth;
-    $('oauthBackBtn').onclick  = showModes;
-    $('connectBtn').onclick    = connect;
-    $('tokenBackBtn').onclick  = showModes;
-
-    // Enter key on OAuth form
-    $('inp-shop-oauth').addEventListener('keydown', e => { if (e.key === 'Enter') startOAuth(); });
-    $('inp-shop').addEventListener('keydown', e => { if (e.key === 'Enter') connect(); });
-    $('disconnectBtn').onclick = disconnect;
-    $('btn-undo').onclick = undo;
-    $('btn-redo').onclick = redo;
-    $('chk-all').onchange = e => toggleAllRows(e.target.checked);
-    $('search').oninput = e => { searchQuery = e.target.value.trim(); render(); if(!session.demo&&searchQuery.length>2){clearTimeout(window._st);window._st=setTimeout(()=>loadProducts(searchQuery),350);} };
-    $('search').onfocus = () => { if(searchQuery) buildSuggestions(); };
-    document.addEventListener('click', e => { if(!e.target.closest('.search-wrap')) $('suggestions').classList.remove('open'); });
-    document.querySelectorAll('.filter-chip').forEach(btn => { btn.onclick = () => setFilter(btn.dataset.filter); });
-    document.querySelectorAll('.tab').forEach(btn => { btn.onclick = () => switchTab(btn.dataset.tab); });
-    $('exportSchedule').onclick = exportScheduleJSON;
-    $('importScheduleBtn').onclick = () => $('importSchedule').click();
-    $('importSchedule').onchange = e => e.target.files[0] && importScheduleFile(e.target.files[0]);
-    document.addEventListener('keydown', e => { if(e.key==='Escape'){closeReviewModal();closeScheduleModal();} });
-  }
-
-  function showModes() {
-    $('connect-modes').style.display = 'flex';
-    $('oauth-form').style.display    = 'none';
-    $('token-form').style.display    = 'none';
-  }
-  function showOAuthForm() {
-    $('connect-modes').style.display = 'none';
-    $('oauth-form').style.display    = 'flex';
-    $('token-form').style.display    = 'none';
-    setTimeout(() => $('inp-shop-oauth')?.focus(), 50);
-  }
-  function showTokenForm() {
-    $('connect-modes').style.display = 'none';
-    $('oauth-form').style.display    = 'none';
-    $('token-form').style.display    = 'flex';
-    setTimeout(() => $('inp-shop')?.focus(), 50);
-  }
-
-  function startOAuth() {
-    const shop = ($('inp-shop-oauth') || $('inp-shop')).value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
-    if (!shop || !shop.includes('.myshopify.com')) return toast('Enter your store domain (e.g. your-store.myshopify.com)');
-    window.location.href = `/auth/start?shop=${encodeURIComponent(shop)}`;
-  }
-
-  return {
-    connect, loadDemo, disconnect, goConnect,
-    startOAuth, showModes, showOAuthForm, showTokenForm,
-    markProduct, markVariant, markMetafield,
-    cycleStatus, removeTag, addTag, addMetafield, removeMetafield,
-    toggleRow, toggleAllRows, bulkStatus, bulkAddTag, bulkRemoveTag, bulkSetPrice,
-    undo, redo,
-    openReviewModal, closeReviewModal, confirmPublish, clearChanges,
-    useSuggestion, setFilter, switchTab,
-    openScheduleModal, closeScheduleModal, renderSchedTypeFields, toggleRevert,
-    applyDefaultSchedPrice, confirmSchedule, cancelSchedule,
-    toggleExportField, doExport, copyExport,
-    boot
-  };
-})();
-
-document.addEventListener('DOMContentLoaded', () => App.boot());
-
-/* ═══════════════════════════════════════════════════════
-   OAuth boot — reads ?shop=...&token=... from URL after
-   Shopify redirects back via /auth/callback
-═══════════════════════════════════════════════════════ */
-(function checkOAuthCallback() {
-  const params = new URLSearchParams(window.location.search);
-  const shop  = params.get('shop');
-  const token = params.get('token');
-  if (shop && token) {
-    // Clean URL immediately — token should never sit in browser history
-    window.history.replaceState({}, '', '/');
-    // Auto-connect
-    document.addEventListener('DOMContentLoaded', () => {
-      // Pre-fill and trigger connect
-      const shopInput  = document.getElementById('inp-shop');
-      const tokenInput = document.getElementById('inp-token');
-      if (shopInput && tokenInput) {
-        shopInput.value  = decodeURIComponent(shop);
-        tokenInput.value = decodeURIComponent(token);
-        // Small delay to let App.boot() finish
-        setTimeout(() => App.connect(), 100);
-      }
-    });
-  }
-})();
+document.addEventListener('DOMContentLoaded', boot);
