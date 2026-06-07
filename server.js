@@ -49,22 +49,7 @@ app.use((req, res, next) => {
 });
 
 app.use(helmet({
-  contentSecurityPolicy: {
-    useDefaults: true,
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      imgSrc: ["'self'", 'data:', 'https://images.unsplash.com', 'https://cdn.shopify.com'],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      objectSrc: ["'none'"],
-      frameAncestors: ["'none'"],
-      formAction: ["'self'"],
-      baseUri: ["'self'"],
-      upgradeInsecureRequests: IS_PROD ? [] : null
-    }
-  },
+  contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
   referrerPolicy: { policy: 'no-referrer' },
   hsts: IS_PROD ? { maxAge: 15552000, includeSubDomains: true, preload: false } : false
