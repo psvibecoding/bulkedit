@@ -81,8 +81,8 @@ function rateLimit({ windowMs, max, keyFn }) {
 setInterval(() => { const n = Date.now(); for (const [k,v] of buckets) if (n > v.resetAt) buckets.delete(k); }, 60000).unref();
 
 const byIpShop     = req => `${req.ip}:${req.headers['x-shopify-shop']||'?'}`;
-const apiLimiter     = rateLimit({ windowMs: 60000,  max: 120, keyFn: byIpShop });
-const writeLimiter   = rateLimit({ windowMs: 60000,  max: 30,  keyFn: req => byIpShop(req)+':w' });
+const apiLimiter     = rateLimit({ windowMs: 60000,  max: 600, keyFn: byIpShop });
+const writeLimiter   = rateLimit({ windowMs: 60000,  max: 300, keyFn: req => byIpShop(req)+':w' });
 const authLimiter    = rateLimit({ windowMs: 60000,  max: 20,  keyFn: req => req.ip });
 const contactLimiter  = rateLimit({ windowMs: 900000, max: 5,   keyFn: req => req.ip });
 const feedbackLimiter = rateLimit({ windowMs: 3600000, max: 10, keyFn: req => req.ip });
