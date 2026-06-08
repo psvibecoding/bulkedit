@@ -150,7 +150,7 @@ async function loadProducts(q='', append=false){
   if(!append) S.pageInfo={hasNextPage:false,endCursor:null};
   setStatus(append?'Loading more…':'Loading…');
   try{
-    const r=await api('/api/products',{query:q,first:50,after:append?S.pageInfo.endCursor:null});
+    const r=await api('/api/products',{query:buildShopifyQuery(q),first:50,after:append?S.pageInfo.endCursor:null});
     const newProds=r.products.map(normProd);
     if(append){
       S.products=[...S.products,...newProds];
@@ -282,6 +282,12 @@ function ensureC(pid){ if(!S.changes[pid])S.changes[pid]={productId:pid,product:
 function prodImg(p){ return p.featuredImage?.url||null; }
 
 /* ── FILTER/SEARCH ── */
+function buildShopifyQuery(q){
+  if(!q) return '';
+  const terms=q.split(',').map(t=>t.trim()).filter(Boolean);
+  if(terms.length<=1) return q.trim();
+  return terms.map(t=>`"${t}"`).join(' OR ');
+}
 function flatRows(){ return S.products.flatMap(p=>p.variants.nodes.map(v=>({p,v}))); }
 function getFiltered(){
   const terms = S.searchQ ? S.searchQ.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean) : [];
@@ -1199,8 +1205,13 @@ function boot(){
     S.searchQ=e.target.value.trim(); renderTable();
     if(!S.demo){
       clearTimeout(window._srt);
-      if(S.searchQ.length>2)      window._srt=setTimeout(()=>loadProducts(S.searchQ),400);
-      else if(S.searchQ.length===0) loadProducts('');
+      if(S.searchQ.length>2){
+        window._srt=setTimeout(async ()=>{
+          await loadProducts(S.searchQ);
+          // Multi-term (comma) search: auto-load all pages so all matching SKUs appear
+          if(S.searchQ.includes(',') && S.pageInfo.hasNextPage) await loadAllProducts(S.searchQ);
+        }, 400);
+      } else if(S.searchQ.length===0) loadProducts('');
     }
   });
   $('search').addEventListener('focus',()=>{ if(S.searchQ)buildSuggestions(); });
