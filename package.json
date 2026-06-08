@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node build.js",
     "dev": "node server.js",
     "start": "NODE_ENV=production node server.js"
   },
@@ -11,5 +12,8 @@
     "express": "^4.19.2",
     "helmet": "^7.1.0",
     "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^4.1.1"
   }
 }
