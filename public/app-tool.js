@@ -1046,24 +1046,66 @@ function switchTab(name){
 /* ── EXPORT ── */
 const EX_ALL=['id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
 const EX_LBL={id:'ID',title:'Title',status:'Status',vendor:'Vendor',tags:'Tags',variant:'Variant',sku:'SKU',price:'Price',compareAtPrice:'Compare at',inventoryQuantity:'Inventory'};
+
+function allMfFields(){
+  const seen=new Set(), fields=[];
+  const add=(ns,key,label,ownerType)=>{
+    const k=`mf:${ns}.${key}`;
+    if(seen.has(k))return; seen.add(k);
+    fields.push({key:k, label:`${label||key} (${ns})`, ownerType});
+  };
+  for(const d of S.mfDefs||[]) add(d.namespace,d.key,d.name,d.ownerType);
+  for(const p of S.products||[]){
+    for(const m of p.metafields?.nodes||[]) add(m.namespace,m.key,m.key,'PRODUCT');
+    for(const v of p.variants?.nodes||[]) for(const m of v.metafields?.nodes||[]) add(m.namespace,m.key,m.key,'PRODUCTVARIANT');
+  }
+  return fields;
+}
+
 function initExportFields(){
   const el=$('export-field-list'); if(!el)return;
-  el.innerHTML=EX_ALL.map(f=>`<label class="field-chip${S.exportFields.includes(f)?' on':''}"><input type="checkbox" data-ef="${f}" ${S.exportFields.includes(f)?'checked':''}>${EX_LBL[f]||f}</label>`).join('');
-  el.querySelectorAll('input[data-ef]').forEach(cb=>cb.addEventListener('change',()=>{const f=cb.dataset.ef;if(cb.checked){if(!S.exportFields.includes(f))S.exportFields.push(f);}else S.exportFields=S.exportFields.filter(x=>x!==f);cb.closest('.field-chip').classList.toggle('on',cb.checked);updateExportPreview();}));
+  const mfFields=allMfFields();
+  const baseChips=EX_ALL.map(f=>`<label class="field-chip${S.exportFields.includes(f)?' on':''}"><input type="checkbox" data-ef="${esc(f)}" ${S.exportFields.includes(f)?'checked':''}>${EX_LBL[f]||f}</label>`).join('');
+  const mfChips=mfFields.length
+    ? `<span class="export-section-lbl">Metafields</span>`+mfFields.map(({key,label})=>`<label class="field-chip${S.exportFields.includes(key)?' on':''}"><input type="checkbox" data-ef="${esc(key)}" ${S.exportFields.includes(key)?'checked':''}>${esc(label)}</label>`).join('')
+    : '';
+  el.innerHTML=baseChips+mfChips;
+  el.querySelectorAll('input[data-ef]').forEach(cb=>cb.addEventListener('change',()=>{
+    const f=cb.dataset.ef;
+    if(cb.checked){if(!S.exportFields.includes(f))S.exportFields.push(f);}
+    else S.exportFields=S.exportFields.filter(x=>x!==f);
+    cb.closest('.field-chip').classList.toggle('on',cb.checked);
+    updateExportPreview();
+  }));
   updateExportPreview();
 }
+
 function exVal(p,v,f){
-  if(f==='tags')return(p.tags||[]).join('|');if(f==='variant')return v.title||'Default';
-  if(f==='sku')return v.sku||'';if(f==='price')return v.price||'';
-  if(f==='compareAtPrice')return v.compareAtPrice||'';if(f==='inventoryQuantity')return String(v.inventoryQuantity??'');
+  if(f==='tags')return(p.tags||[]).join('|');
+  if(f==='variant')return v.title||'Default';
+  if(f==='sku')return v.sku||'';
+  if(f==='price')return v.price||'';
+  if(f==='compareAtPrice')return v.compareAtPrice||'';
+  if(f==='inventoryQuantity')return String(v.inventoryQuantity??'');
+  if(f.startsWith('mf:')){
+    const nskey=f.slice(3), dot=nskey.indexOf('.');
+    const ns=nskey.slice(0,dot), key=nskey.slice(dot+1);
+    const pmf=(p.metafields?.nodes||[]).find(m=>m.namespace===ns&&m.key===key);
+    if(pmf!==undefined)return pmf.value??'';
+    const vmf=(v.metafields?.nodes||[]).find(m=>m.namespace===ns&&m.key===key);
+    return vmf?.value??'';
+  }
   return String(p[f]??'');
 }
-function buildCSV(){ return[S.exportFields.join(','),...flatRows().map(({p,v})=>S.exportFields.map(f=>{const val=exVal(p,v,f);return val.includes(',')||val.includes('"')||val.includes('\n')||val.includes('\r')?`"${val.replace(/"/g,'""')}"`:`${val}`;}).join(','))].join('\n'); }
-function buildJSON(){ return JSON.stringify(flatRows().map(({p,v})=>{const o={};S.exportFields.forEach(f=>o[f]=exVal(p,v,f));return o;}),null,2); }
+
+function exHeader(f){ return f.startsWith('mf:')?f.slice(3):f; }
+function csvQuote(val){ return val.includes(',')||val.includes('"')||val.includes('\n')||val.includes('\r')?`"${val.replace(/"/g,'""')}"`:`${val}`; }
+function buildCSV(){ return[S.exportFields.map(exHeader).join(','),...flatRows().map(({p,v})=>S.exportFields.map(f=>csvQuote(exVal(p,v,f))).join(','))].join('\n'); }
+function buildJSON(){ return JSON.stringify(flatRows().map(({p,v})=>{const o={};S.exportFields.forEach(f=>o[exHeader(f)]=exVal(p,v,f));return o;}),null,2); }
 function updateExportPreview(){
   const pre=$('export-preview'); if(!pre)return;
   const rows=flatRows().slice(0,3);
-  pre.textContent=[S.exportFields.join(','),...rows.map(({p,v})=>S.exportFields.map(f=>{const val=exVal(p,v,f);return val.includes(',')?`"${val}"`:val;}).join(','))].join('\n')+(flatRows().length>3?`\n… (${flatRows().length} total rows)`:'');
+  pre.textContent=[S.exportFields.map(exHeader).join(','),...rows.map(({p,v})=>S.exportFields.map(f=>{const val=exVal(p,v,f);return val.includes(',')?`"${val}"`:val;}).join(','))].join('\n')+(flatRows().length>3?`\n… (${flatRows().length} total rows)`:'');
 }
 
 /* ── BOOT ── */

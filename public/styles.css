@@ -192,7 +192,8 @@ input[type="checkbox"]{width:13px;height:13px;accent-color:var(--green);cursor:p
 .export-layout{padding:16px;display:flex;flex-direction:column;gap:14px}
 .card{background:var(--white);border:1px solid var(--b1);border-radius:var(--r12);padding:18px;box-shadow:var(--shadow-sm)}
 .card h3{font-size:14px;font-weight:600;margin-bottom:10px}
-.field-chips{display:flex;flex-wrap:wrap;gap:7px}
+.field-chips{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.export-section-lbl{width:100%;font-size:10px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;margin-top:4px}
 .field-chip{display:flex;align-items:center;gap:5px;padding:4px 12px;background:var(--white);border:1px solid var(--b1);border-radius:20px;font-size:12px;cursor:pointer;user-select:none;transition:all .15s}
 .field-chip:hover{border-color:var(--b3);box-shadow:var(--shadow-sm)}
 .field-chip.on{border-color:var(--green);color:var(--green);background:var(--green-bg);box-shadow:0 0 0 1px var(--green-brd)}
