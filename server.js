@@ -2,6 +2,7 @@ import express from 'express';
 import helmet from 'helmet';
 import path from 'path';
 import crypto from 'crypto';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -18,6 +19,8 @@ const SHOPIFY_CLIENT_ID   = process.env.SHOPIFY_CLIENT_ID   || '';
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET || '';
 const SHOPIFY_SCOPES      = process.env.SHOPIFY_SCOPES || 'read_products,write_products,read_inventory,write_inventory,read_collections,write_collections';
 const APP_URL             = (process.env.APP_URL || 'http://localhost:8787').replace(/\/$/, '');
+const SCHED_SECRET        = process.env.SCHED_SECRET || '';
+const SCHED_FILE          = process.env.SCHED_FILE || path.join(__dirname, 'schedules.json');
 
 // In-memory OAuth state (stateless — no DB)
 const oauthStates = new Map();
@@ -155,6 +158,119 @@ async function gql({ shop, token }, query, variables = {}) {
     return json.data;
   } finally { clearTimeout(t); }
 }
+
+// ── SCHEDULE HELPERS ─────────────────────────────────────
+function schedKey() {
+  if (!SCHED_SECRET) throw new Error('SCHED_SECRET not set. Add it to environment variables to enable scheduling.');
+  return crypto.createHash('sha256').update(SCHED_SECRET).digest();
+}
+function encryptToken(token) {
+  const iv = crypto.randomBytes(16);
+  const c = crypto.createCipheriv('aes-256-cbc', schedKey(), iv);
+  const enc = Buffer.concat([c.update(token, 'utf8'), c.final()]);
+  return iv.toString('hex') + ':' + enc.toString('hex');
+}
+function decryptToken(enc) {
+  try {
+    const [ivHex, encHex] = enc.split(':');
+    const d = crypto.createDecipheriv('aes-256-cbc', schedKey(), Buffer.from(ivHex, 'hex'));
+    return Buffer.concat([d.update(Buffer.from(encHex, 'hex')), d.final()]).toString('utf8');
+  } catch { return null; }
+}
+function readSchedules() {
+  try { return JSON.parse(fs.readFileSync(SCHED_FILE, 'utf8')); } catch { return []; }
+}
+function writeSchedules(arr) {
+  try { fs.writeFileSync(SCHED_FILE, JSON.stringify(arr)); } catch (e) { console.error('schedules write error:', e.message); }
+}
+
+// Extracted save logic shared by /api/save-product and the schedule executor
+async function execSaveProduct(session, { productId, product = {}, variants = [], metafields = [] }) {
+  const results = [];
+  if (productId && product && Object.keys(product).length) {
+    gid(productId, 'Product');
+    const input = { id: productId, ...safeProductInput(product) };
+    const d = await gql(session, `
+      mutation ProductUpdate($input: ProductInput!) {
+        productUpdate(input:$input) { product { id } userErrors { field message } }
+      }`, { input });
+    const errs = d.productUpdate.userErrors;
+    if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+    results.push({ type: 'product', id: productId });
+  }
+  if (Array.isArray(variants) && variants.length) {
+    if (variants.length > 100) throw new Error('Too many variants');
+    const byProduct = {};
+    for (const v of variants) {
+      gid(v.id, 'ProductVariant');
+      if (!byProduct[productId]) byProduct[productId] = [];
+      const inp = { id: v.id };
+      if (v.price          !== undefined) inp.price          = money(v.price, 'price');
+      if (v.compareAtPrice !== undefined) inp.compareAtPrice = money(v.compareAtPrice, 'compareAtPrice');
+      if (v.sku            !== undefined) inp.inventoryItem  = { sku: String(v.sku || '').slice(0, 255) };
+      byProduct[productId].push(inp);
+    }
+    for (const [pid, variantInputs] of Object.entries(byProduct)) {
+      const d = await gql(session, `
+        mutation VariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+          productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+            productVariants { id } userErrors { field message }
+          }
+        }`, { productId: pid, variants: variantInputs });
+      const errs = d.productVariantsBulkUpdate.userErrors;
+      if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+      results.push({ type: 'variants', count: variantInputs.length });
+    }
+  }
+  const cleanMf = safeMetafields(metafields);
+  if (cleanMf.length) {
+    const d = await gql(session, `
+      mutation MetafieldsSet($metafields:[MetafieldsSetInput!]!) {
+        metafieldsSet(metafields:$metafields) { metafields { id } userErrors { field message code } }
+      }`, { metafields: cleanMf });
+    const errs = d.metafieldsSet.userErrors;
+    if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+    results.push({ type: 'metafields', count: cleanMf.length });
+  }
+  return results;
+}
+
+async function executeSchedule(sched, schedules) {
+  sched.status = 'running';
+  writeSchedules(schedules);
+  try {
+    const token = decryptToken(sched.encToken);
+    if (!token) throw new Error('Could not decrypt token — was SCHED_SECRET changed?');
+    const session = { shop: sched.shop, token };
+    for (const c of sched.changes) {
+      const mf = (c.metafields || []).map(({ _idx, ...rest }) => rest);
+      await execSaveProduct(session, {
+        productId: c.productId,
+        product:   c.product   || {},
+        variants:  Object.values(c.variants || {}),
+        metafields: mf,
+      });
+    }
+    sched.status     = 'executed';
+    sched.executedAt = new Date().toISOString();
+    sched.encToken   = null;
+  } catch (e) {
+    sched.status = 'failed';
+    sched.error  = safeErr(e);
+  }
+  writeSchedules(schedules);
+}
+
+async function runDueSchedules() {
+  if (!SCHED_SECRET) return;
+  const schedules = readSchedules();
+  const due = schedules.filter(s => s.status === 'pending' && new Date(s.scheduledFor) <= new Date());
+  if (!due.length) return;
+  console.log(`[scheduler] Running ${due.length} due schedule(s)`);
+  for (const s of due) await executeSchedule(s, schedules);
+}
+
+setInterval(() => runDueSchedules().catch(e => console.error('[scheduler]', e.message)), 60_000).unref();
 
 // Serve /app
 app.get('/app', (req, res) => {
@@ -409,6 +525,84 @@ app.post('/api/collection-remove', apiLimiter, writeLimiter, async (req, res) =>
     const errs = d.collectionRemoveProducts.userErrors;
     if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
     res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+// ── SCHEDULE API ─────────────────────────────────────────
+
+app.post('/api/schedule/create', apiLimiter, (req, res) => {
+  try {
+    if (!SCHED_SECRET) throw new Error('Scheduling not enabled. Set SCHED_SECRET in environment variables.');
+    const { shop, token } = getSession(req);
+    const { scheduledFor, label, changes } = req.body || {};
+    if (!scheduledFor) throw new Error('Missing scheduledFor');
+    const dt = new Date(scheduledFor);
+    if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
+    if (dt <= new Date()) throw new Error('Scheduled time must be in the future');
+    if (!Array.isArray(changes) || !changes.length || changes.length > 200) throw new Error('Invalid changes');
+    const id = crypto.randomBytes(12).toString('hex');
+    const sched = {
+      id, shop,
+      createdAt: new Date().toISOString(),
+      scheduledFor: dt.toISOString(),
+      label: String(label || `${changes.length} product${changes.length !== 1 ? 's' : ''}`).slice(0, 120),
+      changes,
+      encToken: encryptToken(token),
+      status: 'pending',
+      executedAt: null,
+      error: null,
+    };
+    const schedules = readSchedules();
+    schedules.push(sched);
+    writeSchedules(schedules);
+    const { encToken: _, ...safe } = sched;
+    res.json({ ok: true, schedule: safe });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+app.post('/api/schedule/list', apiLimiter, (req, res) => {
+  try {
+    const { shop } = getSession(req);
+    const schedules = readSchedules();
+    const mine = schedules
+      .filter(s => s.shop === shop)
+      .map(({ encToken: _, ...rest }) => rest)
+      .sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor));
+    res.json({ ok: true, schedules: mine });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+app.post('/api/schedule/cancel', apiLimiter, (req, res) => {
+  try {
+    const { shop } = getSession(req);
+    const { id } = req.body || {};
+    if (!id) throw new Error('Missing id');
+    const schedules = readSchedules();
+    const sched = schedules.find(s => s.id === id && s.shop === shop);
+    if (!sched) throw new Error('Schedule not found');
+    if (!['pending', 'failed'].includes(sched.status)) throw new Error('Cannot cancel this schedule');
+    sched.status = 'cancelled';
+    sched.encToken = null;
+    writeSchedules(schedules);
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+app.post('/api/schedule/run', apiLimiter, writeLimiter, async (req, res) => {
+  try {
+    if (!SCHED_SECRET) throw new Error('Scheduling not enabled.');
+    const { shop } = getSession(req);
+    const { id } = req.body || {};
+    if (!id) throw new Error('Missing id');
+    const schedules = readSchedules();
+    const sched = schedules.find(s => s.id === id && s.shop === shop);
+    if (!sched) throw new Error('Schedule not found');
+    if (!['pending', 'failed'].includes(sched.status)) throw new Error('Schedule cannot be run');
+    if (!sched.encToken) throw new Error('Token unavailable — please recreate this schedule');
+    sched.status = 'pending'; sched.error = null;
+    await executeSchedule(sched, schedules);
+    const { encToken: _, ...safe } = sched;
+    res.json({ ok: true, schedule: safe });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 

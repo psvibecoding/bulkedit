@@ -106,14 +106,10 @@ async function afterOAuth(shop, token){
     $('store-name').textContent = t.shop.name;
     $('loading-msg').textContent='Loading products…';
     await Promise.all([ loadProducts(), loadMfDefs() ]);
-    loadSchedules();
-    updateSchedBadge();
-    setTimeout(checkSchedules, 2000);
     showScreen('s-app');
+    loadSchedules();
     const mfMsg = S.mfDefs.length ? ` · ${S.mfDefs.length} metafield definition${S.mfDefs.length!==1?'s':''} loaded` : '';
-    const schedPending = S.schedules.filter(s=>s.status==='pending').length;
-    const schedMsg = schedPending ? ` · ${schedPending} pending schedule${schedPending!==1?'s':''}` : '';
-    toast(`Connected${mfMsg}${schedMsg}. Session only — no data stored.`);
+    toast(`Connected${mfMsg}. Session only — no data stored.`);
   }catch(e){ showScreen('s-connect'); toast(e.message); }
 }
 
@@ -483,7 +479,6 @@ function getSelPids(){ const ids=new Set(); S.selectedVids.forEach(vid=>{const{p
 function updateSaveBtn(){
   const n=Object.keys(S.changes).length;
   $('btn-save').disabled=!n; $('save-count').textContent=n;
-  if($('btn-schedule'))$('btn-schedule').disabled=!n;
   if(n){
     setStatus(`${n} unsaved change${n!==1?'s':''}`, 'dirty');
     Object.keys(S.changes).forEach(pid=>{
@@ -722,116 +717,100 @@ function buildRecap(payloads){
 function dlText(text,filename){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'})); a.download=filename; a.click(); }
 function manualRecap(){ dlText(buildRecap(Object.values(S.changes)),`bulkedit-recap-${Date.now()}.txt`); }
 
-/* ── SCHEDULES ── */
-const SCHED_KEY=()=>`bulkedit_sched_${S.shop}`;
-
-function loadSchedules(){
-  try{ S.schedules=JSON.parse(localStorage.getItem(SCHED_KEY())||'[]'); }
-  catch{ S.schedules=[]; }
-}
-function saveSchedules(){
-  localStorage.setItem(SCHED_KEY(),JSON.stringify(S.schedules));
-  updateSchedBadge();
-}
+/* ── SCHEDULES (server-side) ── */
 function updateSchedBadge(){
-  const n=(S.schedules||[]).filter(s=>s.shop===S.shop&&s.status==='pending').length;
-  const badge=$('sched-badge'); if(!badge)return;
-  badge.textContent=n; badge.style.display=n?'inline':'none';
+  const n=(S.schedules||[]).filter(s=>s.status==='pending').length;
+  const btn=$('btn-schedule'); if(!btn)return;
+  btn.textContent=n?`Scheduled (${n})`:'Schedule edit';
+}
+
+async function loadSchedules(){
+  if(S.demo){S.schedules=[];return;}
+  try{ const r=await api('/api/schedule/list',{}); S.schedules=r.schedules||[]; }
+  catch{ S.schedules=[]; }
+  updateSchedBadge();
 }
 
 function openScheduleModal(){
-  const n=Object.keys(S.changes).length;
-  if(!n)return toast('No staged changes to schedule.');
-  $('m-sched-sub').textContent=`${n} product${n!==1?'s':''} with staged changes`;
-  $('m-sched-label').value='';
-  const d=new Date(); d.setDate(d.getDate()+1); d.setHours(9,0,0,0);
-  $('m-sched-dt').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
-  $('m-sched-preview').innerHTML=Object.values(S.changes).map(c=>{
-    const title=getProd(c.productId)?.title||c.productId;
-    const parts=[];
-    const fields=Object.keys(c.product||{});
-    if(fields.length)parts.push(fields.join(', '));
-    const varCount=Object.keys(c.variants||{}).length;
-    if(varCount)parts.push(`${varCount} variant${varCount!==1?'s':''}`);
-    const mfCount=(c.metafields||[]).length;
-    if(mfCount)parts.push(`${mfCount} metafield${mfCount!==1?'s':''}`);
-    return `<div class="sched-prev-row"><span class="sched-prod">${esc(title)}</span><span class="sched-fields">${esc(parts.join(' · ')||'—')}</span></div>`;
-  }).join('');
+  const hasChanges=Object.keys(S.changes).length>0;
+  if(hasChanges){
+    // Show create form
+    $('m-sched-create').style.display='';
+    $('m-sched-jobs').style.display='none';
+    $('m-sched-confirm').style.display='';
+    $('m-bulk-title2').textContent='Schedule edit';
+    $('m-sched-sub').textContent=`${Object.keys(S.changes).length} product${Object.keys(S.changes).length!==1?'s':''} with staged changes`;
+    $('m-sched-label').value='';
+    const d=new Date(); d.setDate(d.getDate()+1); d.setHours(9,0,0,0);
+    $('m-sched-dt').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    $('m-sched-preview').innerHTML=Object.values(S.changes).map(c=>{
+      const title=getProd(c.productId)?.title||c.productId;
+      const parts=[];
+      const fields=Object.keys(c.product||{});
+      if(fields.length)parts.push(fields.join(', '));
+      const varCount=Object.keys(c.variants||{}).length;
+      if(varCount)parts.push(`${varCount} variant${varCount!==1?'s':''}`);
+      const mfCount=(c.metafields||[]).length;
+      if(mfCount)parts.push(`${mfCount} metafield${mfCount!==1?'s':''}`);
+      return `<div class="sched-prev-row"><span class="sched-prod">${esc(title)}</span><span class="sched-fields">${esc(parts.join(' · ')||'—')}</span></div>`;
+    }).join('');
+  } else {
+    // No staged changes — show jobs list
+    $('m-sched-create').style.display='none';
+    $('m-sched-jobs').style.display='';
+    $('m-sched-confirm').style.display='none';
+    $('m-bulk-title2').textContent='Scheduled jobs';
+    $('m-sched-sub').textContent=S.shop;
+    renderSchedJobsList();
+  }
   openModal('m-sched');
 }
 
-function confirmSchedule(){
+async function confirmSchedule(){
   const dtVal=$('m-sched-dt').value;
   if(!dtVal)return toast('Select a date and time.');
   const scheduledFor=new Date(dtVal);
   if(isNaN(scheduledFor.getTime()))return toast('Invalid date.');
   if(scheduledFor<=new Date())return toast('Scheduled time must be in the future.');
-  const label=$('m-sched-label').value.trim();
-  const changes=Object.values(S.changes);
-  const n=changes.length;
-  const id=Math.random().toString(36).slice(2)+Date.now().toString(36);
-  loadSchedules();
-  S.schedules.push({id,createdAt:new Date().toISOString(),scheduledFor:scheduledFor.toISOString(),
-    shop:S.shop,label:label||`${n} product${n!==1?'s':''}`,
-    changes:clone(changes),status:'pending',executedAt:null,error:null});
-  saveSchedules();
-  S.changes={}; S.past=[]; S.future=[];
-  S.originals=clone(S.products);
-  closeModal('m-sched');
-  renderTable(); updateSaveBtn(); updateUndoUI();
-  document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
-  toast(`Scheduled for ${scheduledFor.toLocaleString()}.`);
-}
-
-async function runSchedule(sched){
-  sched.status='running'; saveSchedules(); renderSchedList();
+  const btn=$('m-sched-confirm'); btn.disabled=true; btn.textContent='Scheduling…';
   try{
-    for(const c of sched.changes){
-      const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
-      await api('/api/save-product',{productId:c.productId,product:c.product,
-        variants:Object.values(c.variants||{}),metafields:mf});
-    }
-    sched.status='executed'; sched.executedAt=new Date().toISOString();
-    saveSchedules(); renderSchedList();
-    toast(`✓ Schedule "${sched.label}" executed — ${sched.changes.length} product${sched.changes.length!==1?'s':''} updated.`);
-  }catch(e){
-    sched.status='failed'; sched.error=e.message;
-    saveSchedules(); renderSchedList();
-    toast(`Schedule failed: ${e.message}`);
-  }
+    const r=await api('/api/schedule/create',{
+      scheduledFor:scheduledFor.toISOString(),
+      label:$('m-sched-label').value.trim()||undefined,
+      changes:Object.values(S.changes)
+    });
+    S.schedules=[r.schedule,...(S.schedules||[])];
+    updateSchedBadge();
+    S.changes={}; S.past=[]; S.future=[];
+    S.originals=clone(S.products);
+    closeModal('m-sched');
+    renderTable(); updateSaveBtn(); updateUndoUI();
+    document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
+    toast(`Scheduled for ${scheduledFor.toLocaleString()}.`);
+  }catch(e){ toast(e.message); }
+  finally{ btn.disabled=false; btn.textContent='Schedule →'; }
 }
 
-function checkSchedules(){
-  if(!S.token||S.demo||!S.shop)return;
-  loadSchedules();
-  const now=new Date();
-  S.schedules.filter(s=>s.status==='pending'&&s.shop===S.shop&&new Date(s.scheduledFor)<=now)
-    .forEach(s=>runSchedule(s));
-}
-
-function renderSchedList(){
-  const body=$('m-schedlist-body'); if(!body)return;
-  loadSchedules();
-  $('m-schedlist-shop').textContent=S.shop;
-  const mine=[...S.schedules].filter(s=>s.shop===S.shop)
-    .sort((a,b)=>new Date(b.scheduledFor)-new Date(a.scheduledFor));
-  if(!mine.length){ body.innerHTML='<p class="sched-empty">No scheduled jobs for this store.</p>'; return; }
-  body.innerHTML=mine.map(s=>{
-    const dt=new Date(s.scheduledFor).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
-    const n=s.changes.length;
-    const overdue=s.status==='pending'&&new Date(s.scheduledFor)<new Date();
-    const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
-    const sLbl={pending:overdue?'⚠ Overdue':'⏰ Pending',executed:'✓ Done',failed:'✗ Failed',running:'… Running',cancelled:'Cancelled'}[s.status]||s.status;
-    const btns=s.status==='pending'
-      ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
-      :s.status==='failed'?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button>`:'';
-    return `<div class="sched-row"><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
-  }).join('');
-}
-
-function openSchedList(){
-  renderSchedList();
-  openModal('m-schedlist');
+async function renderSchedJobsList(){
+  const body=$('m-sched-jobs'); if(!body)return;
+  body.innerHTML='<p class="sched-empty">Loading…</p>';
+  try{
+    const r=await api('/api/schedule/list',{});
+    S.schedules=r.schedules||[];
+    updateSchedBadge();
+    if(!r.schedules.length){ body.innerHTML='<p class="sched-empty">No scheduled jobs yet.</p>'; return; }
+    body.innerHTML=r.schedules.map(s=>{
+      const dt=new Date(s.scheduledFor).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+      const n=s.changes.length;
+      const overdue=s.status==='pending'&&new Date(s.scheduledFor)<new Date();
+      const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
+      const sLbl={pending:overdue?'Overdue':'Pending',executed:'Done',failed:'Failed',running:'Running',cancelled:'Cancelled'}[s.status]||s.status;
+      const btns=s.status==='pending'
+        ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
+        :['failed','cancelled'].includes(s.status)?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button>`:'';
+      return `<div class="sched-row"><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
+    }).join('');
+  }catch(e){ body.innerHTML=`<p class="sched-empty" style="color:var(--red)">${esc(e.message)}</p>`; }
 }
 
 /* ── SEARCH ── */
@@ -949,31 +928,22 @@ function boot(){
 
   // Schedule
   $('btn-schedule').addEventListener('click', openScheduleModal);
-  $('btn-sched-list').addEventListener('click', openSchedList);
   $('m-sched-confirm').addEventListener('click', confirmSchedule);
-  $('m-schedlist-body').addEventListener('click', e=>{
-    if(e.target.dataset.schedRun){
-      loadSchedules();
-      const s=S.schedules.find(x=>x.id===e.target.dataset.schedRun);
-      if(s&&s.status==='pending') runSchedule(s);
-      return;
-    }
-    if(e.target.dataset.schedCancel){
-      loadSchedules();
-      const s=S.schedules.find(x=>x.id===e.target.dataset.schedCancel);
-      if(s){s.status='cancelled';saveSchedules();renderSchedList();}
-      return;
-    }
-    if(e.target.dataset.schedRetry){
-      loadSchedules();
-      const s=S.schedules.find(x=>x.id===e.target.dataset.schedRetry);
-      if(s){s.status='pending';s.error=null;saveSchedules();runSchedule(s);}
-      return;
-    }
+  $('m-sched-jobs').addEventListener('click', async e=>{
+    const id=e.target.dataset.schedRun||e.target.dataset.schedCancel||e.target.dataset.schedRetry;
+    if(!id)return;
+    const btn=e.target; btn.disabled=true;
+    try{
+      if(e.target.dataset.schedRun){
+        await api('/api/schedule/run',{id});
+      } else if(e.target.dataset.schedCancel){
+        await api('/api/schedule/cancel',{id});
+      } else if(e.target.dataset.schedRetry){
+        await api('/api/schedule/run',{id});
+      }
+      await renderSchedJobsList();
+    }catch(err){ toast(err.message); btn.disabled=false; }
   });
-
-  // Periodic schedule checker (every 30s)
-  setInterval(checkSchedules, 30_000);
 
   // Generic close buttons
   document.addEventListener('click',e=>{
@@ -983,7 +953,7 @@ function boot(){
   });
 
   // Keyboard
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape')['m-bulk','m-save','m-coll','m-sched','m-schedlist'].forEach(id=>closeModal(id)); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape')['m-bulk','m-save','m-coll','m-sched'].forEach(id=>closeModal(id)); });
 
   // Table events
   bindTable();
