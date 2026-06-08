@@ -37,37 +37,37 @@ const DEMO_PRODUCTS = [
   { id:'gid://shopify/Product/1', title:'Merino Wool Crew Neck Sweater', status:'ACTIVE', vendor:'NordWear', tags:['knitwear','winter','new-arrivals'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, inventoryItem:{id:'gid://shopify/InventoryItem/11'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[{ namespace:'custom', key:'material', type:'single_line_text_field', value:'100% Merino Wool' }] } },
-      { id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, inventoryItem:{id:'gid://shopify/InventoryItem/12'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28, inventoryItem:{id:'gid://shopify/InventoryItem/13'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, inventoryItem:{id:'gid://shopify/InventoryItem/11'}, metafields:{ nodes:[{ namespace:'custom', key:'material', type:'single_line_text_field', value:'100% Merino Wool' }] } },
+      { id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, inventoryItem:{id:'gid://shopify/InventoryItem/12'}, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28, inventoryItem:{id:'gid://shopify/InventoryItem/13'}, metafields:{ nodes:[] } },
     ]}},
   { id:'gid://shopify/Product/2', title:'Leather Crossbody Bag — Tan', status:'ACTIVE', vendor:'StudioLeather', tags:['bags','accessories','sale'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, inventoryItem:{id:'gid://shopify/InventoryItem/21'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[{ namespace:'custom', key:'campaign_label', type:'single_line_text_field', value:'Summer Sale' }] } },
+      { id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, inventoryItem:{id:'gid://shopify/InventoryItem/21'}, metafields:{ nodes:[{ namespace:'custom', key:'campaign_label', type:'single_line_text_field', value:'Summer Sale' }] } },
     ]}},
   { id:'gid://shopify/Product/3', title:'Organic Cotton Oversized Tee', status:'ACTIVE', vendor:'EarthBasics', tags:['apparel','sustainable','basics'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,  inventoryItem:{id:'gid://shopify/InventoryItem/31'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/32', title:'S / White',  sku:'EB-TEE-S-WHT',  price:'34.00', compareAtPrice:'', inventoryQuantity:55, inventoryItem:{id:'gid://shopify/InventoryItem/32'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/33', title:'M / Black',  sku:'EB-TEE-M-BLK',  price:'34.00', compareAtPrice:'', inventoryQuantity:40, inventoryItem:{id:'gid://shopify/InventoryItem/33'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,  inventoryItem:{id:'gid://shopify/InventoryItem/31'}, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/32', title:'S / White',  sku:'EB-TEE-S-WHT',  price:'34.00', compareAtPrice:'', inventoryQuantity:55, inventoryItem:{id:'gid://shopify/InventoryItem/32'}, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/33', title:'M / Black',  sku:'EB-TEE-M-BLK',  price:'34.00', compareAtPrice:'', inventoryQuantity:40, inventoryItem:{id:'gid://shopify/InventoryItem/33'}, metafields:{ nodes:[] } },
     ]}},
   { id:'gid://shopify/Product/4', title:'Ceramic Pour-Over Coffee Set', status:'DRAFT', vendor:'KitchenStudio', tags:['kitchen','coffee','gifts'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/41', title:'White',       sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, inventoryItem:{id:'gid://shopify/InventoryItem/41'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[{ namespace:'seo', key:'custom_title', type:'single_line_text_field', value:'' }] } },
-      { id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, inventoryItem:{id:'gid://shopify/InventoryItem/42'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/41', title:'White',       sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, inventoryItem:{id:'gid://shopify/InventoryItem/41'}, metafields:{ nodes:[{ namespace:'seo', key:'custom_title', type:'single_line_text_field', value:'' }] } },
+      { id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, inventoryItem:{id:'gid://shopify/InventoryItem/42'}, metafields:{ nodes:[] } },
     ]}},
   { id:'gid://shopify/Product/5', title:'Natural Rubber Yoga Mat 6mm', status:'ACTIVE', vendor:'MoveWell', tags:['fitness','yoga','eco'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, inventoryItem:{id:'gid://shopify/InventoryItem/51'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[{ namespace:'custom', key:'thickness_mm', type:'number_integer', value:'6' }] } },
+      { id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, inventoryItem:{id:'gid://shopify/InventoryItem/51'}, metafields:{ nodes:[{ namespace:'custom', key:'thickness_mm', type:'number_integer', value:'6' }] } },
     ]}},
   { id:'gid://shopify/Product/6', title:'Linen Duvet Cover Set — King', status:'ARCHIVED', vendor:'HomeTextile', tags:['bedding','linen','home'],
     featuredImage:null,
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, inventoryItem:{id:'gid://shopify/InventoryItem/61'}, inventoryLocationId:'gid://shopify/Location/1', metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, inventoryItem:{id:'gid://shopify/InventoryItem/61'}, metafields:{ nodes:[] } },
     ]}},
 ];
 
@@ -223,7 +223,6 @@ function normProd(p){
     variants:{ nodes:(p.variants?.nodes||[]).map(v=>({
       ...v,
       inventoryItem: v.inventoryItem||null,
-      inventoryLocationId: v.inventoryLocationId || v.inventoryItem?.inventoryLevels?.nodes?.[0]?.location?.id||null,
       metafields:{nodes:v.metafields?.nodes||[]}
     })) }
   };
@@ -564,7 +563,7 @@ function markVar(vid,field,value,el){
     if(isNaN(qty)||qty<0)return;
     v.inventoryQuantity=qty;
     if(!c.inventory)c.inventory={};
-    c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',locationId:v.inventoryLocationId||'',quantity:qty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
+    c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',quantity:qty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
     if(el){ el.classList.add('dirty'); addModChip(el); }
     updateSaveBtn(); return;
   }
@@ -842,7 +841,7 @@ function applyBulkModal(){
       else if(rule==='add')  newQty=Math.max(0,(v.inventoryQuantity||0)+n);
       else                   newQty=Math.max(0,(v.inventoryQuantity||0)-n);
       v.inventoryQuantity=newQty;
-      c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',locationId:v.inventoryLocationId||'',quantity:newQty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
+      c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',quantity:newQty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
     });
     renderTable(); updateSaveBtn(); toast(`Qty updated on ${vids.length} variant${vids.length!==1?'s':''}.`);
   }else if(type==='tags'){
@@ -1015,12 +1014,10 @@ async function confirmSave(){
       const invItems=[];
       for(const c of payloads){
         Object.entries(c.inventory||{}).forEach(([_vid,inv])=>{
-          if(inv.inventoryItemId) invItems.push({inventoryItemId:inv.inventoryItemId,locationId:inv.locationId||'',quantity:inv.quantity});
+          if(inv.inventoryItemId) invItems.push({inventoryItemId:inv.inventoryItemId,quantity:inv.quantity});
         });
       }
       if(invItems.length){
-        const missing=invItems.filter(i=>!i.locationId);
-        if(missing.length)throw new Error('Location ID missing for some variants — please reload products and try again.');
         await api('/api/inventory-set',{quantities:invItems});
       }
     }

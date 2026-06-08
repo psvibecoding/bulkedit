@@ -768,7 +768,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
             variants(first:100) {
               nodes {
                 id title sku price compareAtPrice inventoryQuantity
-                inventoryItem { id inventoryLevels(first:5) { nodes { location { id } } } }
+                inventoryItem { id }
                 metafields(first:50) { nodes { id namespace key type value } }
               }
             }
@@ -816,12 +816,25 @@ app.post('/api/inventory-set', apiLimiter, writeLimiter, async (req, res) => {
     const s = getSession(req);
     const { quantities } = req.body || {};
     if (!Array.isArray(quantities) || !quantities.length || quantities.length > 100) throw new Error('Invalid quantities');
-    const items = quantities.map(q => {
+
+    // Validate and collect items
+    const validated = quantities.map(q => {
       gid(q.inventoryItemId, 'InventoryItem');
-      gid(q.locationId, 'Location');
       const qty = Math.floor(Number(q.quantity));
       if (!Number.isFinite(qty) || qty < 0 || qty > 999999) throw new Error('Invalid quantity');
-      return { inventoryItemId: q.inventoryItemId, locationId: q.locationId, quantity: qty };
+      return { inventoryItemId: q.inventoryItemId, quantity: qty };
+    });
+
+    // Fetch locationId for each inventoryItem in a single batched query
+    const aliasQuery = validated.map((item, i) =>
+      `i${i}: inventoryItem(id: "${item.inventoryItemId}") { inventoryLevels(first:1) { nodes { location { id } } } }`
+    ).join('\n');
+    const levels = await gql(s, `query { ${aliasQuery} }`);
+
+    const items = validated.map((item, i) => {
+      const locationId = levels[`i${i}`]?.inventoryLevels?.nodes?.[0]?.location?.id;
+      if (!locationId) throw new Error(`No inventory location found — make sure the product is stocked at a location in Shopify.`);
+      return { inventoryItemId: item.inventoryItemId, locationId, quantity: item.quantity };
     });
     const d = await gql(s, `
       mutation InventorySet($input: InventorySetQuantitiesInput!) {
