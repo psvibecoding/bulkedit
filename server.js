@@ -21,8 +21,8 @@ const SHOPIFY_SCOPES      = process.env.SHOPIFY_SCOPES || 'read_products,write_p
 const APP_URL             = (process.env.APP_URL || 'http://localhost:8787').replace(/\/$/, '');
 const SCHED_SECRET        = process.env.SCHED_SECRET || '';
 const SCHED_FILE          = process.env.SCHED_FILE || path.join(__dirname, 'schedules.json');
-const RESEND_API_KEY      = process.env.RESEND_API_KEY || '';
-const NOTIFY_EMAIL        = process.env.NOTIFY_EMAIL || '';
+const BREVO_API_KEY       = process.env.BREVO_API_KEY || '';
+const NOTIFY_FROM         = process.env.NOTIFY_FROM || 'noreply@bulkedit.app';
 
 // In-memory OAuth state (stateless — no DB)
 const oauthStates = new Map();
@@ -194,7 +194,7 @@ function schedFileStatus() {
 }
 
 async function sendNotification(sched, success) {
-  if (!RESEND_API_KEY || !NOTIFY_EMAIL) return;
+  if (!BREVO_API_KEY || !sched.notifyEmail) return;
   const dt = new Date(sched.scheduledFor).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Rome' });
   const subject = success
     ? `✅ Schedule executed: ${sched.label}`
@@ -208,24 +208,29 @@ async function sendNotification(sched, success) {
     if (mfCount)  parts.push(`${mfCount} metafield${mfCount !== 1 ? 's' : ''}`);
     return `<tr><td style="padding:4px 12px 4px 0;color:#374151">${c.productId.split('/').pop()}</td><td style="padding:4px 0;color:#6b7280">${parts.join(' · ') || '—'}</td></tr>`;
   }).join('');
-  const html = `
+  const htmlContent = `
     <div style="font-family:sans-serif;max-width:520px;color:#111">
       <h2 style="margin:0 0 8px">${subject}</h2>
       <p style="color:#6b7280;margin:0 0 16px">Store: <strong>${sched.shop}</strong> · Scheduled for: <strong>${dt}</strong></p>
       ${!success ? `<p style="color:#ef4444;margin:0 0 16px">Error: ${sched.error || 'unknown'}</p>` : ''}
       <table style="border-collapse:collapse;width:100%">
-        <thead><tr><th style="text-align:left;padding:4px 12px 4px 0;color:#9ca3af;font-size:12px">Product ID</th><th style="text-align:left;color:#9ca3af;font-size:12px">Changes</th></tr></thead>
+        <thead><tr><th style="text-align:left;padding:4px 12px 4px 0;color:#9ca3af;font-size:12px">Product</th><th style="text-align:left;color:#9ca3af;font-size:12px">Changes</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <p style="margin:20px 0 0;font-size:12px;color:#9ca3af">Sent by BulkEdit</p>
     </div>`;
   try {
-    const r = await fetch('https://api.resend.com/emails', {
+    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
-      body: JSON.stringify({ from: 'BulkEdit <onboarding@resend.dev>', to: [NOTIFY_EMAIL], subject, html }),
+      headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
+      body: JSON.stringify({
+        sender: { name: 'BulkEdit', email: NOTIFY_FROM },
+        to: [{ email: sched.notifyEmail }],
+        subject,
+        htmlContent,
+      }),
     });
-    if (!r.ok) console.error('[notify] resend error:', await r.text());
+    if (!r.ok) console.error('[notify] brevo error:', await r.text());
   } catch (e) { console.error('[notify] email error:', e.message); }
 }
 
@@ -631,7 +636,7 @@ app.get('/api/schedule/ping', async (req, res) => {
 
 // ── SCHEDULE API ─────────────────────────────────────────
 
-app.post('/api/schedule/create', apiLimiter, (req, res) => {
+app.post('/api/schedule/create', apiLimiter, async (req, res) => {
   try {
     if (!SCHED_SECRET) throw new Error('Scheduling not enabled. Set SCHED_SECRET in environment variables.');
     const { shop, token } = getSession(req);
@@ -641,13 +646,20 @@ app.post('/api/schedule/create', apiLimiter, (req, res) => {
     if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
     if (dt <= new Date()) throw new Error('Scheduled time must be in the future');
     if (!Array.isArray(changes) || !changes.length || changes.length > 200) throw new Error('Invalid changes');
+    if (!label || !String(label).trim()) throw new Error('Label is required');
+    let notifyEmail = '';
+    try {
+      const sd = await gql({ shop, token }, `query { shop { email } }`);
+      notifyEmail = sd.shop?.email || '';
+    } catch {}
     const id = crypto.randomBytes(12).toString('hex');
     const sched = {
       id, shop,
       createdAt: new Date().toISOString(),
       scheduledFor: dt.toISOString(),
-      label: String(label || `${changes.length} product${changes.length !== 1 ? 's' : ''}`).slice(0, 120),
+      label: String(label).trim().slice(0, 120),
       linkedTo: linkedTo || null,
+      notifyEmail,
       changes,
       encToken: encryptToken(token),
       status: 'pending',
