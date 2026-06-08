@@ -873,6 +873,7 @@ async function confirmSchedule(){
 
     const r=await api('/api/schedule/create',{
       scheduledFor:scheduledFor.toISOString(),
+      timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
       label:label||undefined,
       changes:changesWithMeta,
       notifyEmail,
@@ -898,6 +899,7 @@ async function confirmSchedule(){
         });
         const r2=await api('/api/schedule/create',{
           scheduledFor:revertAt.toISOString(),
+          timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
           label:(label?`↩ ${label}`:'↩ Revert'),
           changes:revertWithMeta,
           linkedTo:r.schedule.id,

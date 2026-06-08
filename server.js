@@ -247,9 +247,10 @@ function fmtField(field, v) {
 }
 
 function buildEmailHtml(sched, success, linkedRevert = null) {
-  const tzLabel = NOTIFY_TZ === 'UTC' ? 'UTC' : NOTIFY_TZ.split('/').pop().replace(/_/g, ' ');
+  const tz = sched.timezone || NOTIFY_TZ;
+  const tzLabel = tz === 'UTC' ? 'UTC' : tz.split('/').pop().replace(/_/g, ' ');
   const dt = new Date(sched.executedAt || sched.scheduledFor)
-    .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: NOTIFY_TZ })
+    .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz })
     + ` (${tzLabel})`;
   const n = (sched.changes || []).length;
 
@@ -332,7 +333,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
   const revertBanner = (linkedRevert && success && !isRevert) ? (() => {
     const revertDt = new Date(linkedRevert.scheduledFor)
-      .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: NOTIFY_TZ })
+      .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz })
       + ` (${tzLabel})`;
     return `
     <div style="margin:24px 40px 0;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:18px 20px">
@@ -954,7 +955,7 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
   try {
     if (!SCHED_SECRET) throw new Error('Scheduling not enabled. Set SCHED_SECRET in environment variables.');
     const { shop, token } = getSession(req);
-    const { scheduledFor, label, changes, linkedTo, notifyEmail: providedEmail } = req.body || {};
+    const { scheduledFor, label, changes, linkedTo, notifyEmail: providedEmail, timezone: clientTz } = req.body || {};
     if (!scheduledFor) throw new Error('Missing scheduledFor');
     const dt = new Date(scheduledFor);
     if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
@@ -971,10 +972,15 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
       } catch {}
     }
     const id = crypto.randomBytes(12).toString('hex');
+    let safeTimezone = NOTIFY_TZ;
+    if (clientTz && typeof clientTz === 'string') {
+      try { Intl.DateTimeFormat(undefined, { timeZone: clientTz }); safeTimezone = clientTz; } catch {}
+    }
     const sched = {
       id, shop,
       createdAt: new Date().toISOString(),
       scheduledFor: dt.toISOString(),
+      timezone: safeTimezone,
       label: String(label).trim().slice(0, 120),
       linkedTo: linkedTo || null,
       notifyEmail,
