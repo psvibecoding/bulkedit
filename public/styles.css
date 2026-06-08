@@ -137,7 +137,8 @@ tbody tr.r-selected{background:#eff6ff}
 .title-row .ce{flex:1;min-width:0}
 .shopify-link{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:11px;color:var(--t4);border-radius:4px;text-decoration:none;transition:color .15s,background .15s;line-height:1}
 .shopify-link:hover{color:var(--green);background:var(--green-bg)}
-.mod-chip{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#16a34a;background:#dcfce7;border-radius:20px;padding:1px 7px;line-height:1.6;width:fit-content;border:1px solid rgba(22,163,74,.2)}
+.mod-chip{display:none;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#16a34a;background:#dcfce7;border-radius:20px;padding:1px 7px;line-height:1.6;width:fit-content;border:1px solid rgba(22,163,74,.2)}
+tr.r-changed .mod-chip{display:inline-block}
 td{padding:6px 10px;vertical-align:middle}
 td:first-child{text-align:center}
 .prod-thumb{width:34px;height:34px;border-radius:var(--r8);object-fit:cover;border:1px solid var(--b1);display:block;background:var(--s3);box-shadow:var(--shadow-sm)}
