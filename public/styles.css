@@ -155,6 +155,10 @@ input[type="checkbox"]{width:13px;height:13px;accent-color:var(--green);cursor:p
 .mf-val-inp{background:var(--bg);border:1px solid var(--b1);border-radius:var(--r4);padding:3px 6px;font-size:12px;font-family:var(--mono);color:var(--tx);outline:none;width:100%;min-width:80px;transition:border-color .15s}
 .mf-val-inp:focus{border-color:var(--green);background:var(--white)}
 .mf-val-inp.dirty{border-color:rgba(26,92,56,.3);background:#f0fdf4}
+.mf-meas-wrap{display:flex;gap:4px;align-items:center}
+.mf-num{width:70px!important;min-width:0!important}
+.mf-unit-sel{font-size:11px;border:1px solid var(--b1);border-radius:var(--r4);background:var(--bg);padding:2px 4px;color:var(--t1);cursor:pointer;font-family:var(--mono)}
+.mf-unit-sel:focus{outline:2px solid var(--green);outline-offset:1px}
 .mf-empty{font-size:11px;color:var(--t4);font-style:italic}
 .mf-row{display:grid;grid-template-columns:64px 64px 1fr 20px;gap:3px;align-items:center}
 .mf-inp{background:var(--bg);border:1px solid var(--b1);border-radius:var(--r4);padding:3px 6px;font-size:11px;font-family:var(--mono);color:var(--tx);outline:none;width:100%;transition:border-color .15s}
