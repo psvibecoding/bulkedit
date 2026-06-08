@@ -100,24 +100,32 @@ function startOAuth(){
   window.location.href = `/auth/start?shop=${encodeURIComponent(raw)}`;
 }
 
-async function afterOAuth(shop, token){
+async function afterOAuth(shop, token, silent=false){
   S.shop=shop; S.token=token; S.demo=false;
   showScreen('s-loading'); $('loading-msg').textContent='Connecting to your store…';
   try{
     const t = await api('/api/test');
+    sessionStorage.setItem('be_shop', shop);
+    sessionStorage.setItem('be_token', token);
     $('store-name').textContent = t.shop.name;
     $('loading-msg').textContent='Loading products…';
     await Promise.all([ loadProducts(), loadMfDefs() ]);
     showScreen('s-app');
     loadSchedules();
-    toast('Connected — all info loaded. Session only, no data stored.');
+    if(!silent) toast('Connected — all info loaded. Session only, no data stored.');
     const shouldOpenSchedules = new URLSearchParams(location.search).get('openSchedules')==='1' || sessionStorage.getItem('openSchedules')==='1';
     if(shouldOpenSchedules){
       history.replaceState(null,'',location.pathname);
       sessionStorage.removeItem('openSchedules');
       setTimeout(openScheduleModal, 400);
     }
-  }catch(e){ showScreen('s-connect'); toast(e.message); }
+  }catch(e){
+    sessionStorage.removeItem('be_shop');
+    sessionStorage.removeItem('be_token');
+    showScreen('s-connect');
+    if(!silent) toast(e.message);
+    else{ $('f-shop').value=shop; toast('Session expired — please reconnect.'); }
+  }
 }
 
 async function loadProducts(q='', append=false){
@@ -183,6 +191,8 @@ function loadDemoMode(){
 }
 
 function disconnect(){
+  sessionStorage.removeItem('be_shop');
+  sessionStorage.removeItem('be_token');
   Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
   const lm=document.getElementById('load-more-wrap'); if(lm)lm.style.display='none';
   S.selectedVids=new Set();
@@ -1258,7 +1268,7 @@ function boot(){
   bindTable();
   initColResize();
 
-  // OAuth callback / demo URL
+  // OAuth callback / session restore / demo URL
   (function(){
     const p=new URLSearchParams(window.location.search);
     const shop=p.get('shop'), token=p.get('token'), demo=p.get('demo');
@@ -1266,7 +1276,14 @@ function boot(){
     if(shop&&token){
       window.history.replaceState({},'','/app');
       afterOAuth(decodeURIComponent(shop), decodeURIComponent(token));
+      return;
     }
+    // Restore session from sessionStorage (survives reload, clears on tab close)
+    const savedShop=sessionStorage.getItem('be_shop');
+    const savedToken=sessionStorage.getItem('be_token');
+    if(savedShop&&savedToken){ afterOAuth(savedShop, savedToken, true); return; }
+    // Pre-fill shop domain if remembered
+    if(savedShop) $('f-shop').value=savedShop;
   })();
 }
 
