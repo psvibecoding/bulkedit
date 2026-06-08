@@ -21,7 +21,7 @@ const SHOPIFY_SCOPES      = process.env.SHOPIFY_SCOPES || 'read_products,write_p
 const APP_URL             = (process.env.APP_URL || 'http://localhost:8787').replace(/\/$/, '');
 const SCHED_SECRET        = process.env.SCHED_SECRET || '';
 const SCHED_FILE          = process.env.SCHED_FILE || path.join(__dirname, 'schedules.json');
-const BREVO_API_KEY       = process.env.BREVO_API_KEY || '';
+const RESEND_API_KEY      = process.env.RESEND_API_KEY || '';
 const NOTIFY_FROM         = process.env.NOTIFY_FROM || 'noreply@bulkedit.app';
 const CONTACT_TO          = process.env.CONTACT_TO || '';
 
@@ -195,12 +195,10 @@ function schedFileStatus() {
   try { fs.accessSync(path.dirname(SCHED_FILE), fs.constants.W_OK); return 'writable'; } catch { return 'NOT writable'; }
 }
 
-async function sendNotification(sched, success) {
-  if (!BREVO_API_KEY || !sched.notifyEmail) return;
+function buildEmailHtml(sched, success) {
   const dt = new Date(sched.scheduledFor).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Rome' });
-  const subject = success
-    ? `✅ Schedule executed: ${sched.label}`
-    : `❌ Schedule failed: ${sched.label}`;
+  const icon = success ? '✅' : '❌';
+  const title = success ? `Schedule executed: ${sched.label}` : `Schedule failed: ${sched.label}`;
   const rows = (sched.changes || []).map(c => {
     const varCount = Object.keys(c.variants || {}).length;
     const mfCount  = (c.metafields || []).length;
@@ -208,32 +206,47 @@ async function sendNotification(sched, success) {
     if (Object.keys(c.product || {}).length) parts.push(Object.keys(c.product).join(', '));
     if (varCount) parts.push(`${varCount} variant${varCount !== 1 ? 's' : ''}`);
     if (mfCount)  parts.push(`${mfCount} metafield${mfCount !== 1 ? 's' : ''}`);
-    return `<tr><td style="padding:4px 12px 4px 0;color:#374151">${c.productId.split('/').pop()}</td><td style="padding:4px 0;color:#6b7280">${parts.join(' · ') || '—'}</td></tr>`;
+    return `<tr><td style="padding:6px 16px 6px 0;color:#374151;font-size:14px">${c.productId.split('/').pop()}</td><td style="padding:6px 0;color:#6b7280;font-size:14px">${parts.join(' · ') || '—'}</td></tr>`;
   }).join('');
-  const htmlContent = `
-    <div style="font-family:sans-serif;max-width:520px;color:#111">
-      <h2 style="margin:0 0 8px">${subject}</h2>
-      <p style="color:#6b7280;margin:0 0 16px">Store: <strong>${sched.shop}</strong> · Scheduled for: <strong>${dt}</strong></p>
-      ${!success ? `<p style="color:#ef4444;margin:0 0 16px">Error: ${sched.error || 'unknown'}</p>` : ''}
-      <table style="border-collapse:collapse;width:100%">
-        <thead><tr><th style="text-align:left;padding:4px 12px 4px 0;color:#9ca3af;font-size:12px">Product</th><th style="text-align:left;color:#9ca3af;font-size:12px">Changes</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <p style="margin:20px 0 0;font-size:12px;color:#9ca3af">Sent by BulkEdit</p>
-    </div>`;
-  try {
-    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
-      body: JSON.stringify({
-        sender: { name: 'BulkEdit', email: NOTIFY_FROM },
-        to: [{ email: sched.notifyEmail }],
-        subject,
-        htmlContent,
-      }),
-    });
-    if (!r.ok) console.error('[notify] brevo error:', await r.text());
-  } catch (e) { console.error('[notify] email error:', e.message); }
+  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f9f9f7;font-family:sans-serif">
+    <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:12px;border:1px solid #e4e4de;overflow:hidden">
+      <div style="background:#1a5c38;padding:24px 28px">
+        <span style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)">BulkEdit</span>
+      </div>
+      <div style="padding:28px">
+        <h2 style="margin:0 0 6px;font-size:20px;color:#0e0e0c">${icon} ${title}</h2>
+        <p style="margin:0 0 20px;color:#7c7c74;font-size:14px">Store: <strong>${sched.shop}</strong> · Scheduled for: <strong>${dt}</strong></p>
+        ${!success ? `<p style="margin:0 0 20px;color:#ef4444;font-size:14px;background:#fef2f2;padding:10px 14px;border-radius:8px">Error: ${sched.error || 'unknown'}</p>` : ''}
+        <table style="border-collapse:collapse;width:100%">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 16px 8px 0;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Product</th>
+            <th style="text-align:left;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Changes</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;border-top:1px solid #e4e4de;padding-top:16px">Sent by BulkEdit · <a href="https://bulkedit.app" style="color:#1a5c38">bulkedit.app</a></p>
+      </div>
+    </div>
+  </body></html>`;
+}
+
+async function sendEmail({ to, subject, html }) {
+  if (!RESEND_API_KEY) { console.error('[notify] RESEND_API_KEY not set'); return { ok: false, error: 'RESEND_API_KEY not set' }; }
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify({ from: `BulkEdit <${NOTIFY_FROM}>`, to: [to], subject, html }),
+  });
+  const body = await r.text();
+  if (!r.ok) { console.error('[notify] resend error:', body); return { ok: false, error: `Resend error (${r.status}): ${body}` }; }
+  return { ok: true };
+}
+
+async function sendNotification(sched, success) {
+  if (!RESEND_API_KEY || !sched.notifyEmail) return;
+  const subject = success ? `✅ Schedule executed: ${sched.label}` : `❌ Schedule failed: ${sched.label}`;
+  const result = await sendEmail({ to: sched.notifyEmail, subject, html: buildEmailHtml(sched, success) });
+  if (!result.ok) console.error('[notify] failed to send:', result.error);
 }
 
 // Extracted save logic shared by /api/save-product and the schedule executor
@@ -348,26 +361,16 @@ app.get('/terms',   (req, res) => res.sendFile(path.join(__dirname, 'public', 't
 
 app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
-    if (!BREVO_API_KEY || !CONTACT_TO) throw new Error('Contact form not available right now.');
+    if (!RESEND_API_KEY || !CONTACT_TO) throw new Error('Contact form not available right now.');
     const name    = String(req.body?.name    || '').trim().slice(0, 100);
     const email   = String(req.body?.email   || '').trim().slice(0, 200);
     const message = String(req.body?.message || '').trim().slice(0, 2000);
     if (!name)    throw new Error('Name is required.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Valid email is required.');
     if (!message) throw new Error('Message is required.');
-    const htmlContent = `<div style="font-family:sans-serif;max-width:520px;color:#111"><h2 style="margin:0 0 16px">New message from BulkEdit contact form</h2><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p style="margin-top:12px"><strong>Message:</strong></p><p style="white-space:pre-wrap;background:#f5f5f3;padding:12px;border-radius:8px;margin-top:6px">${message}</p></div>`;
-    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
-      body: JSON.stringify({
-        sender:  { name: 'BulkEdit Contact', email: NOTIFY_FROM },
-        to:      [{ email: CONTACT_TO }],
-        replyTo: { email, name },
-        subject: `BulkEdit: message from ${name}`,
-        htmlContent,
-      }),
-    });
-    if (!r.ok) throw new Error('Could not send message. Please try again later.');
+    const html = `<div style="font-family:sans-serif;max-width:520px;color:#111"><h2 style="margin:0 0 16px">New message from BulkEdit contact form</h2><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p style="margin-top:12px"><strong>Message:</strong></p><p style="white-space:pre-wrap;background:#f5f5f3;padding:12px;border-radius:8px;margin-top:6px">${message}</p></div>`;
+    const result = await sendEmail({ to: CONTACT_TO, subject: `BulkEdit: message from ${name}`, html });
+    if (!result.ok) throw new Error('Could not send message. Please try again later.');
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e) }); }
 });
@@ -665,7 +668,7 @@ app.get('/api/schedule/ping', async (req, res) => {
     schedFile: SCHED_FILE,
     fileExists,
     dirWritable,
-    emailConfigured: !!BREVO_API_KEY,
+    emailConfigured: !!RESEND_API_KEY,
     notifyFrom: NOTIFY_FROM || 'not set',
     totalSchedules:    after.length,
     pendingSchedules:  after.filter(s => s.status === 'pending').length,
@@ -676,29 +679,21 @@ app.get('/api/schedule/ping', async (req, res) => {
   });
 });
 
-// Test email endpoint — sends a real email so we can verify Brevo config
+// Test email endpoint — sends a real email so we can verify Resend config
 app.post('/api/notify-test', apiLimiter, async (req, res) => {
   try {
     const { shop } = getSession(req);
     const { email } = req.body || {};
-    if (!BREVO_API_KEY) return res.json({ ok: false, error: 'BREVO_API_KEY not set on server', emailConfigured: false });
-    if (!NOTIFY_FROM)  return res.json({ ok: false, error: 'NOTIFY_FROM not set on server', emailConfigured: true });
-    const to = (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email)))
-      ? String(email).trim()
-      : null;
+    if (!RESEND_API_KEY) return res.json({ ok: false, error: 'RESEND_API_KEY not set on server', emailConfigured: false });
+    if (!NOTIFY_FROM)    return res.json({ ok: false, error: 'NOTIFY_FROM not set on server', emailConfigured: true });
+    const to = (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) ? String(email).trim() : null;
     if (!to) return res.status(400).json({ ok: false, error: 'Provide a valid email address' });
-    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
-      body: JSON.stringify({
-        sender: { name: 'BulkEdit', email: NOTIFY_FROM },
-        to: [{ email: to }],
-        subject: '✅ BulkEdit — email test',
-        htmlContent: `<p style="font-family:sans-serif">Test email from BulkEdit.<br>Shop: <strong>${shop}</strong><br>Sender: <strong>${NOTIFY_FROM}</strong></p>`,
-      }),
+    const result = await sendEmail({
+      to,
+      subject: '✅ BulkEdit — email test',
+      html: `<div style="font-family:sans-serif;padding:24px"><h2>BulkEdit email test</h2><p>Email notifications are working correctly.</p><p style="color:#6b7280;font-size:14px">Shop: <strong>${shop}</strong> · Sender: <strong>${NOTIFY_FROM}</strong></p></div>`,
     });
-    const body = await r.text();
-    if (!r.ok) return res.json({ ok: false, error: `Brevo error (${r.status}): ${body}`, to, from: NOTIFY_FROM });
+    if (!result.ok) return res.json({ ok: false, error: result.error, to, from: NOTIFY_FROM });
     res.json({ ok: true, sent: true, to, from: NOTIFY_FROM });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
