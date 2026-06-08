@@ -116,7 +116,8 @@ function safeProductInput(p = {}) {
     if (!allowed.has(k)) continue; // skip seo/altText — handled separately
     if (k === 'status' && !['ACTIVE','DRAFT','ARCHIVED'].includes(String(v).toUpperCase())) throw new Error('Invalid status');
     if (k === 'tags' && !Array.isArray(v)) throw new Error('Tags must be array');
-    if (k === 'bodyHtml') { clean[k] = String(v || '').slice(0, 100000); continue; }
+    // Shopify API 2024-01+: bodyHtml was renamed to descriptionHtml on ProductInput
+    if (k === 'bodyHtml') { clean['descriptionHtml'] = String(v || '').slice(0, 100000); continue; }
     clean[k] = k === 'status' ? String(v).toUpperCase() : v;
   }
   return clean;
@@ -760,7 +761,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
         products(first:$first, query:$query, after:$after, sortKey:UPDATED_AT, reverse:true) {
           pageInfo { hasNextPage endCursor }
           nodes {
-            id title status vendor tags bodyHtml
+            id title status vendor tags descriptionHtml
             seo { title description }
             featuredImage { id url altText }
             metafields(first:50) { nodes { id namespace key type value } }

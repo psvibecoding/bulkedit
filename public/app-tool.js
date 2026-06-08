@@ -199,12 +199,15 @@ async function loadMfDefs(){
 }
 
 function normProd(p){
-  return { ...p,
+  const norm = { ...p,
+    bodyHtml: p.bodyHtml ?? p.descriptionHtml ?? '',
     featuredImage: p.featuredImage||null,
     seo: p.seo||{title:'',description:''},
     metafields: { nodes: p.metafields?.nodes||[] },
     variants:{ nodes:(p.variants?.nodes||[]).map(v=>({...v, inventoryItem:v.inventoryItem||null, metafields:{nodes:v.metafields?.nodes||[]}})) }
   };
+  delete norm.descriptionHtml;
+  return norm;
 }
 
 function loadDemoMode(){
