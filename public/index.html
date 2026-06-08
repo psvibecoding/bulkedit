@@ -106,65 +106,81 @@
 
     .hero-trust{font-size:11px;color:rgba(255,255,255,.28);font-family:var(--mono);letter-spacing:.04em}
 
-    /* Hero visual / app mockup */
+    /* Hero visual / app mockup — light theme matching the real app */
     .hv-window{
-      background:#141410;border:1px solid rgba(255,255,255,.09);
+      background:var(--white);border:1px solid var(--border);
       border-radius:14px;overflow:hidden;
-      box-shadow:0 32px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.03);
+      box-shadow:0 24px 64px rgba(0,0,0,.14),0 4px 16px rgba(0,0,0,.07);
       animation:float 5s ease-in-out infinite;
     }
     @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 
-    .hv-bar{
-      padding:11px 14px;background:#0e0e0a;
-      border-bottom:1px solid rgba(255,255,255,.07);
+    .hv-topbar{
+      padding:10px 14px;background:var(--white);
+      border-bottom:1px solid var(--border);
       display:flex;align-items:center;gap:8px;
     }
-    .hv-dots{display:flex;gap:5px}
-    .hv-dot{width:9px;height:9px;border-radius:50%}
-    .hv-dot:nth-child(1){background:#ff5f57}.hv-dot:nth-child(2){background:#febc2e}.hv-dot:nth-child(3){background:#28c840}
-    .hv-url{font-size:10px;color:rgba(255,255,255,.22);font-family:var(--mono);flex:1;text-align:center}
-    .hv-save-top{background:var(--green);color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:10px;font-weight:600;font-family:var(--sans);cursor:default;flex-shrink:0}
+    .hv-tl{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+    .hv-logo-mark{
+      width:22px;height:22px;background:var(--green);color:#fff;
+      font-family:var(--mono);font-size:9px;font-weight:500;
+      border-radius:5px;display:flex;align-items:center;justify-content:center;
+      flex-shrink:0;line-height:1;
+    }
+    .hv-store{font-size:10px;color:var(--ink3);font-family:var(--mono);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .hv-tr{display:flex;align-items:center;gap:5px;flex-shrink:0}
+    .hv-btn-sched{
+      padding:4px 9px;border-radius:5px;font-size:10px;font-weight:500;
+      background:var(--bg);border:1px solid var(--border2);color:var(--ink2);
+      cursor:default;font-family:var(--sans);
+    }
+    .hv-btn-save{
+      padding:4px 9px;border-radius:5px;font-size:10px;font-weight:600;
+      background:var(--green);color:#fff;border:none;cursor:default;font-family:var(--sans);
+    }
 
-    .hv-toolbar{
-      padding:7px 12px;background:#111110;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      display:flex;gap:6px;align-items:center;
+    .hv-filters{
+      padding:7px 12px;background:var(--bg);
+      border-bottom:1px solid var(--border);
+      display:flex;gap:5px;align-items:center;
     }
     .hv-chip{
       padding:3px 9px;border-radius:12px;font-size:10px;font-family:var(--mono);
-      color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.07);cursor:default;
+      color:var(--ink4);border:1px solid var(--border);cursor:default;background:var(--white);
     }
-    .hv-chip.on{color:#86efac;background:rgba(26,92,56,.22);border-color:rgba(26,92,56,.38)}
+    .hv-chip.on{color:var(--green);background:var(--green-bg);border-color:var(--green-brd);font-weight:500}
 
     .hv-table{width:100%;border-collapse:collapse}
     .hv-table th{
-      padding:7px 11px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
-      color:rgba(255,255,255,.22);background:#111110;
-      border-bottom:1px solid rgba(255,255,255,.06);font-family:var(--mono);text-align:left;
+      padding:6px 10px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+      color:var(--ink4);background:var(--bg);
+      border-bottom:1px solid var(--border);font-family:var(--mono);text-align:left;
     }
     .hv-table td{
-      padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.045);
-      color:rgba(255,255,255,.55);font-family:var(--mono);font-size:11px;
+      padding:9px 10px;border-bottom:1px solid var(--border);
+      color:var(--ink2);font-family:var(--mono);font-size:11px;
     }
-    .hv-table tr.editing td{background:rgba(26,92,56,.08)}
+    .hv-table tr.editing td{background:rgba(26,92,56,.04)}
     .hv-table tr:last-child td{border-bottom:none}
 
     .hv-swatch{width:22px;height:22px;border-radius:4px;display:inline-block;vertical-align:middle;margin-right:5px;flex-shrink:0}
     .hv-pill{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9px;font-weight:500}
-    .hv-active{background:rgba(26,92,56,.22);color:#86efac;border:1px solid rgba(26,92,56,.3)}
-    .hv-draft{background:rgba(255,255,255,.07);color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.09)}
-    .hv-old{color:rgba(255,255,255,.22);text-decoration:line-through;margin-right:3px;font-size:10px}
-    .hv-new{color:#86efac;font-weight:600}
-    .hv-mod{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;background:rgba(26,92,56,.2);border:1px solid rgba(26,92,56,.3);color:#86efac}
-    .hv-cursor{display:inline-block;width:1px;height:10px;background:#86efac;vertical-align:middle;margin-left:1px;animation:blink .85s step-end infinite}
+    .hv-active{background:var(--green-bg);color:var(--green);border:1px solid var(--green-brd)}
+    .hv-draft{background:rgba(0,0,0,.05);color:var(--ink3);border:1px solid var(--border)}
+    .hv-old{color:var(--ink4);text-decoration:line-through;margin-right:3px;font-size:10px}
+    .hv-new{color:var(--green);font-weight:600}
+    .hv-cursor{display:inline-block;width:1px;height:10px;background:var(--green);vertical-align:middle;margin-left:1px;animation:blink .85s step-end infinite}
     @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    .hv-sched-lbl{
+      display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;
+      font-size:9px;background:rgba(146,64,14,.07);border:1px solid rgba(146,64,14,.2);color:#92400e;
+    }
 
     .hv-foot{
-      padding:9px 12px;border-top:1px solid rgba(255,255,255,.06);
+      padding:9px 12px;border-top:1px solid var(--border);background:var(--bg);
       display:flex;justify-content:space-between;align-items:center;
     }
-    .hv-status-txt{font-size:9px;color:rgba(255,255,255,.22);font-family:var(--mono)}
+    .hv-status-txt{font-size:9px;color:var(--ink4);font-family:var(--mono)}
 
     /* SECTION SHARED */
     .section-tag{display:block;font-size:11px;font-family:var(--mono);letter-spacing:.15em;text-transform:uppercase;color:var(--green);margin-bottom:14px}
@@ -313,32 +329,35 @@
     <div class="hero-text">
       <div class="hero-badge">
         <span class="badge-dot"></span>
-        Free · No account · Any Shopify store
+        Free in early access · Paid plans coming
       </div>
       <h1>The bulk editor<br>Shopify forgot<br>to <em>build</em>.</h1>
       <p class="hero-sub">
-        Change <strong>prices, metafields, tags and collections</strong> across your entire catalog —
-        in one table view, without a single CSV export.
+        Edit <strong>prices, metafields, tags and collections</strong> across your entire catalog —
+        then <strong>schedule changes to go live automatically</strong>, with built-in revert. No CSV.
       </p>
       <div class="hero-cta-wrap">
         <a href="/app" class="btn-hero">
-          Connect your store — it's free
+          Start for free
           <span class="btn-hero-arrow">→</span>
         </a>
       </div>
-      <p class="hero-trust">🔒 OAuth login · Nothing stored · Works with any Shopify plan</p>
+      <p class="hero-trust">🔒 Free during early access · OAuth · No account · No data stored</p>
     </div>
 
-    <!-- App mockup -->
+    <!-- App mockup — light theme, matches the real app -->
     <div class="hv-window">
-      <div class="hv-bar">
-        <div class="hv-dots">
-          <div class="hv-dot"></div><div class="hv-dot"></div><div class="hv-dot"></div>
+      <div class="hv-topbar">
+        <div class="hv-tl">
+          <span class="hv-logo-mark">BE</span>
+          <span class="hv-store">your-store.myshopify.com</span>
         </div>
-        <span class="hv-url">bulkedit · your-store.myshopify.com</span>
-        <button class="hv-save-top">Save 3 ↑</button>
+        <div class="hv-tr">
+          <button class="hv-btn-sched">Schedule</button>
+          <button class="hv-btn-save">Save 3</button>
+        </div>
       </div>
-      <div class="hv-toolbar">
+      <div class="hv-filters">
         <span class="hv-chip on">All</span>
         <span class="hv-chip">Active</span>
         <span class="hv-chip">Modified ● 3</span>
@@ -346,7 +365,7 @@
       <table class="hv-table">
         <thead>
           <tr>
-            <th>Product</th><th>Status</th><th>Price</th><th></th>
+            <th>Product</th><th>Status</th><th>Price</th><th>Scheduled</th>
           </tr>
         </thead>
         <tbody>
@@ -354,37 +373,37 @@
             <td><span class="hv-swatch" style="background:#c8b8a2"></span>Merino Sweater — S</td>
             <td><span class="hv-pill hv-active">Active</span></td>
             <td><span class="hv-old">89.00</span><span class="hv-new">69.00<span class="hv-cursor"></span></span></td>
-            <td><span class="hv-mod">●</span></td>
+            <td><span class="hv-sched-lbl">🗓 Tonight 23:59</span></td>
           </tr>
           <tr class="editing">
             <td><span class="hv-swatch" style="background:#c8b8a2"></span>Merino Sweater — M</td>
             <td><span class="hv-pill hv-active">Active</span></td>
             <td><span class="hv-old">89.00</span><span class="hv-new">69.00</span></td>
-            <td><span class="hv-mod">●</span></td>
+            <td><span class="hv-sched-lbl">🗓 Tonight 23:59</span></td>
           </tr>
           <tr>
             <td><span class="hv-swatch" style="background:#8b7560"></span>Leather Crossbody</td>
             <td><span class="hv-pill hv-draft">Draft</span></td>
             <td>149.00</td>
-            <td></td>
+            <td style="color:var(--ink4)">—</td>
           </tr>
           <tr class="editing">
             <td><span class="hv-swatch" style="background:#a8c4a0"></span>Yoga Mat 6mm</td>
             <td><span class="hv-pill hv-active">Active</span></td>
             <td><span class="hv-old">78.00</span><span class="hv-new">65.00</span></td>
-            <td><span class="hv-mod">●</span></td>
+            <td style="color:var(--ink4)">—</td>
           </tr>
           <tr>
             <td><span class="hv-swatch" style="background:#d4c5a8"></span>Organic Cotton Tee</td>
             <td><span class="hv-pill hv-active">Active</span></td>
             <td>34.00</td>
-            <td></td>
+            <td style="color:var(--ink4)">—</td>
           </tr>
         </tbody>
       </table>
       <div class="hv-foot">
-        <span class="hv-status-txt">5 products · 3 modified</span>
-        <button class="hv-save-top">Save changes 3 →</button>
+        <span class="hv-status-txt">5 products · 3 modified · 2 scheduled</span>
+        <button class="hv-btn-save">Save changes 3 →</button>
       </div>
     </div>
   </div>
@@ -456,9 +475,14 @@
     <p class="section-sub reveal">The native editor is slow, limited, and doesn't touch variant metafields. BulkEdit fixes all of that — with review, undo, and scheduled publishing built in.</p>
     <div class="features-grid reveal">
       <div class="feat">
-        <span class="feat-icon">⚡</span>
-        <h3>Inline table editing</h3>
-        <p>Click any cell and edit directly. Title, price, vendor, tags, SKU — all in one view without leaving the page.</p>
+        <span class="feat-icon">🗓</span>
+        <h3>Schedule &amp; auto-revert</h3>
+        <p>Set changes to go live at a specific time. Add a revert so your Black Friday prices roll back automatically — no manual work at 3am.</p>
+      </div>
+      <div class="feat">
+        <span class="feat-icon">👁</span>
+        <h3>Review before saving</h3>
+        <p>See a full diff — old value → new value — for every field before anything hits your store. No surprises, ever.</p>
       </div>
       <div class="feat">
         <span class="feat-icon">🔖</span>
@@ -466,19 +490,14 @@
         <p>The gap Shopify still doesn't fill. Loads your metafield definitions and lets you edit per variant — by name, not namespace and key.</p>
       </div>
       <div class="feat">
+        <span class="feat-icon">⚡</span>
+        <h3>Inline table editing</h3>
+        <p>Click any cell and edit directly. Title, price, vendor, tags, SKU — all in one view without leaving the page.</p>
+      </div>
+      <div class="feat">
         <span class="feat-icon">⚙️</span>
         <h3>Bulk actions</h3>
         <p>Select multiple products and change status, set a price, add or remove tags, update a metafield — all at once.</p>
-      </div>
-      <div class="feat">
-        <span class="feat-icon">👁</span>
-        <h3>Review before saving</h3>
-        <p>See a full diff — old value → new value — for every field before anything hits your store. No surprises.</p>
-      </div>
-      <div class="feat">
-        <span class="feat-icon">🗓</span>
-        <h3>Scheduled publishing</h3>
-        <p>Set changes to go live at a specific time. Add an automatic revert so your sale prices roll back without any manual work.</p>
       </div>
       <div class="feat">
         <span class="feat-icon">🔒</span>
@@ -549,9 +568,9 @@
 <!-- BOTTOM CTA -->
 <section class="cta-section">
   <h2 class="reveal">Stop editing products<br><em>one by one</em>.</h2>
-  <p class="cta-sub reveal">Free to use. No account. No data stored on our servers.</p>
-  <a href="/app" class="btn-cta-white reveal">Connect your store — it's free →</a>
-  <p class="cta-note reveal">Works with any Shopify store · OAuth login · Session only</p>
+  <p class="cta-sub reveal">Free during early access. No account. No data stored.</p>
+  <a href="/app" class="btn-cta-white reveal">Start for free →</a>
+  <p class="cta-note reveal">Works with any Shopify store · OAuth login · Paid plans coming</p>
 </section>
 
 <!-- FEEDBACK BANNER -->
