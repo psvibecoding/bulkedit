@@ -227,25 +227,52 @@ app.post('/api/test', apiLimiter, async (req, res) => {
 app.post('/api/products', apiLimiter, async (req, res) => {
   try {
     const s = getSession(req);
-    const q = String(req.body?.query || '').trim().slice(0, 80).replace(/[^\w\s-]/g, '');
+    const raw = String(req.body?.query || '').trim().slice(0, 250);
+    const terms = raw ? raw.split(',').map(t => t.trim().replace(/[^\w\s-]/g, '')).filter(Boolean) : [];
     const first = Math.min(Math.max(Number(req.body?.first || 50), 1), 100);
-    const search = q ? `title:*${q}* OR tag:*${q}* OR sku:*${q}*` : null;
+    const search = terms.length
+      ? terms.map(t => `(title:*${t}* OR tag:${t} OR vendor:${t}*)`).join(' OR ')
+      : null;
     const d = await gql(s, `
       query Products($first:Int!, $query:String) {
         products(first:$first, query:$query, sortKey:UPDATED_AT, reverse:true) {
           nodes {
             id title status vendor tags
             featuredImage { url }
+            metafields(first:50) { nodes { id namespace key type value } }
             variants(first:100) {
               nodes {
                 id title sku price compareAtPrice inventoryQuantity
-                metafields(first:10) { nodes { id namespace key type value } }
+                metafields(first:50) { nodes { id namespace key type value } }
               }
             }
           }
         }
       }`, { first, query: search });
     res.json({ ok: true, products: d.products.nodes });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+app.post('/api/metafield-definitions', apiLimiter, async (req, res) => {
+  try {
+    const s = getSession(req);
+    const d = await gql(s, `
+      query MfDefs($first: Int!) {
+        productDefs:  metafieldDefinitions(ownerType: PRODUCT,        first: $first) { nodes { namespace key name type { name } } }
+        variantDefs:  metafieldDefinitions(ownerType: PRODUCTVARIANT, first: $first) { nodes { namespace key name type { name } } }
+      }`, { first: 200 });
+    const map = (nodes, ownerType) => nodes.map(def => ({
+      namespace: def.namespace,
+      key:       def.key,
+      name:      def.name,
+      type:      def.type?.name || 'single_line_text_field',
+      ownerType,
+    }));
+    const definitions = [
+      ...map(d.productDefs.nodes,  'PRODUCT'),
+      ...map(d.variantDefs.nodes,  'PRODUCTVARIANT'),
+    ];
+    res.json({ ok: true, definitions });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
