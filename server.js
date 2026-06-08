@@ -548,6 +548,14 @@ app.post('/api/collection-remove', apiLimiter, writeLimiter, async (req, res) =>
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
+// Public ping endpoint — no auth needed, safe to expose
+// Used by external cron services (cron-job.org, UptimeRobot) to keep server alive
+// and trigger schedule checks even when no users are active
+app.get('/api/schedule/ping', async (req, res) => {
+  await runDueSchedules().catch(() => {});
+  res.json({ ok: true, ts: new Date().toISOString() });
+});
+
 // ── SCHEDULE API ─────────────────────────────────────────
 
 app.post('/api/schedule/create', apiLimiter, (req, res) => {
