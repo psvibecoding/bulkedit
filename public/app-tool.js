@@ -252,7 +252,9 @@ function shopifyAdminUrl(gid){
 }
 function rowHTML(p,v){
   const dirty=!!S.changes[p.id], sel=S.selectedVids.has(v.id);
-  const cls=[dirty?'r-changed':'',sel?'r-selected':''].filter(Boolean).join(' ');
+  const {pf,vf}=getSchedBadges(p.id,v.id);
+  const hasSched=Object.keys(pf).length>0||Object.keys(vf).length>0;
+  const cls=[dirty?'r-changed':'',sel?'r-selected':'',hasSched?'r-scheduled':''].filter(Boolean).join(' ');
   const imgSrc=prodImg(p);
   const imgCell=imgSrc?`<img class="prod-thumb" src="${esc(imgSrc)}" alt="" loading="lazy">`:`<div class="prod-thumb-ph">□</div>`;
   const stCls={ACTIVE:'ACTIVE',DRAFT:'DRAFT',ARCHIVED:'ARCHIVED'}[p.status]||'DRAFT';
@@ -260,17 +262,22 @@ function rowHTML(p,v){
   const tagsHTML=(p.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
   const mfHTML=buildMfHTML(p,v);
   const shopUrl=shopifyAdminUrl(p.id);
+  const priceBadge=vf.price!==undefined?svb(`$${Number(vf.price).toFixed(2)}`,'new price'):'';
+  const catBadge=vf.compareAtPrice!==undefined?svb(vf.compareAtPrice?`$${Number(vf.compareAtPrice).toFixed(2)}`:'removed','new compare at'):'';
+  const statusBadge=pf.status?svb(pf.status,'new status'):'';
+  const vendorBadge=pf.vendor!==undefined?svb(pf.vendor,'new vendor'):'';
+  const tagsBadge=pf.tags!==undefined?svb(Array.isArray(pf.tags)?pf.tags.join(', '):pf.tags,'new tags'):'';
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
 <td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a></div><span class="mod-chip">modified</span></div></td>
-<td><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span></td>
-<td><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></td>
-<td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div></td>
+<td><div><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span>${statusBadge}</div></td>
+<td><div><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></div>${vendorBadge}</td>
+<td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div>${tagsBadge}</td>
 <td class="v-title">${esc(v.title||'Default')}</td>
 <td><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"></td>
-<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}"></td>
-<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"></td>
+<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}">${priceBadge}</td>
+<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}">${catBadge}</td>
 <td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
 </tr>`;
 }
@@ -910,6 +917,13 @@ async function confirmSchedule(){
     }
 
     updateSchedBadge();
+    // Revert scheduled products back to current Shopify values
+    const schedPids=new Set(changesWithMeta.map(c=>c.productId));
+    schedPids.forEach(pid=>{
+      const idx=S.products.findIndex(p=>p.id===pid);
+      const orig=S.originals.find(p=>p.id===pid);
+      if(idx!==-1&&orig)S.products[idx]=clone(orig);
+    });
     S.changes={}; S.past=[]; S.future=[];
     S.originals=clone(S.products);
     closeModal('m-sched');
@@ -923,6 +937,30 @@ async function confirmSchedule(){
 
 let _schedTab='pending';
 let _editingSchedId=null;
+
+function getSchedBadges(productId, variantId){
+  const pending=(S.schedules||[]).filter(s=>s.status==='pending'&&(s.changes||[]).some(c=>c.productId===productId));
+  if(!pending.length)return{pf:{},vf:{}};
+  const pf={}, vf={};
+  for(const sched of pending){
+    const chg=(sched.changes||[]).find(c=>c.productId===productId);
+    if(!chg)continue;
+    if(chg.product)Object.assign(pf,chg.product);
+    if(variantId&&chg.variants?.[variantId])Object.assign(vf,chg.variants[variantId]);
+  }
+  return{pf,vf};
+}
+function fmtSchedVal(val){
+  if(val===undefined||val===null)return'';
+  if(Array.isArray(val))return val.join(', ');
+  return String(val);
+}
+function svb(val, label){
+  const s=fmtSchedVal(val);
+  if(!s&&val!==0)return'';
+  const display=label?`${label}: ${s}`:s;
+  return`<div class="sched-val-badge" title="${esc(display)}">→ ${esc(display)}</div>`;
+}
 function schedRowHTML(s){
   const isRevert=!!s.linkedTo;
   // Inline edit form
