@@ -680,7 +680,7 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
   try {
     if (!SCHED_SECRET) throw new Error('Scheduling not enabled. Set SCHED_SECRET in environment variables.');
     const { shop, token } = getSession(req);
-    const { scheduledFor, label, changes, linkedTo } = req.body || {};
+    const { scheduledFor, label, changes, linkedTo, notifyEmail: providedEmail } = req.body || {};
     if (!scheduledFor) throw new Error('Missing scheduledFor');
     const dt = new Date(scheduledFor);
     if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
@@ -688,10 +688,14 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
     if (!Array.isArray(changes) || !changes.length || changes.length > 200) throw new Error('Invalid changes');
     if (!label || !String(label).trim()) throw new Error('Label is required');
     let notifyEmail = '';
-    try {
-      const sd = await gql({ shop, token }, `query { shop { email } }`);
-      notifyEmail = sd.shop?.email || '';
-    } catch {}
+    if (providedEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(providedEmail))) {
+      notifyEmail = String(providedEmail).trim().slice(0, 200);
+    } else {
+      try {
+        const sd = await gql({ shop, token }, `query { shop { email } }`);
+        notifyEmail = sd.shop?.email || '';
+      } catch {}
+    }
     const id = crypto.randomBytes(12).toString('hex');
     const sched = {
       id, shop,

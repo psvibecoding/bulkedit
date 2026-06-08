@@ -741,6 +741,7 @@ function openScheduleModal(){
     $('m-bulk-title2').textContent='Schedule edit';
     $('m-sched-sub').textContent=`${Object.keys(S.changes).length} product${Object.keys(S.changes).length!==1?'s':''} with staged changes`;
     $('m-sched-label').value='';
+    $('m-sched-email').value='';
     $('m-sched-revert-toggle').checked=false;
     $('m-sched-revert-dt').style.display='none';
     $('m-sched-revert-hint').style.display='none';
@@ -816,10 +817,12 @@ async function confirmSchedule(){
   if(!label) return toast('Add a label — e.g. "Black Friday sale".');
   const btn=$('m-sched-confirm'); btn.disabled=true; btn.textContent='Scheduling…';
   try{
+    const notifyEmail=($('m-sched-email')?.value||'').trim()||undefined;
     const r=await api('/api/schedule/create',{
       scheduledFor:scheduledFor.toISOString(),
       label:label||undefined,
-      changes:Object.values(S.changes)
+      changes:Object.values(S.changes),
+      notifyEmail,
     });
     S.schedules=[r.schedule,...(S.schedules||[])];
 
