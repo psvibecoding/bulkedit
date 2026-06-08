@@ -251,14 +251,16 @@ function buildMfHTML(p, v){
       variantDefs.map(def  => defRow(def, v.id, v.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key)?.value??'')).join('');
     return html || `<span class="mf-empty">No definitions</span>`;
   }
-  // Fallback raw mode
-  if(!v.metafields.nodes.length) return `<span class="mf-empty" style="font-size:11px;color:var(--t4)">—</span><button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
-  return v.metafields.nodes.map((m,i)=>`<div class="mf-row">
-<input class="mf-inp" placeholder="ns"    data-vid="${esc(v.id)}" data-idx="${i}" data-mf="namespace" value="${esc(m.namespace||'custom')}">
-<input class="mf-inp" placeholder="key"   data-vid="${esc(v.id)}" data-idx="${i}" data-mf="key"       value="${esc(m.key||'')}">
-<input class="mf-inp" placeholder="value" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="value"     value="${esc(m.value||'')}">
-<button class="mf-del" data-vid="${esc(v.id)}" data-idx="${i}">×</button>
-</div>`).join('')+`<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
+  // Fallback raw mode: show all existing metafields (product + variant) with ns.key labels
+  const prodRows = p.metafields.nodes.map(m =>
+    defRow({namespace:m.namespace,key:m.key,name:`${m.namespace}.${m.key}`,type:m.type||'single_line_text_field',ownerType:'PRODUCT'}, p.id, m.value||'')
+  ).join('');
+  const varRows = v.metafields.nodes.map((m,i) => m.key
+    ? defRow({namespace:m.namespace,key:m.key,name:`${m.namespace}.${m.key}`,type:m.type||'single_line_text_field',ownerType:'PRODUCTVARIANT'}, v.id, m.value||'')
+    : `<div class="mf-row"><input class="mf-inp" placeholder="ns" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="namespace" value="custom"><input class="mf-inp" placeholder="key" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="key" value=""><input class="mf-inp" placeholder="value" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="value" value=""><button class="mf-del" data-vid="${esc(v.id)}" data-idx="${i}">×</button></div>`
+  ).join('');
+  const rawContent = prodRows + varRows;
+  return (rawContent || `<span class="mf-empty">—</span>`) + `<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
 }
 
 /* ── TABLE EVENT DELEGATION ── */
@@ -674,7 +676,7 @@ function boot(){
     S.searchQ=e.target.value.trim(); renderTable();
     if(!S.demo){
       clearTimeout(window._srt);
-      if(S.searchQ.length>2)      window._srt=setTimeout(()=>loadProducts(S.searchQ.split(',')[0].trim()),400);
+      if(S.searchQ.length>2)      window._srt=setTimeout(()=>loadProducts(S.searchQ),400);
       else if(S.searchQ.length===0) loadProducts('');
     }
   });
