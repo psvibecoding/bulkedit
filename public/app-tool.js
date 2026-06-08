@@ -812,8 +812,9 @@ async function confirmSchedule(){
     if(revertAt<=scheduledFor)return toast('Revert time must be after the schedule time.');
   }
 
-  const btn=$('m-sched-confirm'); btn.disabled=true; btn.textContent='Scheduling…';
   const label=$('m-sched-label').value.trim();
+  if(!label) return toast('Add a label — e.g. "Black Friday sale".');
+  const btn=$('m-sched-confirm'); btn.disabled=true; btn.textContent='Scheduling…';
   try{
     const r=await api('/api/schedule/create',{
       scheduledFor:scheduledFor.toISOString(),

@@ -21,6 +21,8 @@ const SHOPIFY_SCOPES      = process.env.SHOPIFY_SCOPES || 'read_products,write_p
 const APP_URL             = (process.env.APP_URL || 'http://localhost:8787').replace(/\/$/, '');
 const SCHED_SECRET        = process.env.SCHED_SECRET || '';
 const SCHED_FILE          = process.env.SCHED_FILE || path.join(__dirname, 'schedules.json');
+const RESEND_API_KEY      = process.env.RESEND_API_KEY || '';
+const NOTIFY_EMAIL        = process.env.NOTIFY_EMAIL || '';
 
 // In-memory OAuth state (stateless — no DB)
 const oauthStates = new Map();
@@ -191,6 +193,42 @@ function schedFileStatus() {
   try { fs.accessSync(path.dirname(SCHED_FILE), fs.constants.W_OK); return 'writable'; } catch { return 'NOT writable'; }
 }
 
+async function sendNotification(sched, success) {
+  if (!RESEND_API_KEY || !NOTIFY_EMAIL) return;
+  const dt = new Date(sched.scheduledFor).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Rome' });
+  const subject = success
+    ? `✅ Schedule executed: ${sched.label}`
+    : `❌ Schedule failed: ${sched.label}`;
+  const rows = (sched.changes || []).map(c => {
+    const varCount = Object.keys(c.variants || {}).length;
+    const mfCount  = (c.metafields || []).length;
+    const parts = [];
+    if (Object.keys(c.product || {}).length) parts.push(Object.keys(c.product).join(', '));
+    if (varCount) parts.push(`${varCount} variant${varCount !== 1 ? 's' : ''}`);
+    if (mfCount)  parts.push(`${mfCount} metafield${mfCount !== 1 ? 's' : ''}`);
+    return `<tr><td style="padding:4px 12px 4px 0;color:#374151">${c.productId.split('/').pop()}</td><td style="padding:4px 0;color:#6b7280">${parts.join(' · ') || '—'}</td></tr>`;
+  }).join('');
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px;color:#111">
+      <h2 style="margin:0 0 8px">${subject}</h2>
+      <p style="color:#6b7280;margin:0 0 16px">Store: <strong>${sched.shop}</strong> · Scheduled for: <strong>${dt}</strong></p>
+      ${!success ? `<p style="color:#ef4444;margin:0 0 16px">Error: ${sched.error || 'unknown'}</p>` : ''}
+      <table style="border-collapse:collapse;width:100%">
+        <thead><tr><th style="text-align:left;padding:4px 12px 4px 0;color:#9ca3af;font-size:12px">Product ID</th><th style="text-align:left;color:#9ca3af;font-size:12px">Changes</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p style="margin:20px 0 0;font-size:12px;color:#9ca3af">Sent by BulkEdit</p>
+    </div>`;
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify({ from: 'BulkEdit <onboarding@resend.dev>', to: [NOTIFY_EMAIL], subject, html }),
+    });
+    if (!r.ok) console.error('[notify] resend error:', await r.text());
+  } catch (e) { console.error('[notify] email error:', e.message); }
+}
+
 // Extracted save logic shared by /api/save-product and the schedule executor
 async function execSaveProduct(session, { productId, product = {}, variants = [], metafields = [] }) {
   const results = [];
@@ -261,9 +299,11 @@ async function executeSchedule(sched, schedules) {
     sched.status     = 'executed';
     sched.executedAt = new Date().toISOString();
     sched.encToken   = null;
+    sendNotification(sched, true).catch(() => {});
   } catch (e) {
     sched.status = 'failed';
     sched.error  = safeErr(e);
+    sendNotification(sched, false).catch(() => {});
   }
   writeSchedules(schedules);
 }
