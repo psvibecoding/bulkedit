@@ -70,7 +70,11 @@ const DEMO_PRODUCTS = [
 
 /* ── HELPERS ── */
 function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),3000); }
-function setStatus(msg,cls=''){ const el=$('status-msg'); el.textContent=msg; el.className='status-txt'+(cls?' '+cls:''); }
+function setStatus(msg,cls=''){
+  const el=$('status-msg'); if(!el)return;
+  el.textContent=msg; el.className='status-txt'+(cls?' '+cls:'');
+  document.querySelector('.statusbar')?.setAttribute('data-status',cls||'ready');
+}
 function showScreen(name){
   ['s-connect','s-loading','s-app'].forEach(id=>{ const el=$(id); if(!el)return; el.classList.remove('active'); el.style.display='none'; });
   const t=$(name); if(!t)return; t.classList.add('active');
@@ -282,6 +286,29 @@ function buildMfHTML(p, v){
   return (rawContent || `<span class="mf-empty">—</span>`) + `<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
 }
 
+/* ── RESIZABLE COLUMNS ── */
+function initColResize(){
+  const table=document.querySelector('table'); if(!table)return;
+  table.style.tableLayout='fixed';
+  const ths=[...document.querySelectorAll('thead th')];
+  const widths=[34,44,220,90,110,150,80,90,80,90,220];
+  ths.forEach((th,i)=>{
+    th.style.width=(widths[i]||100)+'px';
+    if(i<2)return;
+    const h=document.createElement('div');
+    h.className='col-rz';
+    th.appendChild(h);
+    let x0,w0;
+    h.addEventListener('mousedown',e=>{
+      e.preventDefault(); x0=e.clientX; w0=th.offsetWidth;
+      const mv=e2=>{th.style.width=Math.max(60,w0+e2.clientX-x0)+'px';};
+      const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);};
+      document.addEventListener('mousemove',mv);
+      document.addEventListener('mouseup',up);
+    });
+  });
+}
+
 /* ── TABLE EVENT DELEGATION ── */
 function bindTable(){
   const tbody=$('tbody');
@@ -442,15 +469,30 @@ function getSelPids(){ const ids=new Set(); S.selectedVids.forEach(vid=>{const{p
 function updateSaveBtn(){
   const n=Object.keys(S.changes).length;
   $('btn-save').disabled=!n; $('save-count').textContent=n;
-  if(n)setStatus(`${n} unsaved change${n!==1?'s':''}`,  'dirty');
-  else setStatus('No pending changes','ok');
+  if(n){
+    setStatus(`${n} unsaved change${n!==1?'s':''}`, 'dirty');
+    Object.keys(S.changes).forEach(pid=>{
+      document.querySelectorAll(`tr[data-pid]`).forEach(tr=>{
+        if(tr.dataset.pid!==pid)return;
+        tr.classList.add('r-changed');
+        const tc=tr.querySelector('.title-cell');
+        if(tc&&!tc.querySelector('.mod-chip')){
+          const c=document.createElement('span');
+          c.className='mod-chip'; c.textContent='modified';
+          tc.appendChild(c);
+        }
+      });
+    });
+  }else{
+    setStatus('Ready','ready');
+  }
 }
 
 /* ── BULK MODAL ── */
 function openBulkModal(type){
   S.bulkType=type;
   const n=S.selectedVids.size;
-  $('m-bulk-title').textContent={status:'Change status',price:'Set price',tags:'Tags',metafield:'Set metafield'}[type]||'Bulk action';
+  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',tags:'Edit Tags',metafield:'Edit Metafields',collections:'Add / Remove Collection'}[type]||'Bulk action';
   $('m-bulk-sub').textContent=`Applied to ${n} selected variant${n!==1?'s':''}`;
   const body=$('m-bulk-body');
   if(type==='status'){
@@ -639,7 +681,8 @@ async function confirmSave(){
     document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
     closeModal('m-save'); renderTable(); updateSaveBtn(); updateUndoUI();
     toast(`${n} product${n!==1?'s':''} saved.`);
-    setStatus('All changes saved','ok');
+    setStatus('All changes saved','saved');
+    setTimeout(()=>setStatus('Ready','ready'),3000);
     dlText(recap,`bulkedit-recap-${Date.now()}.txt`);
   }catch(e){ toast(e.message); setStatus('Save failed','dirty'); }
   finally{ btn.disabled=false; }
@@ -798,6 +841,7 @@ function boot(){
 
   // Table events
   bindTable();
+  initColResize();
 
   // OAuth callback / demo URL
   (function(){

@@ -193,11 +193,18 @@ input[type="checkbox"]{width:13px;height:13px;accent-color:var(--green);cursor:p
 .btn-row{display:flex;gap:8px;flex-wrap:wrap}
 
 /* ═══════════ STATUSBAR ═══════════ */
-.statusbar{display:flex;align-items:center;justify-content:space-between;padding:7px 16px;background:var(--white);border-top:1px solid var(--b1);font-size:11px;flex-wrap:wrap;gap:8px}
+.statusbar{display:flex;align-items:center;justify-content:space-between;padding:7px 16px;background:var(--white);border-top:1px solid var(--b1);font-size:11px;flex-wrap:wrap;gap:8px;transition:background .3s,border-top-color .3s}
+.statusbar[data-status="dirty"]{background:#fefce8;border-top-color:#f59e0b}
+.statusbar[data-status="dirty"] .status-txt{color:#92400e;font-weight:600}
+.statusbar[data-status="dirty"] .status-hint{color:#92400e;opacity:.7}
+.statusbar[data-status="saved"]{background:#f0fdf4;border-top-color:#4ade80}
+.statusbar[data-status="saved"] .status-txt{color:var(--green);font-weight:600}
 .status-txt{font-family:var(--mono);color:var(--t2)}
 .status-txt.dirty{color:var(--amber)}
 .status-txt.ok{color:var(--green)}
 .status-hint{color:var(--t4);font-family:var(--mono);font-size:10px}
+.col-rz{position:absolute;right:-2px;top:0;bottom:0;width:5px;cursor:col-resize;z-index:1;background:transparent;border-radius:2px}
+.col-rz:hover,.col-rz:active{background:var(--green);opacity:.5}
 
 /* ═══════════ MODALS ═══════════ */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
