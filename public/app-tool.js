@@ -95,6 +95,7 @@ async function api(path,body={}){
 function startOAuth(){
   const raw = $('f-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
   if(!raw||!raw.includes('.myshopify.com')) return toast('Enter your store domain — e.g. your-store.myshopify.com');
+  if(new URLSearchParams(location.search).get('openSchedules')==='1') sessionStorage.setItem('openSchedules','1');
   window.location.href = `/auth/start?shop=${encodeURIComponent(raw)}`;
 }
 
@@ -108,10 +109,11 @@ async function afterOAuth(shop, token){
     await Promise.all([ loadProducts(), loadMfDefs() ]);
     showScreen('s-app');
     loadSchedules();
-    const mfMsg = S.mfDefs.length ? ` · ${S.mfDefs.length} metafield definition${S.mfDefs.length!==1?'s':''} loaded` : '';
-    toast(`Connected${mfMsg}. Session only — no data stored.`);
-    if(new URLSearchParams(location.search).get('openSchedules')==='1'){
+    toast('Connected — all info loaded. Session only, no data stored.');
+    const shouldOpenSchedules = new URLSearchParams(location.search).get('openSchedules')==='1' || sessionStorage.getItem('openSchedules')==='1';
+    if(shouldOpenSchedules){
       history.replaceState(null,'',location.pathname);
+      sessionStorage.removeItem('openSchedules');
       setTimeout(openScheduleModal, 400);
     }
   }catch(e){ showScreen('s-connect'); toast(e.message); }

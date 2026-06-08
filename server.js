@@ -854,11 +854,10 @@ app.post('/api/notify-test', apiLimiter, async (req, res) => {
     if (!NOTIFY_FROM)    return res.json({ ok: false, error: 'NOTIFY_FROM not set on server', emailConfigured: true });
     const to = (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) ? String(email).trim() : null;
     if (!to) return res.status(400).json({ ok: false, error: 'Provide a valid email address' });
-    const result = await sendEmail({
-      to,
-      subject: '✅ BulkEdit — email test',
-      html: buildEmailHtml({ shop, label: 'Email test', scheduledFor: new Date().toISOString(), executedAt: new Date().toISOString(), changes: [] }, true),
-    });
+    let html;
+    try { html = buildEmailHtml({ shop, label: 'Email test', scheduledFor: new Date().toISOString(), executedAt: new Date().toISOString(), changes: [] }, true); }
+    catch (renderErr) { return res.json({ ok: false, error: `Template error: ${renderErr.message}`, to, from: NOTIFY_FROM }); }
+    const result = await sendEmail({ to, subject: '✅ BulkEdit — email test', html });
     if (!result.ok) return res.json({ ok: false, error: result.error, to, from: NOTIFY_FROM });
     res.json({ ok: true, sent: true, to, from: NOTIFY_FROM });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
