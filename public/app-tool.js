@@ -252,8 +252,8 @@ function shopifyAdminUrl(gid){
 }
 function rowHTML(p,v){
   const dirty=!!S.changes[p.id], sel=S.selectedVids.has(v.id);
-  const {pf,vf}=getSchedBadges(p.id,v.id);
-  const hasSched=Object.keys(pf).length>0||Object.keys(vf).length>0;
+  const schedList=getSchedBadges(p.id,v.id);
+  const hasSched=schedList.length>0;
   const cls=[dirty?'r-changed':'',sel?'r-selected':'',hasSched?'r-scheduled':''].filter(Boolean).join(' ');
   const imgSrc=prodImg(p);
   const imgCell=imgSrc?`<img class="prod-thumb" src="${esc(imgSrc)}" alt="" loading="lazy">`:`<div class="prod-thumb-ph">□</div>`;
@@ -262,11 +262,16 @@ function rowHTML(p,v){
   const tagsHTML=(p.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
   const mfHTML=buildMfHTML(p,v);
   const shopUrl=shopifyAdminUrl(p.id);
-  const priceBadge=vf.price!==undefined?svb(`$${Number(vf.price).toFixed(2)}`,'new price'):'';
-  const catBadge=vf.compareAtPrice!==undefined?svb(vf.compareAtPrice?`$${Number(vf.compareAtPrice).toFixed(2)}`:'removed','new compare at'):'';
-  const statusBadge=pf.status?svb(pf.status,'new status'):'';
-  const vendorBadge=pf.vendor!==undefined?svb(pf.vendor,'new vendor'):'';
-  const tagsBadge=pf.tags!==undefined?svb(Array.isArray(pf.tags)?pf.tags.join(', '):pf.tags,'new tags'):'';
+  const priceBadge=schedList.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">→ new price $${Number(b.vf.price).toFixed(2)}</div>`).join('');
+  const catBadge=schedList.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?`$${Number(b.vf.compareAtPrice).toFixed(2)}`:'removed';return`<div class="sched-val-badge">→ compare at ${esc(val)}</div>`;}).join('');
+  const statusBadge=schedList.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">→ ${esc(b.pf.status)}</div>`).join('');
+  const vendorBadge=schedList.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">→ ${esc(b.pf.vendor||'(none)')}</div>`).join('');
+  const tagsBadge=schedList.filter(b=>b.pf.tags!==undefined).map(b=>{
+    const cur=p.tags||[];
+    const nxt=Array.isArray(b.pf.tags)?b.pf.tags:String(b.pf.tags).split(',').map(t=>t.trim()).filter(Boolean);
+    const cls2=nxt.length<cur.length?'sched-val-badge-red':'sched-val-badge';
+    return`<div class="${cls2}">→ ${esc(nxt.join(', ')||'(no tags)')}</div>`;
+  }).join('');
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
@@ -939,27 +944,12 @@ let _schedTab='pending';
 let _editingSchedId=null;
 
 function getSchedBadges(productId, variantId){
-  const pending=(S.schedules||[]).filter(s=>s.status==='pending'&&(s.changes||[]).some(c=>c.productId===productId));
-  if(!pending.length)return{pf:{},vf:{}};
-  const pf={}, vf={};
-  for(const sched of pending){
-    const chg=(sched.changes||[]).find(c=>c.productId===productId);
-    if(!chg)continue;
-    if(chg.product)Object.assign(pf,chg.product);
-    if(variantId&&chg.variants?.[variantId])Object.assign(vf,chg.variants[variantId]);
-  }
-  return{pf,vf};
-}
-function fmtSchedVal(val){
-  if(val===undefined||val===null)return'';
-  if(Array.isArray(val))return val.join(', ');
-  return String(val);
-}
-function svb(val, label){
-  const s=fmtSchedVal(val);
-  if(!s&&val!==0)return'';
-  const display=label?`${label}: ${s}`:s;
-  return`<div class="sched-val-badge" title="${esc(display)}">→ ${esc(display)}</div>`;
+  return (S.schedules||[])
+    .filter(s=>s.status==='pending'&&(s.changes||[]).some(c=>c.productId===productId))
+    .map(sched=>{
+      const chg=(sched.changes||[]).find(c=>c.productId===productId);
+      return{label:sched.label, pf:chg?.product||{}, vf:(variantId&&chg?.variants?.[variantId])||{}};
+    });
 }
 function schedRowHTML(s){
   const isRevert=!!s.linkedTo;

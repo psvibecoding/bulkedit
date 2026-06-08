@@ -292,7 +292,8 @@ input[type="checkbox"]{width:13px;height:13px;accent-color:var(--green);cursor:p
 .sched-running{color:var(--t2);background:var(--s3);border:1px solid var(--b2)}
 .sched-cancelled{color:var(--t4);background:var(--s3);border:1px solid var(--b1)}
 .sched-btns{display:flex;gap:5px;flex-shrink:0}
-.sched-val-badge{display:inline-block;font-size:10px;font-family:var(--mono);color:var(--green);background:var(--green-bg);border:1px solid var(--green-brd);border-radius:4px;padding:1px 5px;margin-top:2px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.sched-val-badge{display:inline-block;font-size:10px;font-family:var(--mono);color:var(--green);background:var(--green-bg);border:1px solid var(--green-brd);border-radius:4px;padding:1px 5px;margin-top:2px;word-break:break-word}
+.sched-val-badge-red{display:inline-block;font-size:10px;font-family:var(--mono);color:var(--red);background:var(--red-bg);border:1px solid var(--red-brd);border-radius:4px;padding:1px 5px;margin-top:2px;word-break:break-word}
 
 .hidden{display:none!important}
 @media(max-width:700px){.topbar{flex-direction:column;align-items:flex-start}.topbar-l,.topbar-r{width:100%}.search-box{max-width:100%}}
