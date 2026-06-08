@@ -754,7 +754,9 @@ function openScheduleModal(){
     const d=new Date(); d.setHours(d.getHours()+1,0,0,0);
     $('m-sched-dt').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('m-sched-preview').innerHTML=Object.values(S.changes).map(c=>{
-      const title=getProd(c.productId)?.title||c.productId;
+      const prod=getProd(c.productId);
+      const title=prod?.title||c.productId;
+      const img=prod?.featuredImage?.url||'';
       const parts=[];
       const fields=Object.keys(c.product||{});
       if(fields.length)parts.push(fields.join(', '));
@@ -762,7 +764,10 @@ function openScheduleModal(){
       if(varCount)parts.push(`${varCount} variant${varCount!==1?'s':''}`);
       const mfCount=(c.metafields||[]).length;
       if(mfCount)parts.push(`${mfCount} metafield${mfCount!==1?'s':''}`);
-      return `<div class="sched-prev-row"><span class="sched-prod">${esc(title)}</span><span class="sched-fields">${esc(parts.join(' · ')||'—')}</span></div>`;
+      const imgEl=img
+        ?`<img src="${esc(img)}" style="width:32px;height:32px;border-radius:5px;object-fit:cover;flex-shrink:0;border:1px solid var(--b1)" alt=""/>`
+        :`<div style="width:32px;height:32px;border-radius:5px;background:var(--s3);flex-shrink:0"></div>`;
+      return `<div class="sched-prev-row">${imgEl}<span class="sched-prod">${esc(title)}</span><span class="sched-fields">${esc(parts.join(' · ')||'—')}</span></div>`;
     }).join('');
   } else {
     // No staged changes — show jobs list
