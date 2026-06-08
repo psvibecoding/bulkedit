@@ -851,6 +851,35 @@ async function confirmSchedule(){
   finally{ btn.disabled=false; btn.textContent='Schedule →'; }
 }
 
+let _schedTab='pending';
+function schedRowHTML(s){
+  const dt=new Date(s.scheduledFor).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+  const n=s.changes.length;
+  const overdue=s.status==='pending'&&new Date(s.scheduledFor)<new Date();
+  const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
+  const sLbl={pending:overdue?'Overdue':'Pending',executed:'Done',failed:'Failed',running:'Running',cancelled:'Cancelled'}[s.status]||s.status;
+  const isRevert=!!s.linkedTo;
+  const btns=s.status==='pending'
+    ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
+    :['failed','cancelled'].includes(s.status)?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button>`:'';
+  return `<div class="sched-row${isRevert?' sched-revert':''}"><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
+}
+
+function renderSchedTabs(all){
+  const pending=all.filter(s=>['pending','running','failed'].includes(s.status));
+  const done=all.filter(s=>['executed','cancelled'].includes(s.status));
+  const list=_schedTab==='pending'?pending:done;
+  const body=$('m-sched-jobs'); if(!body)return;
+  const tabsHTML=`<div class="sched-tabs">
+    <button class="sched-tab${_schedTab==='pending'?' active':''}" data-sched-tab="pending">Pending${pending.length?` <span class="sched-tab-count">${pending.length}</span>`:''}</button>
+    <button class="sched-tab${_schedTab==='done'?' active':''}" data-sched-tab="done">Done${done.length?` <span class="sched-tab-count">${done.length}</span>`:''}</button>
+  </div>`;
+  const listHTML=list.length
+    ?list.map(schedRowHTML).join('')
+    :`<p class="sched-empty">${_schedTab==='pending'?'No pending schedules.':'No completed schedules yet.'}</p>`;
+  body.innerHTML=tabsHTML+`<div class="sched-list-inner">${listHTML}</div>`;
+}
+
 async function renderSchedJobsList(){
   const body=$('m-sched-jobs'); if(!body)return;
   body.innerHTML='<p class="sched-empty">Loading…</p>';
@@ -858,19 +887,7 @@ async function renderSchedJobsList(){
     const r=await api('/api/schedule/list',{});
     S.schedules=r.schedules||[];
     updateSchedBadge();
-    if(!r.schedules.length){ body.innerHTML='<p class="sched-empty">No scheduled jobs yet.</p>'; return; }
-    body.innerHTML=r.schedules.map(s=>{
-      const dt=new Date(s.scheduledFor).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
-      const n=s.changes.length;
-      const overdue=s.status==='pending'&&new Date(s.scheduledFor)<new Date();
-      const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
-      const sLbl={pending:overdue?'Overdue':'Pending',executed:'Done',failed:'Failed',running:'Running',cancelled:'Cancelled'}[s.status]||s.status;
-      const isRevert=!!s.linkedTo;
-      const btns=s.status==='pending'
-        ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
-        :['failed','cancelled'].includes(s.status)?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button>`:'';
-      return `<div class="sched-row${isRevert?' sched-revert':''}"><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
-    }).join('');
+    renderSchedTabs(S.schedules);
   }catch(e){ body.innerHTML=`<p class="sched-empty" style="color:var(--red)">${esc(e.message)}</p>`; }
 }
 
@@ -1002,6 +1019,7 @@ function boot(){
     }
   });
   $('m-sched-jobs').addEventListener('click', async e=>{
+    if(e.target.dataset.schedTab){ _schedTab=e.target.dataset.schedTab; renderSchedTabs(S.schedules); return; }
     const id=e.target.dataset.schedRun||e.target.dataset.schedCancel||e.target.dataset.schedRetry;
     if(!id)return;
     const btn=e.target; btn.disabled=true;
