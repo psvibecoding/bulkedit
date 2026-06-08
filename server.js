@@ -267,7 +267,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       const after  = fmtField(field, newVal);
       rows.push(`
         <tr>
-          <td style="padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top;white-space:nowrap">${label}</td>
+          <td style="padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top;word-break:break-word">${label}</td>
           <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top;word-break:break-word">${before}</td>
           <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
           <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#1a5c38;vertical-align:top;word-break:break-word">${after}</td>
@@ -278,7 +278,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
     Object.entries(c.variants || {}).forEach(([varId, v]) => {
       const vb = c.variantsBefore?.[varId];
       const varLabel = vb?.title && vb.title !== 'Default Title' ? vb.title : null;
-      const prefixStyle = `padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top;white-space:nowrap`;
+      const prefixStyle = `padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top;word-break:break-word`;
       if (v.price !== undefined) {
         rows.push(`
           <tr>
