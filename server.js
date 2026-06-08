@@ -267,10 +267,10 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       const after  = fmtField(field, newVal);
       rows.push(`
         <tr>
-          <td style="padding:5px 12px 5px 0;width:100px;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:middle">${label}</td>
-          <td style="padding:5px 12px 5px 0;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:middle;white-space:nowrap">${before}</td>
-          <td style="padding:5px 10px 5px 0;font-size:13px;color:#9ca3af;vertical-align:middle">→</td>
-          <td style="padding:5px 0;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:middle;white-space:nowrap">${after}</td>
+          <td style="padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top;white-space:nowrap">${label}</td>
+          <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top;word-break:break-word">${before}</td>
+          <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
+          <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:top;word-break:break-word">${after}</td>
         </tr>`);
     });
 
@@ -278,23 +278,23 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
     Object.entries(c.variants || {}).forEach(([varId, v]) => {
       const vb = c.variantsBefore?.[varId];
       const varLabel = vb?.title && vb.title !== 'Default Title' ? vb.title : null;
-      const prefixStyle = `padding:5px 12px 5px 0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:middle;white-space:nowrap`;
+      const prefixStyle = `padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top;white-space:nowrap`;
       if (v.price !== undefined) {
         rows.push(`
           <tr>
             <td style="${prefixStyle}">${varLabel ? `Price · ${varLabel}` : 'Price'}</td>
-            <td style="padding:5px 12px 5px 0;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:middle">${fmtPrice(vb?.price)}</td>
-            <td style="padding:5px 10px 5px 0;font-size:13px;color:#9ca3af;vertical-align:middle">→</td>
-            <td style="padding:5px 0;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:middle">${fmtPrice(v.price)}</td>
+            <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top">${fmtPrice(vb?.price)}</td>
+            <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
+            <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:top">${fmtPrice(v.price)}</td>
           </tr>`);
       }
       if (v.compareAtPrice !== undefined) {
         rows.push(`
           <tr>
             <td style="${prefixStyle}">${varLabel ? `Compare · ${varLabel}` : 'Compare at'}</td>
-            <td style="padding:5px 12px 5px 0;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:middle">${fmtPrice(vb?.compareAtPrice)}</td>
-            <td style="padding:5px 10px 5px 0;font-size:13px;color:#9ca3af;vertical-align:middle">→</td>
-            <td style="padding:5px 0;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:middle">${fmtPrice(v.compareAtPrice)}</td>
+            <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top">${fmtPrice(vb?.compareAtPrice)}</td>
+            <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
+            <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:top">${fmtPrice(v.compareAtPrice)}</td>
           </tr>`);
       }
     });
@@ -308,7 +308,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       </tr>`);
 
     const innerTable = rows.length
-      ? `<table style="width:100%;border-collapse:collapse;margin-top:8px">${rows.join('')}</table>`
+      ? `<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:8px">${rows.join('')}</table>`
       : `<div style="font-size:13px;color:#9ca3af;margin-top:6px">—</div>`;
 
     const imgBlock = imgUrl
