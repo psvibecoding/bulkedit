@@ -196,38 +196,117 @@ function schedFileStatus() {
 }
 
 function buildEmailHtml(sched, success) {
-  const dt = new Date(sched.scheduledFor).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Rome' });
-  const icon = success ? '✅' : '❌';
-  const title = success ? `Schedule executed: ${sched.label}` : `Schedule failed: ${sched.label}`;
-  const rows = (sched.changes || []).map(c => {
-    const varCount = Object.keys(c.variants || {}).length;
-    const mfCount  = (c.metafields || []).length;
+  const dt = new Date(sched.executedAt || sched.scheduledFor).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+  const n  = (sched.changes || []).length;
+
+  const productRows = (sched.changes || []).map(c => {
+    const title = c.productTitle || c.productId.split('/').pop();
     const parts = [];
-    if (Object.keys(c.product || {}).length) parts.push(Object.keys(c.product).join(', '));
-    if (varCount) parts.push(`${varCount} variant${varCount !== 1 ? 's' : ''}`);
-    if (mfCount)  parts.push(`${mfCount} metafield${mfCount !== 1 ? 's' : ''}`);
-    return `<tr><td style="padding:6px 16px 6px 0;color:#374151;font-size:14px">${c.productId.split('/').pop()}</td><td style="padding:6px 0;color:#6b7280;font-size:14px">${parts.join(' · ') || '—'}</td></tr>`;
+    const productFields = Object.keys(c.product || {});
+    if (productFields.length) {
+      const fieldLabels = { status: 'Status', title: 'Title', vendor: 'Vendor', tags: 'Tags', bodyHtml: 'Description', productType: 'Type' };
+      parts.push(productFields.map(f => fieldLabels[f] || f).join(', '));
+    }
+    const varCount = Object.keys(c.variants || {}).length;
+    if (varCount) parts.push(`${varCount} variant price${varCount !== 1 ? 's' : ''}`);
+    const mfCount = (c.metafields || []).length;
+    if (mfCount) parts.push(`${mfCount} metafield${mfCount !== 1 ? 's' : ''}`);
+    return `
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #f0f0ec;vertical-align:top">
+          <div style="font-size:14px;font-weight:500;color:#0e0e0c;line-height:1.4">${title}</div>
+          <div style="font-size:12px;color:#7c7c74;margin-top:2px">${parts.join(' · ') || 'No changes'}</div>
+        </td>
+      </tr>`;
   }).join('');
-  return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f9f9f7;font-family:sans-serif">
-    <div style="max-width:520px;margin:40px auto;background:#fff;border-radius:12px;border:1px solid #e4e4de;overflow:hidden">
-      <div style="background:#1a5c38;padding:24px 28px">
-        <span style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)">BulkEdit</span>
+
+  const statusBg    = success ? '#f0fdf4' : '#fef2f2';
+  const statusBorder= success ? '#bbf7d0' : '#fecaca';
+  const statusColor = success ? '#15803d' : '#dc2626';
+  const statusIcon  = success ? '✓' : '✕';
+  const statusLabel = success ? 'Changes applied successfully' : 'Schedule failed';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BulkEdit</title></head>
+<body style="margin:0;padding:0;background:#f4f4f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased">
+<div style="max-width:560px;margin:0 auto;padding:40px 16px 60px">
+
+  <!-- Card -->
+  <div style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08),0 0 0 1px rgba(0,0,0,.06)">
+
+    <!-- Header -->
+    <div style="background:#1a5c38;padding:20px 32px;display:flex;align-items:center;gap:12px">
+      <div style="background:rgba(255,255,255,.18);border-radius:7px;width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center">
+        <span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em">BE</span>
       </div>
-      <div style="padding:28px">
-        <h2 style="margin:0 0 6px;font-size:20px;color:#0e0e0c">${icon} ${title}</h2>
-        <p style="margin:0 0 20px;color:#7c7c74;font-size:14px">Store: <strong>${sched.shop}</strong> · Scheduled for: <strong>${dt}</strong></p>
-        ${!success ? `<p style="margin:0 0 20px;color:#ef4444;font-size:14px;background:#fef2f2;padding:10px 14px;border-radius:8px">Error: ${sched.error || 'unknown'}</p>` : ''}
-        <table style="border-collapse:collapse;width:100%">
-          <thead><tr>
-            <th style="text-align:left;padding:4px 16px 8px 0;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Product</th>
-            <th style="text-align:left;color:#9ca3af;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Changes</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <p style="margin:24px 0 0;font-size:12px;color:#9ca3af;border-top:1px solid #e4e4de;padding-top:16px">Sent by BulkEdit · <a href="https://bulkedit.app" style="color:#1a5c38">bulkedit.app</a></p>
+      <span style="color:rgba(255,255,255,.75);font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase">BulkEdit</span>
+    </div>
+
+    <!-- Status banner -->
+    <div style="background:${statusBg};border-bottom:1px solid ${statusBorder};padding:22px 32px;display:flex;align-items:center;gap:14px">
+      <div style="width:36px;height:36px;border-radius:50%;background:${statusColor};display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="color:#fff;font-size:16px;font-weight:700;line-height:1">${statusIcon}</span>
+      </div>
+      <div>
+        <div style="font-size:16px;font-weight:600;color:${statusColor}">${statusLabel}</div>
+        <div style="font-size:13px;color:#7c7c74;margin-top:2px">${sched.label}</div>
       </div>
     </div>
-  </body></html>`;
+
+    <!-- Body -->
+    <div style="padding:28px 32px">
+
+      <!-- Meta grid -->
+      <table style="width:100%;border-collapse:collapse;background:#f9f9f7;border-radius:10px;overflow:hidden;margin-bottom:28px">
+        <tr>
+          <td style="padding:10px 16px;border-bottom:1px solid #ebebeb;width:110px">
+            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Store</div>
+          </td>
+          <td style="padding:10px 16px;border-bottom:1px solid #ebebeb">
+            <div style="font-size:13px;color:#0e0e0c;font-weight:500">${sched.shop}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 16px;border-bottom:1px solid #ebebeb">
+            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Executed</div>
+          </td>
+          <td style="padding:10px 16px;border-bottom:1px solid #ebebeb">
+            <div style="font-size:13px;color:#0e0e0c;font-weight:500">${dt}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 16px">
+            <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Products</div>
+          </td>
+          <td style="padding:10px 16px">
+            <div style="font-size:13px;color:#0e0e0c;font-weight:500">${n} product${n !== 1 ? 's' : ''}</div>
+          </td>
+        </tr>
+      </table>
+
+      ${!success ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:24px;font-size:13px;color:#dc2626">Error: ${sched.error || 'unknown error'}</div>` : ''}
+
+      <!-- Product list -->
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Changes applied</div>
+      <table style="width:100%;border-collapse:collapse">
+        <tbody>${productRows}</tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:18px 32px;border-top:1px solid #e4e4de;background:#f9f9f7">
+      <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6">
+        This notification was sent by <a href="https://bulkedit.app" style="color:#1a5c38;text-decoration:none;font-weight:500">BulkEdit</a> because you scheduled a bulk product update for your Shopify store.
+      </p>
+    </div>
+  </div>
+
+  <p style="text-align:center;margin:20px 0 0;font-size:11px;color:#b0b0a8">
+    © 2026 BulkEdit &nbsp;·&nbsp; <a href="https://bulkedit.app/privacy" style="color:#b0b0a8;text-decoration:none">Privacy Policy</a>
+  </p>
+</div>
+</body></html>`;
 }
 
 async function sendEmail({ to, subject, html }) {
@@ -691,7 +770,7 @@ app.post('/api/notify-test', apiLimiter, async (req, res) => {
     const result = await sendEmail({
       to,
       subject: '✅ BulkEdit — email test',
-      html: `<div style="font-family:sans-serif;padding:24px"><h2>BulkEdit email test</h2><p>Email notifications are working correctly.</p><p style="color:#6b7280;font-size:14px">Shop: <strong>${shop}</strong> · Sender: <strong>${NOTIFY_FROM}</strong></p></div>`,
+      html: buildEmailHtml({ shop, label: 'Email test', scheduledFor: new Date().toISOString(), executedAt: new Date().toISOString(), changes: [] }, true),
     });
     if (!result.ok) return res.json({ ok: false, error: result.error, to, from: NOTIFY_FROM });
     res.json({ ok: true, sent: true, to, from: NOTIFY_FROM });

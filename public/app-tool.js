@@ -818,10 +818,13 @@ async function confirmSchedule(){
   const btn=$('m-sched-confirm'); btn.disabled=true; btn.textContent='Scheduling…';
   try{
     const notifyEmail=($('m-sched-email')?.value||'').trim()||undefined;
+    const changesWithTitles=Object.values(S.changes).map(c=>({
+      ...c, productTitle: getProd(c.productId)?.title||''
+    }));
     const r=await api('/api/schedule/create',{
       scheduledFor:scheduledFor.toISOString(),
       label:label||undefined,
-      changes:Object.values(S.changes),
+      changes:changesWithTitles,
       notifyEmail,
     });
     S.schedules=[r.schedule,...(S.schedules||[])];
