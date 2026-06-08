@@ -102,7 +102,8 @@ async function afterOAuth(shop, token){
     $('loading-msg').textContent='Loading products…';
     await Promise.all([ loadProducts(), loadMfDefs() ]);
     showScreen('s-app');
-    toast('Connected. Session only — no data stored.');
+    const mfMsg = S.mfDefs.length ? ` · ${S.mfDefs.length} metafield definition${S.mfDefs.length!==1?'s':''} loaded` : '';
+    toast(`Connected${mfMsg}. Session only — no data stored.`);
   }catch(e){ showScreen('s-connect'); toast(e.message); }
 }
 
