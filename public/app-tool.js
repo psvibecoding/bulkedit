@@ -1120,12 +1120,6 @@ function updateExportPreview(){
 
 /* ── BOOT ── */
 function boot(){
-  // If a session exists, hide connect screen immediately (before any async) to avoid flash
-  if(sessionStorage.getItem('be_shop')&&sessionStorage.getItem('be_token')){
-    showScreen('s-loading');
-    $('loading-msg').textContent='Restoring session…';
-  }
-
   // Connect
   $('btn-connect').addEventListener('click', startOAuth);
   $('f-shop').addEventListener('keydown', e=>{ if(e.key==='Enter') startOAuth(); });

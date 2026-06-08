@@ -24,6 +24,8 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--fon
 .screen.active{display:block!important}
 #s-connect.active{display:flex!important}
 #s-loading.active{display:flex!important}
+html[data-restoring] #s-connect{display:none!important}
+html[data-restoring] #s-loading{display:flex!important}
 
 /* ═══════════ CONNECT ═══════════ */
 #s-connect{min-height:100vh;align-items:center;justify-content:center;padding:48px 24px;background:var(--bg);flex-direction:column;gap:0}
