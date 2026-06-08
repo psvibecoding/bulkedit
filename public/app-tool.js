@@ -898,7 +898,7 @@ function schedRowHTML(s){
   const btns=s.status==='pending'
     ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
     :['failed','cancelled'].includes(s.status)?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button>`:'';
-  const firstImg=(s.changes||[]).find(c=>c.productImage)?.productImage||'';
+  const firstImg=(s.changes||[]).reduce((acc,c)=>acc||(c.productImage||getProd(c.productId)?.featuredImage?.url||''),'');
   const imgBlock=firstImg
     ?`<img src="${esc(firstImg)}" style="width:36px;height:36px;border-radius:7px;object-fit:cover;border:1px solid var(--b1);flex-shrink:0" alt=""/>`
     :`<div style="width:36px;height:36px;border-radius:7px;background:var(--s3);flex-shrink:0"></div>`;
@@ -1065,18 +1065,6 @@ function boot(){
   // Schedule
   $('btn-schedule').addEventListener('click', openScheduleModal);
   $('m-sched-confirm').addEventListener('click', confirmSchedule);
-  $('btn-notify-test-inline').addEventListener('click', async ()=>{
-    const emailVal=($('m-sched-email')?.value||'').trim();
-    const email=emailVal||prompt('Email address to send the test to:','');
-    if(!email)return;
-    const btn=$('btn-notify-test-inline'); btn.disabled=true; btn.textContent='Sending…';
-    try{
-      const r=await api('/api/notify-test',{email});
-      if(r.ok) toast(`Test email sent to ${r.to} — check your inbox (and spam folder).`);
-      else toast(`Email error: ${r.error}`);
-    }catch(err){ toast(err.message); }
-    btn.disabled=false; btn.textContent='Test email';
-  });
   $('m-sched-revert-toggle').addEventListener('change', e=>{
     const on=e.target.checked;
     $('m-sched-revert-dt').style.display=on?'':'none';
