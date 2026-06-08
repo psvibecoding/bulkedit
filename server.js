@@ -301,7 +301,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
             If you want to keep them permanently, cancel the revert from BulkEdit.
           </div>
           <div style="margin-top:12px">
-            <a href="${APP_URL}/app" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;letter-spacing:.01em">Open BulkEdit to cancel revert →</a>
+            <a href="${APP_URL}/app?openSchedules=1" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;letter-spacing:.01em">Open BulkEdit to cancel revert →</a>
           </div>
         </td>
       </tr></table>
@@ -360,8 +360,6 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       <div style="font-size:13px;color:#b91c1c">${sched.error || 'Unknown error'}</div>
     </div>` : ''}
 
-    ${revertBanner}
-
     <!-- Products -->
     <div style="padding:4px 40px 8px">
       <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;padding:20px 0 4px">
@@ -369,6 +367,8 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       </div>
       ${productBlocks || `<div style="padding:16px 0;font-size:13px;color:#9ca3af">No product details available.</div>`}
     </div>
+
+    ${revertBanner}
 
     <!-- Footer -->
     <div style="margin:8px 40px 0;padding:20px 0;border-top:1px solid #f3f3f1">

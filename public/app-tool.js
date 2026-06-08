@@ -110,6 +110,10 @@ async function afterOAuth(shop, token){
     loadSchedules();
     const mfMsg = S.mfDefs.length ? ` · ${S.mfDefs.length} metafield definition${S.mfDefs.length!==1?'s':''} loaded` : '';
     toast(`Connected${mfMsg}. Session only — no data stored.`);
+    if(new URLSearchParams(location.search).get('openSchedules')==='1'){
+      history.replaceState(null,'',location.pathname);
+      setTimeout(openScheduleModal, 400);
+    }
   }catch(e){ showScreen('s-connect'); toast(e.message); }
 }
 
