@@ -82,7 +82,8 @@ const byIpShop     = req => `${req.ip}:${req.headers['x-shopify-shop']||'?'}`;
 const apiLimiter     = rateLimit({ windowMs: 60000,  max: 120, keyFn: byIpShop });
 const writeLimiter   = rateLimit({ windowMs: 60000,  max: 30,  keyFn: req => byIpShop(req)+':w' });
 const authLimiter    = rateLimit({ windowMs: 60000,  max: 20,  keyFn: req => req.ip });
-const contactLimiter = rateLimit({ windowMs: 900000, max: 5,   keyFn: req => req.ip });
+const contactLimiter  = rateLimit({ windowMs: 900000, max: 5,   keyFn: req => req.ip });
+const feedbackLimiter = rateLimit({ windowMs: 3600000, max: 10, keyFn: req => req.ip });
 
 // ── HELPERS ───────────────────────────────────────────────
 function safeErr(err) {
@@ -525,6 +526,27 @@ function maybeRunSchedules() {
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 app.get('/terms',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
 
+app.post('/api/feedback', feedbackLimiter, async (req, res) => {
+  try {
+    const { shop } = getSession(req);
+    const message = String(req.body?.message || '').trim().slice(0, 2000);
+    const email   = String(req.body?.email   || '').trim().slice(0, 200);
+    if (!message) return res.status(400).json({ ok: false, error: 'Message required' });
+    if (RESEND_API_KEY && CONTACT_TO) {
+      const html = `<div style="font-family:sans-serif;max-width:520px">
+        <h2 style="margin:0 0 16px">💬 BulkEdit user feedback</h2>
+        <p><strong>Shop:</strong> ${shop}</p>
+        ${email ? `<p><strong>Reply to:</strong> <a href="mailto:${email}">${email}</a></p>` : '<p><em>No reply email provided</em></p>'}
+        <p style="margin-top:16px"><strong>Message:</strong></p>
+        <p style="white-space:pre-wrap;background:#f5f5f3;padding:14px;border-radius:8px;font-size:14px;line-height:1.6">${message}</p>
+        <p style="font-size:11px;color:#9ca3af;margin-top:16px">Sent from in-app feedback button · ${new Date().toISOString()}</p>
+      </div>`;
+      await sendEmail({ to: CONTACT_TO, subject: `💬 Feedback — ${shop}`, html });
+    }
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e) }); }
+});
+
 app.post('/api/contact', contactLimiter, async (req, res) => {
   try {
     if (!RESEND_API_KEY || !CONTACT_TO) throw new Error('Contact form not available right now.');
@@ -740,6 +762,9 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
       results.push({ type: 'metafields', count: cleanMf.length });
     }
 
+    const productCount = results.filter(r => r.type === 'product').length
+      + results.filter(r => r.type === 'variants').reduce((a, r) => a + (r.count || 0), 0);
+    console.log(JSON.stringify({ event: 'save', shop: s.shop, products: req.body?.productId ? 1 : 0, fields: Object.keys(req.body?.product || {}).length, variants: (req.body?.variants || []).length, metafields: (req.body?.metafields || []).length, ts: new Date().toISOString() }));
     res.json({ ok: true, results });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });

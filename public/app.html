@@ -59,6 +59,7 @@
         <button class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩</button>
         <button class="icon-btn" id="btn-redo" title="Redo (Ctrl+Y)" disabled>↪</button>
         <button class="btn-ghost sm" id="btn-disconnect">Disconnect</button>
+        <button class="btn-ghost sm" id="btn-feedback" title="Send feedback">Feedback</button>
         <button class="btn-ghost sm btn-sched" id="btn-schedule">Schedule</button>
         <button class="btn-save" id="btn-save" disabled>
           Save changes <span id="save-count" class="save-badge">0</span>
@@ -267,7 +268,31 @@
   </div>
 </div>
 
+<!-- FEEDBACK MODAL -->
+<div id="m-feedback" class="overlay hidden">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <div><h2>Share feedback</h2><p class="modal-sub">What's working? What's missing?</p></div>
+      <button class="close-btn" data-close="m-feedback">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
+      <div class="bulk-field">
+        <label>Your feedback <span style="color:var(--red)">*</span></label>
+        <textarea id="fb-message" class="sched-input" rows="4" placeholder="Tell us what you think, what's broken, or what you'd love to see…" style="resize:vertical;min-height:90px"></textarea>
+      </div>
+      <div class="bulk-field">
+        <label>Your email <span style="color:var(--t4);font-weight:400">(optional — if you want a reply)</span></label>
+        <input id="fb-email" type="email" class="sched-input" placeholder="you@example.com"/>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost sm" data-close="m-feedback">Cancel</button>
+      <button class="btn-cta sm" id="fb-submit">Send feedback →</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=20"></script>
+<script src="/app-tool.js?v=21"></script>
 </body>
 </html>

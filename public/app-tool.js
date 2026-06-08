@@ -1041,6 +1041,24 @@ function boot(){
   $('btn-dl-json').addEventListener('click', ()=>{ dlText(buildJSON(),`shopify-export-${Date.now()}.json`); toast('JSON downloaded.'); });
   $('btn-copy-csv').addEventListener('click',()=>{ navigator.clipboard?.writeText(buildCSV()).then(()=>toast('CSV copied.')).catch(()=>toast('Clipboard not available.')); });
 
+  // Feedback
+  $('btn-feedback').addEventListener('click', ()=>{
+    $('fb-message').value=''; $('fb-email').value='';
+    openModal('m-feedback');
+  });
+  $('fb-submit').addEventListener('click', async ()=>{
+    const message=$('fb-message').value.trim();
+    if(!message) return toast('Write something — even one line helps.');
+    const email=($('fb-email').value||'').trim();
+    const btn=$('fb-submit'); btn.disabled=true; btn.textContent='Sending…';
+    try{
+      await api('/api/feedback',{message,email:email||undefined});
+      closeModal('m-feedback');
+      toast('Thanks for the feedback! It really helps.');
+    }catch(e){ toast(e.message); }
+    btn.disabled=false; btn.textContent='Send feedback →';
+  });
+
   // Schedule
   $('btn-schedule').addEventListener('click', openScheduleModal);
   $('m-sched-confirm').addEventListener('click', confirmSchedule);
