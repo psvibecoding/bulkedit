@@ -102,6 +102,23 @@ function startOAuth(){
 
 async function afterOAuth(shop, token, silent=false){
   S.shop=shop; S.token=token; S.demo=false;
+
+  // Fast restore from cache — show app instantly, then refresh in background
+  if(silent){
+    const cache=loadProductsCache();
+    if(cache){
+      S.products=cache.products||[]; S.originals=clone(S.products);
+      S.mfDefs=cache.mfDefs||[];
+      $('store-name').textContent=cache.storeName||shop;
+      showScreen('s-app');
+      renderTable(); initExportFields(); buildTagFilter(); updateSaveBtn();
+      loadSchedules();
+      document.documentElement.removeAttribute('data-restoring');
+      refreshInBackground();
+      return;
+    }
+  }
+
   showScreen('s-loading'); $('loading-msg').textContent='Connecting to your store…';
   try{
     const t = await api('/api/test');
@@ -110,6 +127,7 @@ async function afterOAuth(shop, token, silent=false){
     $('store-name').textContent = t.shop.name;
     $('loading-msg').textContent='Loading products…';
     await Promise.all([ loadProducts(), loadMfDefs() ]);
+    saveProductsCache(t.shop.name);
     showScreen('s-app');
     loadSchedules();
     if(!silent) toast('Connected — all info loaded. Session only, no data stored.');
@@ -190,9 +208,33 @@ function loadDemoMode(){
   toast('Demo loaded — changes won\'t be saved.');
 }
 
+function saveProductsCache(storeName){
+  try{ sessionStorage.setItem('be_cache',JSON.stringify({storeName,products:S.products,mfDefs:S.mfDefs,ts:Date.now()})); }catch{}
+}
+function loadProductsCache(){
+  try{
+    const raw=sessionStorage.getItem('be_cache'); if(!raw)return null;
+    const c=JSON.parse(raw);
+    if(Date.now()-c.ts>10*60*1000)return null; // 10-min TTL
+    return c;
+  }catch{return null;}
+}
+async function refreshInBackground(){
+  try{
+    const t=await api('/api/test');
+    $('store-name').textContent=t.shop.name;
+    await Promise.all([loadProducts(),loadMfDefs()]);
+    saveProductsCache(t.shop.name);
+  }catch{
+    sessionStorage.removeItem('be_shop'); sessionStorage.removeItem('be_token'); sessionStorage.removeItem('be_cache');
+    showScreen('s-connect'); toast('Session expired — please reconnect.');
+  }
+}
+
 function disconnect(){
   sessionStorage.removeItem('be_shop');
   sessionStorage.removeItem('be_token');
+  sessionStorage.removeItem('be_cache');
   Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
   const lm=document.getElementById('load-more-wrap'); if(lm)lm.style.display='none';
   S.selectedVids=new Set();
