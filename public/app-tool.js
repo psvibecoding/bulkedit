@@ -1001,36 +1001,77 @@ function openSaveModal(){
 
 async function confirmSave(){
   const payloads=Object.values(S.changes); if(!payloads.length)return;
-  const btn=$('m-save-confirm'); btn.disabled=true;
+  const btn=$('m-save-confirm'); btn.disabled=true; btn.textContent='Saving…';
   setStatus('Saving…','saving');
   try{
-    if(S.demo){ await delay(600); }
-    else{
-      for(const c of payloads){
+    if(S.demo){ await delay(600); commitAll(payloads); return; }
+
+    const savedPids=[], failed=[];
+
+    // Save each product individually — catch per-product errors
+    for(const c of payloads){
+      try{
         const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
+        setStatus(`Saving ${savedPids.length+failed.length+1} / ${payloads.length}…`,'saving');
         await api('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});
-      }
-      // Inventory changes — separate API (requires location ID)
-      const invItems=[];
-      for(const c of payloads){
-        Object.entries(c.inventory||{}).forEach(([_vid,inv])=>{
-          if(inv.inventoryItemId) invItems.push({inventoryItemId:inv.inventoryItemId,quantity:inv.quantity});
-        });
-      }
-      if(invItems.length){
-        await api('/api/inventory-set',{quantities:invItems});
+        savedPids.push(c.productId);
+      }catch(e){
+        failed.push({pid:c.productId,title:getProd(c.productId)?.title||c.productId,err:e.message});
       }
     }
-    const n=payloads.length;
-    S.changes={}; S.past=[]; S.future=[];
-    S.originals=clone(S.products);
-    document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
-    closeModal('m-save'); renderTable(); updateSaveBtn(); updateUndoUI();
-    toast(`${n} product${n!==1?'s':''} saved.`);
-    setStatus('All changes saved','saved');
-    setTimeout(()=>setStatus('Ready','ready'),3000);
+
+    // Inventory — only for products that saved OK
+    const savedSet=new Set(savedPids), invFailed=[];
+    const invItems=[];
+    for(const c of payloads){
+      if(!savedSet.has(c.productId))continue;
+      Object.entries(c.inventory||{}).forEach(([_,inv])=>{ if(inv.inventoryItemId)invItems.push({inventoryItemId:inv.inventoryItemId,quantity:inv.quantity}); });
+    }
+    if(invItems.length){
+      try{ await api('/api/inventory-set',{quantities:invItems}); }
+      catch(e){ invFailed.push(e.message); }
+    }
+
+    // Commit successes: update originals + remove from S.changes
+    savedPids.forEach(pid=>{
+      const cur=getProd(pid), origIdx=S.originals.findIndex(p=>p.id===pid);
+      if(cur&&origIdx!==-1) S.originals[origIdx]=clone(cur);
+      delete S.changes[pid];
+    });
+
+    renderTable(); updateSaveBtn(); updateUndoUI();
+
+    const allFailed=[...failed,...(invFailed.length?[{pid:'inv',title:'Inventory',err:invFailed.join(', ')}]:[])];
+
+    if(allFailed.length){
+      // Show errors inside modal, keep it open for retry
+      const errHTML=allFailed.map(f=>`<div class="diff-row"><span class="diff-field" style="color:var(--red)">✕ ${esc(f.title)}</span><span class="diff-new" style="color:var(--red);font-family:var(--mono);font-size:11px">${esc(f.err)}</span></div>`).join('');
+      const banner=`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;margin-bottom:14px"><div style="font-size:12px;font-weight:600;color:#dc2626;margin-bottom:8px">⚠ ${allFailed.length} failed · ${savedPids.length} saved</div>${errHTML}</div>`;
+      const list=$('m-save-diff'); if(list)list.innerHTML=banner+list.innerHTML;
+      $('m-save-sub').textContent=`${savedPids.length} saved · ${allFailed.length} failed — fix and retry`;
+      toast(`${savedPids.length} saved · ${allFailed.length} failed.`);
+      setStatus(`${allFailed.length} product${allFailed.length!==1?'s':''} failed`,'dirty');
+    }else{
+      S.past=[]; S.future=[];
+      document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
+      closeModal('m-save');
+      toast(`${savedPids.length} product${savedPids.length!==1?'s':''} saved.`);
+      setStatus('All changes saved','saved');
+      setTimeout(()=>setStatus('Ready','ready'),3000);
+    }
   }catch(e){ toast(e.message); setStatus('Save failed','dirty'); }
-  finally{ btn.disabled=false; }
+  finally{ btn.disabled=false; btn.textContent='Save to Shopify →'; }
+}
+
+function commitAll(payloads){
+  const n=payloads.length;
+  S.changes={}; S.past=[]; S.future=[];
+  S.originals=clone(S.products);
+  document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
+  closeModal('m-save'); renderTable(); updateSaveBtn(); updateUndoUI();
+  toast(`${n} product${n!==1?'s':''} saved.`);
+  setStatus('All changes saved','saved');
+  setTimeout(()=>setStatus('Ready','ready'),3000);
 }
 
 function buildRecap(payloads){
