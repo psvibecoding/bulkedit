@@ -898,7 +898,11 @@ function schedRowHTML(s){
   const btns=s.status==='pending'
     ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
     :['failed','cancelled'].includes(s.status)?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button>`:'';
-  return `<div class="sched-row${isRevert?' sched-revert':''}"><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
+  const firstImg=(s.changes||[]).find(c=>c.productImage)?.productImage||'';
+  const imgBlock=firstImg
+    ?`<img src="${esc(firstImg)}" style="width:36px;height:36px;border-radius:7px;object-fit:cover;border:1px solid var(--b1);flex-shrink:0" alt=""/>`
+    :`<div style="width:36px;height:36px;border-radius:7px;background:var(--s3);flex-shrink:0"></div>`;
+  return `<div class="sched-row${isRevert?' sched-revert':''}"><div style="flex-shrink:0;margin-right:10px">${imgBlock}</div><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
 }
 
 function renderSchedTabs(all){
@@ -913,8 +917,7 @@ function renderSchedTabs(all){
   const listHTML=list.length
     ?list.map(schedRowHTML).join('')
     :`<p class="sched-empty">${_schedTab==='pending'?'No pending schedules.':'No completed schedules yet.'}</p>`;
-  body.innerHTML=tabsHTML+`<div class="sched-list-inner">${listHTML}</div>`
-    +`<div class="sched-test-row"><span class="sched-test-lbl">Email notifications</span><button class="btn-ghost xs" id="btn-notify-test">Send test email</button></div>`;
+  body.innerHTML=tabsHTML+`<div class="sched-list-inner">${listHTML}</div>`;
 }
 
 async function renderSchedJobsList(){
@@ -1087,18 +1090,6 @@ function boot(){
   });
   $('m-sched-jobs').addEventListener('click', async e=>{
     if(e.target.dataset.schedTab){ _schedTab=e.target.dataset.schedTab; renderSchedTabs(S.schedules); return; }
-    if(e.target.id==='btn-notify-test'){
-      const email=prompt('Email address to send the test to:','');
-      if(!email)return;
-      const btn=e.target; btn.disabled=true; btn.textContent='Sending…';
-      try{
-        const r=await api('/api/notify-test',{email});
-        if(r.ok) toast(`Test email sent to ${r.to} — check your inbox (and spam folder).`);
-        else toast(`Error: ${r.error}`);
-      }catch(err){ toast(err.message); }
-      btn.disabled=false; btn.textContent='Send test email';
-      return;
-    }
     const id=e.target.dataset.schedRun||e.target.dataset.schedCancel||e.target.dataset.schedRetry;
     if(!id)return;
     const btn=e.target; btn.disabled=true;
