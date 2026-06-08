@@ -180,14 +180,30 @@ function renderLoadMore(){
   if(!wrap){
     wrap=document.createElement('div');
     wrap.id='load-more-wrap';
-    wrap.style.cssText='padding:12px 16px;border-top:1px solid var(--b1);display:flex;justify-content:center';
-    const btn=document.createElement('button');
-    btn.className='btn-ghost sm'; btn.textContent='Load all products ↓';
-    btn.addEventListener('click',()=>loadAllProducts(S.searchQ));
-    wrap.appendChild(btn);
+    wrap.style.cssText='padding:10px 16px;border-top:1px solid var(--b1);display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap';
     document.querySelector('.table-scroll')?.after(wrap);
   }
-  wrap.style.display=S.pageInfo?.hasNextPage?'flex':'none';
+  if(!S.pageInfo?.hasNextPage){ wrap.style.display='none'; return; }
+  wrap.style.display='flex';
+  const loaded=S.products.length;
+  wrap.innerHTML=`<span style="font-size:12px;color:var(--t3);font-family:var(--mono)">${loaded} loaded · more available</span>
+    <button class="btn-ghost sm" id="btn-load-more">Load 50 more</button>
+    <button class="btn-ghost sm" id="btn-load-all">Load all ↓</button>`;
+  const disable=()=>wrap.querySelectorAll('button').forEach(b=>b.disabled=true);
+  wrap.querySelector('#btn-load-more').addEventListener('click',async()=>{ disable(); await loadProducts(S.searchQ,true); });
+  wrap.querySelector('#btn-load-all').addEventListener('click',async()=>{ disable(); await loadAllProducts(S.searchQ); });
+}
+
+function renderPaginationWarning(){
+  const existing=document.getElementById('page-warn');
+  const show=S.pageInfo?.hasNextPage&&(S.filter!=='all'||S.tagFilter);
+  if(!show){ if(existing)existing.remove(); return; }
+  if(existing)return;
+  const el=document.createElement('div');
+  el.id='page-warn';
+  el.style.cssText='margin:4px 16px 0;padding:6px 12px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f;font-family:var(--mono)';
+  el.textContent=`⚠ Filters apply only to the ${S.products.length} loaded products — load all to filter the full catalog.`;
+  document.querySelector('.toolbar')?.after(el);
 }
 
 async function loadMfDefs(){
@@ -332,7 +348,7 @@ function renderTable(){
   const rows=getFiltered(); const tbody=$('tbody');
   if(!rows.length){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; return; }
   tbody.innerHTML=rows.map(({p,v})=>rowHTML(p,v)).join('');
-  updateSaveBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview();
+  updateSaveBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview(); renderPaginationWarning();
 }
 
 function shopifyAdminUrl(gid){
@@ -691,7 +707,7 @@ function updateSaveBtn(){
 function openBulkModal(type){
   S.bulkType=type;
   const n=S.selectedVids.size;
-  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',tags:'Edit Tags',metafield:'Edit Metafields',description:'Edit Description',seo:'Edit SEO',collections:'Add / Remove Collection'}[type]||'Bulk action';
+  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',compareAt:'Change Compare at',tags:'Edit Tags',qty:'Change Inventory Qty',metafield:'Edit Metafields',description:'Edit Description',seo:'Edit SEO',collections:'Add / Remove Collection'}[type]||'Bulk action';
   $('m-bulk-sub').textContent=type==='seo'?`Applied to ${getSelPids().length} product${getSelPids().length!==1?'s':''}`:`Applied to ${n} selected variant${n!==1?'s':''}`;
   const body=$('m-bulk-body');
   if(type==='status'){
@@ -704,6 +720,21 @@ function openBulkModal(type){
       const isRound=rule==='round99'||rule==='round00';
       if(wrap)wrap.style.display=isRound?'none':'';
       if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount ($)';}
+    });
+  }else if(type==='compareAt'){
+    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-cat-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount ($)</option><option value="amt-down">Decrease by amount ($)</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option><option value="clear">Clear (remove strikethrough)</option></select></div><div class="bulk-field" id="bv-cat-val-wrap"><label id="bv-cat-val-lbl">New price ($)</label><input id="bv-cat-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><p style="font-size:11px;color:var(--t3);margin:0 0 4px;font-family:var(--mono)">Relative rules (%, amount, round) apply only to variants that already have a Compare at price.</p>`;
+    body.querySelector('#bv-cat-rule').addEventListener('change',e=>{
+      const rule=e.target.value;
+      const wrap=$('bv-cat-val-wrap'),lbl=$('bv-cat-val-lbl');
+      const hide=rule==='round99'||rule==='round00'||rule==='clear';
+      if(wrap)wrap.style.display=hide?'none':'';
+      if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount ($)';}
+    });
+  }else if(type==='qty'){
+    body.innerHTML=`<div class="bulk-field"><label>Action</label><select id="bv-qty-rule"><option value="set">Set exact quantity</option><option value="add">Increase by</option><option value="sub">Decrease by</option></select></div><div class="bulk-field"><label id="bv-qty-lbl">Quantity</label><input id="bv-qty-val" type="number" min="0" step="1" placeholder="0" autofocus></div>`;
+    body.querySelector('#bv-qty-rule').addEventListener('change',e=>{
+      const lbl=$('bv-qty-lbl');
+      if(lbl)lbl.textContent={set:'Quantity',add:'Increase by',sub:'Decrease by'}[e.target.value]||'Quantity';
     });
   }else if(type==='tags'){
     body.innerHTML=`<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
@@ -765,6 +796,50 @@ function applyBulkModal(){
       }
     });
     renderTable(); updateSaveBtn(); toast(`Price updated on ${vids.length} variant${vids.length!==1?'s':''}.`);
+  }else if(type==='compareAt'){
+    const rule=$('bv-cat-rule')?.value||'set';
+    const isClear=rule==='clear';
+    const isRound=rule==='round99'||rule==='round00';
+    const val=$('bv-cat-val')?.value;
+    const n=isRound||isClear?0:Number(val);
+    if(!isRound&&!isClear&&(val===''||val==null||isNaN(n)))return toast('Enter a valid number.');
+    const vids=[...S.selectedVids];
+    pushH(`Bulk compare at: ${rule}`);
+    let changed=0;
+    vids.forEach(vid=>{
+      const{p,v}=getVar(vid); if(!p||!v)return;
+      const c=ensureC(p.id);
+      if(!c.variants[vid])c.variants[vid]={id:vid};
+      if(isClear){
+        v.compareAtPrice=''; c.variants[vid].compareAtPrice=''; changed++;
+      }else if(rule==='set'){
+        const nv=Math.max(0,n).toFixed(2); v.compareAtPrice=nv; c.variants[vid].compareAtPrice=nv; changed++;
+      }else{
+        if(!v.compareAtPrice)return; // skip variants with no compare at for relative rules
+        const nv=applyPriceRule(v.compareAtPrice,rule,n);
+        v.compareAtPrice=nv; c.variants[vid].compareAtPrice=nv; changed++;
+      }
+    });
+    renderTable(); updateSaveBtn(); toast(`Compare at updated on ${changed} variant${changed!==1?'s':''}.`);
+  }else if(type==='qty'){
+    const rule=$('bv-qty-rule')?.value||'set';
+    const val=$('bv-qty-val')?.value;
+    const n=parseInt(val,10);
+    if(val===''||val==null||isNaN(n)||n<0)return toast('Enter a valid quantity.');
+    const vids=[...S.selectedVids];
+    pushH(`Bulk qty ${rule}: ${n}`);
+    vids.forEach(vid=>{
+      const{p,v}=getVar(vid); if(!p||!v)return;
+      const c=ensureC(p.id);
+      if(!c.inventory)c.inventory={};
+      let newQty;
+      if(rule==='set')       newQty=n;
+      else if(rule==='add')  newQty=Math.max(0,(v.inventoryQuantity||0)+n);
+      else                   newQty=Math.max(0,(v.inventoryQuantity||0)-n);
+      v.inventoryQuantity=newQty;
+      c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',quantity:newQty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
+    });
+    renderTable(); updateSaveBtn(); toast(`Qty updated on ${vids.length} variant${vids.length!==1?'s':''}.`);
   }else if(type==='tags'){
     const tag=$('bv-tag')?.value.trim(); const action=$('bv-tag-action')?.value;
     if(!tag)return toast('Enter a tag.');
@@ -1397,6 +1472,8 @@ function boot(){
   // Bulk
   $('bulk-status-btn').addEventListener('click', ()=>openBulkModal('status'));
   $('bulk-price-btn').addEventListener('click',  ()=>openBulkModal('price'));
+  $('bulk-cat-btn').addEventListener('click',    ()=>openBulkModal('compareAt'));
+  $('bulk-qty-btn').addEventListener('click',    ()=>openBulkModal('qty'));
   $('bulk-tags-btn').addEventListener('click',   ()=>openBulkModal('tags'));
   $('bulk-mf-btn').addEventListener('click',     ()=>openBulkModal('metafield'));
   $('bulk-desc-btn').addEventListener('click',   ()=>openBulkModal('description'));
