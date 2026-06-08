@@ -341,6 +341,15 @@ function maybeRunSchedules() {
   runDueSchedules().catch(() => {});
 }
 
+// Shopify admin opens apps inside an iframe — break out immediately to standalone
+app.get('/shopify-open', (req, res) => {
+  const shop = req.query.shop ? `?shop=${encodeURIComponent(String(req.query.shop))}` : '';
+  res.removeHeader('X-Frame-Options');
+  res.removeHeader('Content-Security-Policy');
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!doctype html><html><head><meta charset="utf-8"><script>try{window.top.location.replace('/app${shop}');}catch(e){window.location.replace('/app${shop}');}</script></head><body></body></html>`);
+});
+
 // Serve /app
 app.get('/app', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app.html'));
