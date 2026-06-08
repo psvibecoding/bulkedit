@@ -30,33 +30,28 @@
     nav{
       position:sticky;top:0;z-index:50;height:58px;
       display:flex;align-items:center;justify-content:space-between;padding:0 48px;
-      background:rgba(10,10,8,.94);backdrop-filter:blur(20px);
-      border-bottom:1px solid rgba(255,255,255,.06);
+      background:rgba(249,249,247,.92);backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--border);
     }
-    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
     .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center;line-height:1}
-    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.45)}
-    .nav-cta{background:#fff;color:var(--dark);border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none;transition:opacity .15s}
-    .nav-cta:hover{opacity:.88}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none;transition:background .15s}
+    .nav-cta:hover{background:var(--green-lt)}
 
     /* HERO */
     .hero{
-      position:relative;background:var(--dark);
+      position:relative;background:var(--bg);
       min-height:91vh;display:flex;align-items:center;overflow:hidden;
     }
     .hero::before{
       content:'';position:absolute;inset:0;pointer-events:none;
-      background:
-        radial-gradient(ellipse 100% 80% at 10% -10%,rgba(26,92,56,.42),transparent 58%),
-        radial-gradient(ellipse 50% 40% at 90% 110%,rgba(26,92,56,.14),transparent 50%);
-    }
-    .hero::after{
-      content:'';position:absolute;inset:0;pointer-events:none;opacity:.028;
-      background-image:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)'/></svg>");
+      background:radial-gradient(ellipse 70% 60% at 0% 60%,rgba(26,92,56,.055),transparent 55%);
     }
     .hero-inner{
       position:relative;z-index:1;width:100%;
-      max-width:760px;margin:0 auto;padding:100px 48px 88px;
+      max-width:1180px;margin:0 auto;padding:96px 48px 80px;
+      display:grid;grid-template-columns:1fr 480px;gap:72px;align-items:center;
     }
 
     /* Hero text animation */
@@ -71,39 +66,126 @@
     .hero-badge{
       display:inline-flex;align-items:center;gap:8px;
       padding:5px 14px;border-radius:20px;
-      background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);
-      font-size:11px;color:#86efac;font-family:var(--mono);letter-spacing:.06em;
-      margin-bottom:30px;
+      background:var(--green-bg);border:1px solid var(--green-brd);
+      font-size:11px;color:var(--green);font-family:var(--mono);letter-spacing:.06em;
+      margin-bottom:28px;
     }
-    .badge-dot{width:6px;height:6px;background:#22c55e;border-radius:50%;flex-shrink:0;animation:pulse-dot 2.2s ease-in-out infinite}
-    @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.65)}}
+    .badge-dot{width:6px;height:6px;background:var(--green);border-radius:50%;flex-shrink:0;animation:pulse-dot 2.2s ease-in-out infinite}
+    @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.6)}}
 
     .hero h1{
-      font-family:var(--serif);font-size:68px;line-height:1.02;
-      letter-spacing:-.6px;color:#fff;margin-bottom:24px;
+      font-family:var(--serif);font-size:58px;line-height:1.04;
+      letter-spacing:-.5px;color:var(--ink);margin-bottom:22px;
     }
-    .hero h1 em{font-style:italic;color:#86efac}
+    .hero h1 em{font-style:italic;color:var(--green)}
 
     .hero-sub{
-      font-size:17px;color:rgba(255,255,255,.5);line-height:1.78;
-      margin-bottom:38px;max-width:430px;
+      font-size:17px;color:var(--ink2);line-height:1.78;
+      margin-bottom:36px;max-width:420px;
     }
-    .hero-sub strong{color:rgba(255,255,255,.82);font-weight:500}
+    .hero-sub strong{color:var(--ink);font-weight:600}
 
     .hero-cta-wrap{display:flex;flex-direction:column;gap:14px;align-items:flex-start;margin-bottom:20px}
     .btn-hero{
       display:inline-flex;align-items:center;gap:10px;
-      background:#fff;color:var(--dark);border:none;border-radius:10px;
-      padding:16px 32px;font-size:16px;font-weight:700;cursor:pointer;
+      background:var(--green);color:#fff;border:none;border-radius:10px;
+      padding:15px 30px;font-size:16px;font-weight:700;cursor:pointer;
       font-family:var(--sans);text-decoration:none;
-      transition:opacity .15s,transform .15s;
-      box-shadow:0 6px 30px rgba(0,0,0,.35);
+      transition:background .15s,transform .15s;
+      box-shadow:0 4px 20px rgba(26,92,56,.3);
     }
-    .btn-hero:hover{opacity:.91;transform:translateY(-2px)}
+    .btn-hero:hover{background:var(--green-lt);transform:translateY(-2px)}
     .btn-hero-arrow{transition:transform .15s}
     .btn-hero:hover .btn-hero-arrow{transform:translateX(4px)}
 
-    .hero-trust{font-size:11px;color:rgba(255,255,255,.28);font-family:var(--mono);letter-spacing:.04em}
+    .hero-trust{font-size:11px;color:var(--ink4);font-family:var(--mono);letter-spacing:.04em}
+
+    /* App mockup — faithful replica of the real BulkEdit UI */
+    .am-window{
+      background:var(--white);border:1px solid var(--border);border-radius:12px;
+      overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.09),0 4px 16px rgba(0,0,0,.05);
+      animation:float 5s ease-in-out infinite;
+    }
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .am-topbar{
+      display:flex;align-items:center;gap:7px;padding:9px 12px;
+      background:var(--white);border-bottom:1px solid var(--border);
+      box-shadow:0 1px 4px rgba(0,0,0,.05);
+    }
+    .am-tl{display:flex;align-items:center;gap:7px;flex:1;min-width:0;overflow:hidden}
+    .am-logo{
+      width:20px;height:20px;background:var(--green);color:#fff;
+      font-family:var(--mono);font-size:8px;font-weight:500;border-radius:4px;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;
+    }
+    .am-store{font-family:var(--mono);font-size:9px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1}
+    .am-search{
+      display:flex;align-items:center;gap:4px;background:var(--bg);
+      border:1px solid var(--border);border-radius:4px;
+      padding:3px 7px;font-family:var(--mono);font-size:9px;color:var(--ink4);
+      white-space:nowrap;flex-shrink:0;
+    }
+    .am-tr{display:flex;align-items:center;gap:4px;flex-shrink:0}
+    .am-btn{
+      padding:3px 7px;border-radius:4px;font-size:9px;font-weight:500;
+      background:var(--white);border:1px solid var(--border);color:var(--ink2);
+      cursor:default;font-family:var(--sans);white-space:nowrap;
+    }
+    .am-btn-save{
+      display:flex;align-items:center;gap:4px;
+      padding:3px 8px;border-radius:4px;font-size:9px;font-weight:600;
+      background:var(--green);color:#fff;border:none;cursor:default;font-family:var(--sans);
+    }
+    .am-save-badge{background:rgba(255,255,255,.25);border-radius:20px;padding:0 4px;font-size:8px}
+
+    .am-tabs{
+      display:flex;background:var(--bg);border-bottom:1px solid var(--border);padding:0 12px;
+    }
+    .am-tab{
+      padding:6px 10px;font-size:10px;font-weight:500;font-family:var(--sans);
+      color:var(--ink3);background:none;border:none;border-bottom:2px solid transparent;
+      cursor:default;margin-bottom:-1px;
+    }
+    .am-tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+
+    .am-filters{
+      display:flex;align-items:center;gap:4px;padding:5px 12px;
+      background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap;
+    }
+    .am-flbl{font-size:9px;color:var(--ink4);font-family:var(--mono);margin-right:2px}
+    .am-filter{
+      padding:2px 7px;border-radius:10px;font-size:9px;font-family:var(--mono);
+      background:var(--white);border:1px solid var(--border);color:var(--ink3);cursor:default;
+    }
+    .am-filter.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+    .am-table{width:100%;border-collapse:collapse}
+    .am-table th{
+      padding:5px 8px;font-size:8px;letter-spacing:.08em;text-transform:uppercase;
+      color:var(--ink4);background:var(--bg);border-bottom:1px solid var(--border);
+      font-family:var(--mono);text-align:left;white-space:nowrap;
+    }
+    .am-table td{
+      padding:7px 8px;border-bottom:1px solid var(--border);
+      color:var(--ink2);font-family:var(--mono);font-size:10px;white-space:nowrap;
+    }
+    .am-table tr.mod td{background:rgba(26,92,56,.04)}
+    .am-table tr:last-child td{border-bottom:none}
+
+    .am-thumb{width:26px;height:26px;border-radius:4px;display:inline-block;vertical-align:middle}
+    .am-pill{display:inline-block;padding:1px 6px;border-radius:5px;font-size:8px;font-weight:500}
+    .am-pill-active{background:var(--green-bg);color:var(--green);border:1px solid var(--green-brd)}
+    .am-pill-draft{background:rgba(0,0,0,.05);color:var(--ink3);border:1px solid var(--border)}
+    .am-old{color:var(--ink4);text-decoration:line-through;font-size:9px;margin-right:2px}
+    .am-new{color:var(--green);font-weight:600}
+    .am-chk{width:11px;height:11px;accent-color:var(--green);cursor:default;vertical-align:middle}
+
+    .am-statusbar{
+      padding:5px 12px;background:var(--bg);border-top:1px solid var(--border);
+      display:flex;justify-content:space-between;align-items:center;gap:8px;
+    }
+    .am-status-l{font-size:8px;color:var(--ink3);font-family:var(--mono)}
+    .am-status-r{font-size:8px;color:var(--ink4);font-family:var(--mono)}
 
 
     /* SECTION SHARED */
@@ -212,10 +294,15 @@
     .btn-primary:hover{background:var(--green-lt);transform:translateY(-1px)}
 
     /* RESPONSIVE */
+    @media(max-width:1040px){
+      .hero-inner{grid-template-columns:1fr;gap:48px;padding:80px 24px 64px}
+      .hero h1{font-size:48px}
+    }
     @media(max-width:768px){
       nav{padding:0 20px}
-      .hero-inner{padding:64px 20px 56px}
-      .hero h1{font-size:38px}
+      .hero-inner{padding:64px 20px 52px}
+      .hero h1{font-size:36px}
+      .am-window{display:none}
       .pain{padding:72px 20px}
       .reddit-grid{grid-template-columns:1fr;gap:14px}
       .features{padding:72px 20px}
@@ -262,6 +349,92 @@
         </a>
       </div>
       <p class="hero-trust">🔒 OAuth login · No account · No data stored</p>
+    </div>
+
+    <!-- Faithful BulkEdit app mockup -->
+    <div class="am-window">
+      <div class="am-topbar">
+        <div class="am-tl">
+          <span class="am-logo">BE</span>
+          <span class="am-store">your-store.myshopify.com</span>
+          <span class="am-search">⌕ Search…</span>
+        </div>
+        <div class="am-tr">
+          <button class="am-btn">↩</button>
+          <button class="am-btn">↪</button>
+          <button class="am-btn">Schedule</button>
+          <button class="am-btn-save">Save <span class="am-save-badge">3</span></button>
+        </div>
+      </div>
+      <div class="am-tabs">
+        <button class="am-tab on">Products</button>
+        <button class="am-tab">Export</button>
+      </div>
+      <div class="am-filters">
+        <span class="am-flbl">Status</span>
+        <button class="am-filter on">All</button>
+        <button class="am-filter">Active</button>
+        <button class="am-filter">Draft</button>
+        <button class="am-filter">Modified</button>
+      </div>
+      <table class="am-table">
+        <thead>
+          <tr>
+            <th><input type="checkbox" class="am-chk"></th>
+            <th></th>
+            <th>Product</th>
+            <th>Status</th>
+            <th>Price</th>
+            <th>Compare at</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="mod">
+            <td><input type="checkbox" class="am-chk" checked></td>
+            <td><span class="am-thumb" style="background:#c8b8a2"></span></td>
+            <td>Merino Sweater — S</td>
+            <td><span class="am-pill am-pill-active">Active</span></td>
+            <td><span class="am-old">89.00</span><span class="am-new">69.00</span></td>
+            <td style="color:var(--ink4)">—</td>
+          </tr>
+          <tr class="mod">
+            <td><input type="checkbox" class="am-chk" checked></td>
+            <td><span class="am-thumb" style="background:#c8b8a2"></span></td>
+            <td>Merino Sweater — M</td>
+            <td><span class="am-pill am-pill-active">Active</span></td>
+            <td><span class="am-old">89.00</span><span class="am-new">69.00</span></td>
+            <td style="color:var(--ink4)">—</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="am-chk"></td>
+            <td><span class="am-thumb" style="background:#8b7560"></span></td>
+            <td>Leather Crossbody Bag</td>
+            <td><span class="am-pill am-pill-draft">Draft</span></td>
+            <td>149.00</td>
+            <td style="color:var(--ink4)">—</td>
+          </tr>
+          <tr class="mod">
+            <td><input type="checkbox" class="am-chk" checked></td>
+            <td><span class="am-thumb" style="background:#a8c4a0"></span></td>
+            <td>Yoga Mat 6mm</td>
+            <td><span class="am-pill am-pill-active">Active</span></td>
+            <td><span class="am-old">78.00</span><span class="am-new">65.00</span></td>
+            <td style="color:var(--ink4)">—</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" class="am-chk"></td>
+            <td><span class="am-thumb" style="background:#d4c5a8"></span></td>
+            <td>Organic Cotton Tee</td>
+            <td><span class="am-pill am-pill-active">Active</span></td>
+            <td>34.00</td>
+            <td style="color:var(--ink4)">—</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="am-statusbar">
+        <span class="am-status-l">Ready</span>
+        <span class="am-status-r">Changes are staged — click "Save changes" to send to Shopify</span>
+      </div>
     </div>
 
   </div>
