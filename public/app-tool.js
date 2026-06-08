@@ -1,290 +1,153 @@
-/* ═══════════════════════════════════════════════
-   BulkEdit — app.js v4
-   Clean event delegation · No inline handlers
-   OAuth · Bulk modal · Review & Save · Recap
-═══════════════════════════════════════════════ */
 'use strict';
+/* ═══════════════════════════════════════════
+   BulkEdit — app-tool.js v8
+   OAuth only · Metafield definitions · Collections
+═══════════════════════════════════════════ */
 
-/* ─── HELPERS ─────────────────────────────── */
 const $ = id => document.getElementById(id);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
-  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[c]));
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
 const delay = ms => new Promise(r => setTimeout(r, ms));
-const fmt   = iso => new Date(iso).toLocaleString();
-const clone = obj => JSON.parse(JSON.stringify(obj));
 
-/* ─── STATE ───────────────────────────────── */
+/* ── STATE ── */
 let S = {
-  shop: '', token: '', demo: false,
-  products: [],
-  originals: [],   // snapshot at load time — used for diff
-  changes: {},     // { productId: { productId, product:{}, variants:{}, metafields:[] } }
-  past: [], future: [],
-  filter: 'all',
-  searchQ: '',
+  shop:'', token:'', demo:false,
+  products:[], originals:[], changes:{},
+  mfDefs:[],         // metafield definitions from store
+  collsCache:null,   // collections cache
+  past:[], future:[],
+  filter:'all', searchQ:'',
   selectedVids: new Set(),
-  exportFields: ['title','status','vendor','tags','variant','sku','price','compareAtPrice'],
-  bulkModalType: null,
+  bulkType: null,
+  exportFields:['title','status','vendor','tags','variant','sku','price','compareAtPrice'],
 };
-const MAX_HIST = 80;
+const MAX_H = 80;
 
-/* ─── DEMO DATA ───────────────────────────── */
-const DEMO_PRODUCTS = [
-  { id:'gid://shopify/Product/1', title:'Merino Wool Crew Neck Sweater', status:'ACTIVE', vendor:'NordWear', tags:['knitwear','winter','new-arrivals'],
-    featuredImage:{ url:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=80&q=70' },
-    variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, metafields:{ nodes:[{ namespace:'custom', key:'material', type:'single_line_text_field', value:'100% Merino Wool' }] } },
-      { id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28, metafields:{ nodes:[] } },
-    ]}},
-  { id:'gid://shopify/Product/2', title:'Leather Crossbody Bag — Tan', status:'ACTIVE', vendor:'StudioLeather', tags:['bags','accessories','sale'],
-    featuredImage:{ url:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=80&q=70' },
-    variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, metafields:{ nodes:[{ namespace:'custom', key:'campaign_label', type:'single_line_text_field', value:'Summer Sale' }] } },
-    ]}},
-  { id:'gid://shopify/Product/3', title:'Organic Cotton Oversized Tee', status:'ACTIVE', vendor:'EarthBasics', tags:['apparel','sustainable','basics'],
-    featuredImage:{ url:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&q=70' },
-    variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,  metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/32', title:'S / White',  sku:'EB-TEE-S-WHT',  price:'34.00', compareAtPrice:'', inventoryQuantity:55, metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/33', title:'M / Black',  sku:'EB-TEE-M-BLK',  price:'34.00', compareAtPrice:'', inventoryQuantity:40, metafields:{ nodes:[] } },
-    ]}},
-  { id:'gid://shopify/Product/4', title:'Ceramic Pour-Over Coffee Set', status:'DRAFT', vendor:'KitchenStudio', tags:['kitchen','coffee','gifts'],
-    featuredImage:{ url:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=80&q=70' },
-    variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/41', title:'White',      sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, metafields:{ nodes:[{ namespace:'seo', key:'custom_title', type:'single_line_text_field', value:'' }] } },
-      { id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, metafields:{ nodes:[] } },
-    ]}},
-  { id:'gid://shopify/Product/5', title:'Natural Rubber Yoga Mat 6mm', status:'ACTIVE', vendor:'MoveWell', tags:['fitness','yoga','eco'],
-    featuredImage:{ url:'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=80&q=70' },
-    variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, metafields:{ nodes:[{ namespace:'custom', key:'thickness_mm', type:'number_integer', value:'6' }] } },
-    ]}},
-  { id:'gid://shopify/Product/6', title:'Linen Duvet Cover Set — King', status:'ARCHIVED', vendor:'HomeTextile', tags:['bedding','linen','home'],
-    featuredImage: null,
-    variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, metafields:{ nodes:[] } },
-    ]}},
-];
+/* ── HELPERS ── */
+function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),3000); }
+function setStatus(msg,cls=''){ const el=$('status-msg'); el.textContent=msg; el.className='status-txt'+(cls?' '+cls:''); }
+function showScreen(name){
+  ['s-connect','s-loading','s-app'].forEach(id=>{ const el=$(id); if(!el)return; el.classList.remove('active'); el.style.display='none'; });
+  const t=$(name); if(!t)return; t.classList.add('active');
+  t.style.display=(name==='s-connect'||name==='s-loading')?'flex':'block';
+}
+function openModal(id){ const el=$(id); if(!el)return; el.classList.remove('hidden'); el.classList.add('open'); }
+function closeModal(id){ const el=$(id); if(!el)return; el.classList.remove('open'); el.classList.add('hidden'); }
 
-/* ─── NORMALISE PRODUCT FROM API ─────────── */
-function normProd(p) {
-  return {
-    ...p,
-    featuredImage: p.featuredImage || null,
-    variants: { nodes: (p.variants?.nodes || []).map(v => ({
-      ...v, metafields: { nodes: v.metafields?.nodes || [] }
-    }))}
-  };
+/* ── API ── */
+function apiH(){ return {'Content-Type':'application/json','X-Shopify-Shop':S.shop,'X-Shopify-Token':S.token}; }
+async function api(path,body={}){
+  const r=await fetch(path,{method:'POST',headers:apiH(),body:JSON.stringify(body)});
+  const j=await r.json(); if(!j.ok)throw new Error(j.error||'Request failed'); return j;
 }
 
-/* ─── LOOKUPS ─────────────────────────────── */
-function getProd(id) { return S.products.find(p => p.id === id); }
-function getVar(vid) {
-  for (const p of S.products) {
-    const v = p.variants.nodes.find(v => v.id === vid);
-    if (v) return { p, v };
-  }
-  return {};
-}
-function ensureChange(pid) {
-  if (!S.changes[pid]) S.changes[pid] = { productId:pid, product:{}, variants:{}, metafields:[] };
-  return S.changes[pid];
-}
-function prodImg(p) { return p.featuredImage?.url || null; }
-
-/* ─── TOAST ───────────────────────────────── */
-let _toastTmr;
-function toast(msg) {
-  const el = $('toast');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(_toastTmr);
-  _toastTmr = setTimeout(() => el.classList.remove('show'), 3200);
-}
-
-/* ─── STATUS ──────────────────────────────── */
-function setStatus(msg, cls = '') {
-  const el = $('status-msg');
-  el.textContent = msg;
-  el.className = 'status-text' + (cls ? ' ' + cls : '');
-}
-
-/* ─── SCREENS ─────────────────────────────── */
-function showScreen(name) {
-  ['s-connect','s-loading','s-app'].forEach(id => {
-    const el = $(id); if (!el) return;
-    el.classList.remove('active');
-    el.style.display = 'none';
-  });
-  const target = $(name); if (!target) return;
-  target.classList.add('active');
-  target.style.display = (name === 's-loading' || name === 's-connect') ? 'flex' : 'block';
-}
-
-/* ─── CONNECT SCREEN STEPS ───────────────── */
-function showStep(step) {
-  ['c-choose','c-oauth','c-token'].forEach(id => {
-    const el = $(id); if (el) el.style.display = 'none';
-  });
-  const target = $(step); if (target) target.style.display = 'flex';
-}
-
-// Init — hide all steps except c-choose on page load
-function initSteps() {
-  ['c-oauth','c-token'].forEach(id => {
-    const el = $(id); if (el) el.style.display = 'none';
-  });
-  const choose = $('c-choose'); if (choose) choose.style.display = 'flex';
-}
-
-/* ─── MODALS ──────────────────────────────── */
-function openModal(id) { const el = $(id); el.classList.remove('hidden'); el.classList.add('open'); }
-function closeModal(id) { const el = $(id); el.classList.remove('open'); el.classList.add('hidden'); }
-
-/* ─── API ─────────────────────────────────── */
-function apiHeaders() {
-  return { 'Content-Type':'application/json', 'X-Shopify-Shop':S.shop, 'X-Shopify-Token':S.token };
-}
-async function apiPost(path, body = {}) {
-  const r = await fetch(path, { method:'POST', headers:apiHeaders(), body:JSON.stringify(body) });
-  const j = await r.json();
-  if (!j.ok) throw new Error(j.error || 'Request failed');
-  return j;
-}
-
-/* ─── CONNECT: OAuth ─────────────────────── */
-function startOAuth() {
-  const raw = ($('f-shop-oauth')?.value || '').trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
-  if (!raw || !raw.includes('.myshopify.com')) return toast('Enter your store domain (e.g. your-store.myshopify.com)');
+/* ── CONNECT ── */
+function startOAuth(){
+  const raw = $('f-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
+  if(!raw||!raw.includes('.myshopify.com')) return toast('Enter your store domain — e.g. your-store.myshopify.com');
   window.location.href = `/auth/start?shop=${encodeURIComponent(raw)}`;
 }
 
-/* ─── CONNECT: Token ─────────────────────── */
-async function connectWithToken() {
-  S.shop  = $('f-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
-  S.token = $('f-token').value.trim();
-  S.demo  = false;
-  if (!S.shop || !S.token) return toast('Enter store domain and access token.');
-  showScreen('s-loading'); $('loading-msg').textContent = 'Connecting…';
-  try {
-    const t = await apiPost('/api/test');
-    await afterConnect(t.shop.name, false);
-  } catch(e) { showScreen('s-connect'); toast(e.message); }
+async function afterOAuth(shop, token){
+  S.shop=shop; S.token=token; S.demo=false;
+  showScreen('s-loading'); $('loading-msg').textContent='Connecting to your store…';
+  try{
+    const t = await api('/api/test');
+    $('store-name').textContent = t.shop.name;
+    $('loading-msg').textContent='Loading products…';
+    await Promise.all([ loadProducts(), loadMfDefs() ]);
+    showScreen('s-app');
+    toast('Connected. Session only — no data stored.');
+  }catch(e){ showScreen('s-connect'); toast(e.message); }
 }
 
-async function afterConnect(storeName, isDemo) {
-  $('store-name').textContent = storeName;
-  $('demo-badge').classList.toggle('hidden', !isDemo);
-  $('demo-banner').classList.toggle('hidden', !isDemo);
-  if (isDemo) { S.products = DEMO_PRODUCTS.map(normProd); S.originals = clone(S.products); renderTable(); initExportFields(); showScreen('s-app'); toast('Demo loaded.'); return; }
-  $('loading-msg').textContent = 'Loading products…';
-  await loadProducts();
-  showScreen('s-app');
-  toast('Connected. Token is session-only.');
-}
-
-function loadDemoMode() {
-  S.shop = 'demo.myshopify.com'; S.token = 'demo'; S.demo = true;
-  afterConnect('Demo store', true);
-}
-
-async function loadProducts(q = '') {
+async function loadProducts(q=''){
   setStatus('Loading…');
-  try {
-    const r = await apiPost('/api/products', { query:q, first:50 });
-    S.products  = r.products.map(normProd);
-    S.originals = clone(S.products);
+  try{
+    const r=await api('/api/products',{query:q,first:50});
+    S.products=r.products.map(normProd); S.originals=clone(S.products);
     renderTable(); initExportFields();
     setStatus(`${S.products.length} products loaded`);
-  } catch(e) { toast(e.message); setStatus('Load failed','dirty'); }
+  }catch(e){ toast(e.message); setStatus('Load failed','dirty'); }
 }
 
-function disconnect() {
-  Object.assign(S, { shop:'', token:'', demo:false, products:[], originals:[], changes:{}, past:[], future:[], filter:'all', searchQ:'', selectedVids:new Set(), bulkModalType:null, });
-  $('f-token').value = '';
-  showStep('c-choose');
+async function loadMfDefs(){
+  if(S.demo) return;
+  try{
+    const r=await api('/api/metafield-definitions');
+    S.mfDefs=r.definitions||[];
+  }catch(e){ S.mfDefs=[]; }
+}
+
+function normProd(p){
+  return { ...p,
+    featuredImage: p.featuredImage||null,
+    variants:{ nodes:(p.variants?.nodes||[]).map(v=>({...v, metafields:{nodes:v.metafields?.nodes||[]}})) }
+  };
+}
+
+function disconnect(){
+  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,past:[],future:[],filter:'all',searchQ:'',bulkType:null});
+  S.selectedVids=new Set();
+  $('f-shop').value='';
   showScreen('s-connect');
   updateUndoUI(); updateSaveBtn();
   toast('Disconnected.');
 }
 
-/* ─── UNDO / REDO ─────────────────────────── */
-function snapState() { return clone({ products:S.products, changes:S.changes }); }
-function pushHist(label) {
-  S.past.push({ label, snap:snapState() });
-  if (S.past.length > MAX_HIST) S.past.shift();
-  S.future = []; updateUndoUI();
+/* ── UNDO/REDO ── */
+function snap(){ return clone({products:S.products,changes:S.changes}); }
+function pushH(label){ S.past.push({label,s:snap()}); if(S.past.length>MAX_H)S.past.shift(); S.future=[]; updateUndoUI(); }
+function applySnap(s){ S.products=clone(s.products); S.changes=clone(s.changes); }
+function undo(){ if(!S.past.length)return; S.future.push({label:'redo',s:snap()}); const h=S.past.pop(); applySnap(h.s); renderTable(); updateUndoUI(); updateSaveBtn(); toast('Undone: '+h.label); }
+function redo(){ if(!S.future.length)return; S.past.push({label:'undo',s:snap()}); const f=S.future.pop(); applySnap(f.s); renderTable(); updateUndoUI(); updateSaveBtn(); toast('Redone'); }
+function updateUndoUI(){
+  $('btn-undo').disabled=!S.past.length; $('btn-redo').disabled=!S.future.length;
+  const h=$('undo-hint');
+  if(S.past.length||S.future.length){ h.classList.remove('hidden'); $('undo-hint-msg').textContent=`${S.past.length} action${S.past.length!==1?'s':''} in history`; }
+  else h.classList.add('hidden');
 }
-function applySnap(snap) { S.products = clone(snap.products); S.changes = clone(snap.changes); }
-
-function undo() {
-  if (!S.past.length) return;
-  S.future.push({ label:'redo', snap:snapState() });
-  const h = S.past.pop(); applySnap(h.snap);
-  renderTable(); updateUndoUI(); updateSaveBtn();
-  toast('Undone: ' + h.label);
-}
-function redo() {
-  if (!S.future.length) return;
-  S.past.push({ label:'undo', snap:snapState() });
-  const f = S.future.pop(); applySnap(f.snap);
-  renderTable(); updateUndoUI(); updateSaveBtn();
-  toast('Redone');
-}
-function updateUndoUI() {
-  $('btn-undo').disabled = !S.past.length;
-  $('btn-redo').disabled = !S.future.length;
-  const hint = $('undo-hint');
-  if (S.past.length || S.future.length) {
-    hint.classList.remove('hidden');
-    $('undo-hint-msg').textContent = `${S.past.length} action${S.past.length !== 1 ? 's' : ''} in history${S.future.length ? ' · ' + S.future.length + ' redo' : ''}`;
-  } else hint.classList.add('hidden');
-}
-document.addEventListener('keydown', e => {
-  const mod = e.ctrlKey || e.metaKey;
-  if (mod && !e.shiftKey && e.key === 'z') { e.preventDefault(); undo(); }
-  if (mod && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redo(); }
+document.addEventListener('keydown',e=>{
+  const m=e.ctrlKey||e.metaKey;
+  if(m&&!e.shiftKey&&e.key==='z'){e.preventDefault();undo();}
+  if(m&&(e.key==='y'||(e.shiftKey&&e.key==='Z'))){e.preventDefault();redo();}
 });
 
-/* ─── RENDER TABLE ────────────────────────── */
-function flatRows() { return S.products.flatMap(p => p.variants.nodes.map(v => ({ p, v }))); }
+/* ── LOOKUP ── */
+function getProd(id){ return S.products.find(p=>p.id===id); }
+function getVar(vid){ for(const p of S.products){ const v=p.variants.nodes.find(v=>v.id===vid); if(v)return{p,v}; } return{}; }
+function ensureC(pid){ if(!S.changes[pid])S.changes[pid]={productId:pid,product:{},variants:{},metafields:[]}; return S.changes[pid]; }
+function prodImg(p){ return p.featuredImage?.url||null; }
 
-function getFiltered() {
-  const q = S.searchQ.toLowerCase();
-  const terms = q ? q.split(',').map(t => t.trim()).filter(Boolean) : [];
-  return flatRows().filter(({ p, v }) => {
-    const haystack = [p.title, p.vendor, (p.tags||[]).join(' '), v.title, v.sku].join(' ').toLowerCase();
-    const ms = !terms.length || terms.some(t => haystack.includes(t));
-    const mf = S.filter === 'all'     ? true
-             : S.filter === 'changed' ? !!S.changes[p.id]
-             : p.status === S.filter;
-    return ms && mf;
+/* ── FILTER/SEARCH ── */
+function flatRows(){ return S.products.flatMap(p=>p.variants.nodes.map(v=>({p,v}))); }
+function getFiltered(){
+  const terms = S.searchQ ? S.searchQ.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean) : [];
+  return flatRows().filter(({p,v})=>{
+    const hay=[p.title,p.vendor,(p.tags||[]).join(' '),v.title,v.sku].join(' ').toLowerCase();
+    const ms=!terms.length||terms.some(t=>hay.includes(t));
+    const mf=S.filter==='all'?true:S.filter==='changed'?!!S.changes[p.id]:p.status===S.filter;
+    return ms&&mf;
   });
 }
 
-function renderTable() {
-  const rows = getFiltered();
-  const tbody = $('tbody');
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; }
-  else tbody.innerHTML = rows.map(({ p, v }) => rowHTML(p, v)).join('');
+/* ── RENDER ── */
+function renderTable(){
+  const rows=getFiltered(); const tbody=$('tbody');
+  if(!rows.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; return; }
+  tbody.innerHTML=rows.map(({p,v})=>rowHTML(p,v)).join('');
   updateSaveBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview();
 }
 
-function rowHTML(p, v) {
-  const dirty = !!S.changes[p.id];
-  const sel   = S.selectedVids.has(v.id);
-  const cls = [dirty?'r-changed':'', sel?'r-selected':''].filter(Boolean).join(' ');
-  const imgSrc = prodImg(p);
-  const imgCell = imgSrc
-    ? `<img class="prod-thumb" src="${esc(imgSrc)}" alt="" loading="lazy">`
-    : `<div class="prod-thumb-ph">□</div>`;
-  const stCls = { ACTIVE:'ACTIVE', DRAFT:'DRAFT', ARCHIVED:'ARCHIVED' }[p.status] || 'DRAFT';
-  const stLbl = { ACTIVE:'● Active', DRAFT:'○ Draft', ARCHIVED:'⊘ Archived' }[p.status] || p.status;
-  const tagsHTML = (p.tags||[]).map(t =>
-    `<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`
-  ).join('') + `<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
-  const mfHTML = v.metafields.nodes.map((m,i) => mfRowHTML(v.id, m, i)).join('')
-    + `<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
+function rowHTML(p,v){
+  const dirty=!!S.changes[p.id], sel=S.selectedVids.has(v.id);
+  const cls=[dirty?'r-changed':'',sel?'r-selected':''].filter(Boolean).join(' ');
+  const imgSrc=prodImg(p);
+  const imgCell=imgSrc?`<img class="prod-thumb" src="${esc(imgSrc)}" alt="" loading="lazy">`:`<div class="prod-thumb-ph">□</div>`;
+  const stCls={ACTIVE:'ACTIVE',DRAFT:'DRAFT',ARCHIVED:'ARCHIVED'}[p.status]||'DRAFT';
+  const stLbl={ACTIVE:'● Active',DRAFT:'○ Draft',ARCHIVED:'⊘ Archived'}[p.status]||p.status;
+  const tagsHTML=(p.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
+  const mfHTML=buildMfHTML(v);
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
@@ -292,565 +155,482 @@ function rowHTML(p, v) {
 <td><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span></td>
 <td><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div></td>
-<td style="color:var(--t2);font-size:12px">${esc(v.title||'Default')}</td>
-<td><input class="ce" data-vid="${esc(v.id)}" data-vfield="sku" value="${esc(v.sku||'')}"></td>
-<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vfield="price" value="${esc(v.price||'')}"></td>
-<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vfield="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"></td>
+<td style="color:var(--t2);font-size:12px;white-space:nowrap">${esc(v.title||'Default')}</td>
+<td><input class="ce" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"></td>
+<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}"></td>
+<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"></td>
 <td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
 </tr>`;
 }
 
-function mfRowHTML(vid, m, i) {
-  return `<div class="mf-row" data-vidx="${esc(vid)}" data-midx="${i}">
-<input class="mf-inp" placeholder="ns"    data-vid="${esc(vid)}" data-idx="${i}" data-mf="namespace" value="${esc(m.namespace||'custom')}">
-<input class="mf-inp" placeholder="key"   data-vid="${esc(vid)}" data-idx="${i}" data-mf="key"       value="${esc(m.key||'')}">
-<input class="mf-inp" placeholder="value" data-vid="${esc(vid)}" data-idx="${i}" data-mf="value"     value="${esc(m.value||'')}">
-<button class="mf-del" data-vid="${esc(vid)}" data-idx="${i}">×</button>
-</div>`;
+/* ── METAFIELD RENDERING ── */
+function getMfLabel(ns, key){
+  const def=S.mfDefs.find(d=>d.namespace===ns&&d.key===key);
+  return def ? def.name : key.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
 
-/* ─── TABLE EVENT DELEGATION ─────────────── */
-function bindTableEvents() {
-  const tbody = $('tbody');
-  tbody.addEventListener('change', e => {
-    if (e.target.classList.contains('row-chk')) toggleRowSel(e.target.dataset.vid, e.target.checked);
+function buildMfHTML(v){
+  // If we have store definitions — show only defined fields with readable names
+  if(S.mfDefs.length){
+    const rows=S.mfDefs.map((def,i)=>{
+      const existing=v.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key);
+      const val=existing?.value??'';
+      return `<div class="mf-def-row">
+        <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
+        <input class="mf-val-inp" placeholder="—"
+          data-vid="${esc(v.id)}" data-ns="${esc(def.namespace)}" data-key="${esc(def.key)}" data-type="${esc(def.type||'single_line_text_field')}"
+          data-mf="smart" value="${esc(val)}">
+      </div>`;
+    }).join('');
+    return rows || `<span class="mf-empty">No definitions</span>`;
+  }
+  // Fallback — show existing metafields raw + add button
+  if(!v.metafields.nodes.length) return `<span class="mf-empty" style="font-size:11px;color:var(--t4)">—</span><button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
+  return v.metafields.nodes.map((m,i)=>`<div class="mf-row">
+<input class="mf-inp" placeholder="ns" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="namespace" value="${esc(m.namespace||'custom')}">
+<input class="mf-inp" placeholder="key" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="key" value="${esc(m.key||'')}">
+<input class="mf-inp" placeholder="value" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="value" value="${esc(m.value||'')}">
+<button class="mf-del" data-vid="${esc(v.id)}" data-idx="${i}">×</button>
+</div>`).join('')+`<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
+}
+
+/* ── TABLE EVENT DELEGATION ── */
+function bindTable(){
+  const tbody=$('tbody');
+  tbody.addEventListener('change',e=>{
+    if(e.target.classList.contains('row-chk')) toggleRowSel(e.target.dataset.vid,e.target.checked);
   });
-  tbody.addEventListener('input', e => {
-    const el = e.target;
-    if (el.dataset.field)  { markProd(el.dataset.pid, el.dataset.field, el.value, el); return; }
-    if (el.dataset.vfield) { markVar(el.dataset.vid, el.dataset.vfield, el.value, el); return; }
-    if (el.dataset.mf)     { markMf(el.dataset.vid, +el.dataset.idx, el.dataset.mf, el.value, el); return; }
+  tbody.addEventListener('input',e=>{
+    const el=e.target;
+    if(el.dataset.field){  markProd(el.dataset.pid,el.dataset.field,el.value,el); return; }
+    if(el.dataset.vf){     markVar(el.dataset.vid,el.dataset.vf,el.value,el); return; }
+    if(el.dataset.mf==='smart'){ markMfSmart(el); return; }
+    if(el.dataset.mf&&el.dataset.mf!=='smart'){ markMfRaw(el); return; }
   });
-  tbody.addEventListener('click', e => {
-    const el = e.target;
-    if (el.classList.contains('status-pill')) { cycleStatus(el.dataset.pid); return; }
-    if (el.classList.contains('tag-rm'))      { removeTag(el.dataset.pid, el.dataset.tag); return; }
-    if (el.classList.contains('tag-add'))     { addTagPrompt(el.dataset.pid); return; }
-    if (el.classList.contains('mf-add'))      { addMf(el.dataset.vid); return; }
-    if (el.classList.contains('mf-del'))      { removeMf(el.dataset.vid, +el.dataset.idx); return; }
-    if (el.dataset.switchtab)                 { switchTab(el.dataset.switchtab); return; }
+  tbody.addEventListener('click',e=>{
+    const el=e.target;
+    if(el.classList.contains('status-pill')){ cycleStatus(el.dataset.pid); return; }
+    if(el.classList.contains('tag-rm')){ removeTag(el.dataset.pid,el.dataset.tag); return; }
+    if(el.classList.contains('tag-add')){ addTagPrompt(el.dataset.pid); return; }
+    if(el.classList.contains('mf-add')){ addMfRaw(el.dataset.vid); return; }
+    if(el.classList.contains('mf-del')){ removeMfRaw(el.dataset.vid,+el.dataset.idx); return; }
   });
 }
 
-/* ─── MARK CHANGES ────────────────────────── */
-function markProd(pid, field, value, el) {
-  pushHist(`Edit ${field} on "${getProd(pid)?.title || pid}"`);
-  const p = getProd(pid); if (!p) return;
-  p[field] = field === 'tags' ? value.split(',').map(x => x.trim()).filter(Boolean) : value;
-  ensureChange(pid).product[field] = p[field];
-  if (el) el.classList.add('dirty');
+/* ── MARK CHANGES ── */
+function markProd(pid,field,value,el){
+  pushH(`Edit ${field}`);
+  const p=getProd(pid); if(!p)return;
+  p[field]=field==='tags'?value.split(',').map(x=>x.trim()).filter(Boolean):value;
+  ensureC(pid).product[field]=p[field];
+  if(el)el.classList.add('dirty');
   updateSaveBtn();
 }
-function markVar(vid, field, value, el) {
-  const { p, v } = getVar(vid); if (!p || !v) return;
-  pushHist(`Edit ${field} on "${v.title||'Default'}"`);
-  v[field] = value;
-  const c = ensureChange(p.id);
-  if (!c.variants[vid]) c.variants[vid] = { id:vid };
-  c.variants[vid][field] = value;
-  if (el) el.classList.add('dirty');
+function markVar(vid,field,value,el){
+  const{p,v}=getVar(vid); if(!p||!v)return;
+  pushH(`Edit ${field}`);
+  v[field]=value;
+  const c=ensureC(p.id);
+  if(!c.variants[vid])c.variants[vid]={id:vid};
+  c.variants[vid][field]=value;
+  if(el)el.classList.add('dirty');
   updateSaveBtn();
 }
-function markMf(vid, idx, field, value, el) {
-  const { p, v } = getVar(vid); if (!p || !v) return;
-  pushHist('Edit metafield');
-  v.metafields.nodes[idx][field] = value;
-  const m = v.metafields.nodes[idx];
-  const c = ensureChange(p.id);
-  c.metafields = c.metafields.filter(x => !(x.ownerId === vid && x._idx === idx));
-  if (m.namespace && m.key) c.metafields.push({ ownerId:vid, namespace:m.namespace, key:m.key, type:m.type||'single_line_text_field', value:String(m.value??''), _idx:idx });
-  if (el) el.classList.add('dirty');
+function markMfSmart(el){
+  const{p,v}=getVar(el.dataset.vid); if(!p||!v)return;
+  const ns=el.dataset.ns, key=el.dataset.key, type=el.dataset.type, val=el.value;
+  pushH(`Edit metafield ${key}`);
+  const existing=v.metafields.nodes.find(m=>m.namespace===ns&&m.key===key);
+  if(existing) existing.value=val;
+  else v.metafields.nodes.push({namespace:ns,key,type,value:val});
+  const c=ensureC(p.id);
+  c.metafields=c.metafields.filter(m=>!(m.ownerId===el.dataset.vid&&m.namespace===ns&&m.key===key));
+  if(val!=='') c.metafields.push({ownerId:el.dataset.vid,namespace:ns,key,type,value:val});
+  if(el)el.classList.add('dirty');
   updateSaveBtn();
 }
-function cycleStatus(pid) {
-  const p = getProd(pid); if (!p) return;
-  pushHist(`Cycle status on "${p.title}"`);
-  const cyc = { ACTIVE:'DRAFT', DRAFT:'ARCHIVED', ARCHIVED:'ACTIVE' };
-  p.status = cyc[p.status] || 'ACTIVE';
-  ensureChange(pid).product.status = p.status;
+function markMfRaw(el){
+  const{p,v}=getVar(el.dataset.vid); if(!p||!v)return;
+  const idx=+el.dataset.idx;
+  pushH('Edit metafield');
+  v.metafields.nodes[idx][el.dataset.mf]=el.value;
+  const m=v.metafields.nodes[idx];
+  const c=ensureC(p.id);
+  c.metafields=c.metafields.filter(x=>!(x.ownerId===el.dataset.vid&&x._idx===idx));
+  if(m.namespace&&m.key) c.metafields.push({ownerId:el.dataset.vid,namespace:m.namespace,key:m.key,type:m.type||'single_line_text_field',value:String(m.value??''),_idx:idx});
+  updateSaveBtn();
+}
+function cycleStatus(pid){
+  const p=getProd(pid); if(!p)return;
+  pushH(`Cycle status`);
+  const cy={ACTIVE:'DRAFT',DRAFT:'ARCHIVED',ARCHIVED:'ACTIVE'};
+  p.status=cy[p.status]||'ACTIVE'; ensureC(pid).product.status=p.status;
   renderTable(); updateSaveBtn();
 }
-function removeTag(pid, tag) {
-  const p = getProd(pid); if (!p) return;
-  pushHist(`Remove tag "${tag}"`);
-  p.tags = (p.tags||[]).filter(t => t !== tag);
-  ensureChange(pid).product.tags = [...p.tags];
-  rerenderTagCell(pid, p.tags); updateSaveBtn();
+function removeTag(pid,tag){
+  const p=getProd(pid); if(!p)return;
+  pushH(`Remove tag "${tag}"`);
+  p.tags=(p.tags||[]).filter(t=>t!==tag); ensureC(pid).product.tags=[...p.tags];
+  rerenderTags(pid,p.tags); updateSaveBtn();
 }
-function addTagPrompt(pid) {
-  const tag = prompt('New tag:'); if (!tag?.trim()) return;
-  const p = getProd(pid); if (!p) return;
-  if (p.tags.includes(tag.trim())) return toast('Tag already exists.');
-  pushHist(`Add tag "${tag.trim()}"`);
-  p.tags.push(tag.trim());
-  ensureChange(pid).product.tags = [...p.tags];
-  rerenderTagCell(pid, p.tags); updateSaveBtn();
+function addTagPrompt(pid){
+  const tag=prompt('New tag:'); if(!tag?.trim())return;
+  const p=getProd(pid); if(!p||(p.tags||[]).includes(tag.trim()))return;
+  pushH(`Add tag "${tag.trim()}"`);
+  p.tags=[...(p.tags||[]),tag.trim()]; ensureC(pid).product.tags=[...p.tags];
+  rerenderTags(pid,p.tags); updateSaveBtn();
 }
-function rerenderTagCell(pid, tags) {
-  const cell = $(`tw-${pid}`); if (!cell) return;
-  cell.innerHTML = tags.map(t =>
-    `<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(pid)}" data-tag="${esc(t)}">×</span></span>`
-  ).join('') + `<span class="tag-add" data-pid="${esc(pid)}">+</span>`;
+function rerenderTags(pid,tags){
+  const cell=$(`tw-${pid}`); if(!cell)return;
+  cell.innerHTML=tags.map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(pid)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(pid)}">+</span>`;
 }
-function addMf(vid) {
-  const { v } = getVar(vid); if (!v) return;
-  pushHist('Add metafield');
-  v.metafields.nodes.push({ namespace:'custom', key:'', type:'single_line_text_field', value:'' });
-  rerenderMfCell(vid, v);
+function addMfRaw(vid){
+  const{v}=getVar(vid); if(!v)return;
+  pushH('Add metafield');
+  v.metafields.nodes.push({namespace:'custom',key:'',type:'single_line_text_field',value:''});
+  const cell=$(`mf-${vid}`); if(cell)cell.innerHTML=buildMfHTML(v);
 }
-function removeMf(vid, idx) {
-  const { p, v } = getVar(vid); if (!p || !v) return;
-  pushHist('Remove metafield');
-  v.metafields.nodes.splice(idx, 1);
-  const c = ensureChange(p.id);
-  c.metafields = c.metafields.filter(x => !(x.ownerId === vid && x._idx === idx));
-  rerenderMfCell(vid, v); updateSaveBtn();
-}
-function rerenderMfCell(vid, v) {
-  const cell = $(`mf-${vid}`); if (!cell) return;
-  cell.innerHTML = v.metafields.nodes.map((m,i) => mfRowHTML(vid, m, i)).join('')
-    + `<button class="mf-add" data-vid="${esc(vid)}">+ metafield</button>`;
+function removeMfRaw(vid,idx){
+  const{p,v}=getVar(vid); if(!p||!v)return;
+  pushH('Remove metafield');
+  v.metafields.nodes.splice(idx,1);
+  const c=ensureC(p.id); c.metafields=c.metafields.filter(x=>!(x.ownerId===vid&&x._idx===idx));
+  const cell=$(`mf-${vid}`); if(cell)cell.innerHTML=buildMfHTML(v);
+  updateSaveBtn();
 }
 
-/* ─── ROW SELECTION ───────────────────────── */
-function toggleRowSel(vid, checked) {
-  checked ? S.selectedVids.add(vid) : S.selectedVids.delete(vid);
+/* ── ROW SELECTION ── */
+function toggleRowSel(vid,checked){
+  checked?S.selectedVids.add(vid):S.selectedVids.delete(vid);
   updateBulkBar();
-  const row = document.querySelector(`tr[data-vid="${vid}"]`);
-  if (row) row.classList.toggle('r-selected', checked);
+  const row=document.querySelector(`tr[data-vid="${vid}"]`);
+  if(row)row.classList.toggle('r-selected',checked);
 }
-function toggleAllRows(checked) {
-  document.querySelectorAll('.row-chk').forEach(cb => { cb.checked = checked; toggleRowSel(cb.dataset.vid, checked); });
+function toggleAll(checked){ document.querySelectorAll('.row-chk').forEach(cb=>{cb.checked=checked;toggleRowSel(cb.dataset.vid,checked);}); }
+function updateBulkBar(){
+  const n=S.selectedVids.size;
+  $('bulk-bar').classList.toggle('hidden',n===0);
+  $('bulk-lbl').textContent=`${n} selected`;
 }
-function updateBulkBar() {
-  const n = S.selectedVids.size;
-  $('bulk-bar').classList.toggle('hidden', n === 0);
-  $('bulk-count').textContent = `${n} selected`;
-}
-function getSelPids() {
-  const ids = new Set();
-  S.selectedVids.forEach(vid => { const { p } = getVar(vid); if (p) ids.add(p.id); });
-  return [...ids];
+function getSelPids(){ const ids=new Set(); S.selectedVids.forEach(vid=>{const{p}=getVar(vid);if(p)ids.add(p.id);}); return[...ids]; }
+
+/* ── SAVE BUTTON ── */
+function updateSaveBtn(){
+  const n=Object.keys(S.changes).length;
+  $('btn-save').disabled=!n; $('save-count').textContent=n;
+  if(n)setStatus(`${n} unsaved change${n!==1?'s':''}`,  'dirty');
+  else setStatus('No pending changes','ok');
 }
 
-/* ─── SAVE BUTTON ─────────────────────────── */
-function updateSaveBtn() {
-  const n = Object.keys(S.changes).length;
-  $('btn-save').disabled = !n;
-  $('save-count').textContent = n;
-  if (n) setStatus(`${n} unsaved change${n!==1?'s':''}`, 'dirty');
-  else   setStatus('No pending changes', 'ok');
-}
-
-/* ─── BULK MODAL ──────────────────────────── */
-function openBulkModal(type) {
-  S.bulkModalType = type;
-  const n = S.selectedVids.size;
-  $('m-bulk-title').textContent = { status:'Change status', price:'Set price', tags:'Add or remove tags', metafield:'Set variant metafield' }[type] || 'Bulk action';
-  $('m-bulk-sub').textContent   = `Applied to ${n} selected variant${n!==1?'s':''}`;
-  const body = $('m-bulk-body');
-  if (type === 'status') {
-    body.innerHTML = `<div class="bulk-field"><label>New status</label><select id="bv-status"><option value="ACTIVE">● Active</option><option value="DRAFT">○ Draft</option><option value="ARCHIVED">⊘ Archived</option></select></div>`;
-  } else if (type === 'price') {
-    body.innerHTML = `<div class="bulk-field"><label>New price</label><input id="bv-price" type="number" step=".01" min="0" placeholder="0.00" autofocus></div>`;
-  } else if (type === 'tags') {
-    body.innerHTML = `<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
-  } else if (type === 'metafield') {
-    body.innerHTML = `
-      <div class="bulk-field"><label>Namespace</label><input id="bv-mf-ns" type="text" placeholder="custom" value="custom"></div>
-      <div class="bulk-field"><label>Key</label><input id="bv-mf-key" type="text" placeholder="e.g. material" autofocus></div>
-      <div class="bulk-field"><label>Value</label><input id="bv-mf-val" type="text" placeholder="e.g. Cotton"></div>
-      <div class="bulk-field"><label>Type</label><select id="bv-mf-type"><option value="single_line_text_field">single_line_text_field</option><option value="multi_line_text_field">multi_line_text_field</option><option value="number_integer">number_integer</option><option value="number_decimal">number_decimal</option><option value="boolean">boolean</option></select></div>`;
+/* ── BULK MODAL ── */
+function openBulkModal(type){
+  S.bulkType=type;
+  const n=S.selectedVids.size;
+  $('m-bulk-title').textContent={status:'Change status',price:'Set price',tags:'Tags',metafield:'Set metafield'}[type]||'Bulk action';
+  $('m-bulk-sub').textContent=`Applied to ${n} selected variant${n!==1?'s':''}`;
+  const body=$('m-bulk-body');
+  if(type==='status'){
+    body.innerHTML=`<div class="bulk-field"><label>New status</label><select id="bv-status"><option value="ACTIVE">● Active</option><option value="DRAFT">○ Draft</option><option value="ARCHIVED">⊘ Archived</option></select></div>`;
+  }else if(type==='price'){
+    body.innerHTML=`<div class="bulk-field"><label>New price</label><input id="bv-price" type="number" step=".01" min="0" placeholder="0.00" autofocus></div>`;
+  }else if(type==='tags'){
+    body.innerHTML=`<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
+  }else if(type==='metafield'){
+    // Use store definitions if available
+    if(S.mfDefs.length){
+      const opts=S.mfDefs.map(d=>`<option value="${esc(d.namespace)}|${esc(d.key)}|${esc(d.type||'single_line_text_field')}">${esc(d.name)}</option>`).join('');
+      body.innerHTML=`<div class="bulk-field"><label>Metafield</label><select id="bv-mf-def"><option value="">Select metafield…</option>${opts}</select></div><div class="bulk-field"><label>Value</label><input id="bv-mf-val" type="text" placeholder="Value" autofocus></div>`;
+    }else{
+      body.innerHTML=`<div class="bulk-field"><label>Namespace</label><input id="bv-mf-ns" type="text" value="custom"></div><div class="bulk-field"><label>Key</label><input id="bv-mf-key" type="text" placeholder="e.g. material" autofocus></div><div class="bulk-field"><label>Value</label><input id="bv-mf-val" type="text" placeholder="Value"></div>`;
+    }
   }
   openModal('m-bulk');
-  setTimeout(() => body.querySelector('input,select')?.focus(), 60);
+  setTimeout(()=>body.querySelector('input,select')?.focus(),60);
 }
 
-function applyBulkModal() {
-  const type = S.bulkModalType;
-  if (type === 'status') {
-    const val = $('bv-status').value;
-    const pids = getSelPids(); if (!pids.length) return;
-    pushHist(`Bulk status → ${val}`);
-    pids.forEach(pid => { const p = getProd(pid); if (!p) return; p.status = val; ensureChange(pid).product.status = val; });
-    renderTable(); updateSaveBtn(); toast(`Status set to ${val} on ${pids.length} products.`);
-  } else if (type === 'price') {
-    const val = $('bv-price')?.value; const n = Number(val);
-    if (!val || isNaN(n) || n < 0) return toast('Enter a valid price.');
-    const vids = [...S.selectedVids];
-    pushHist(`Bulk price → ${n.toFixed(2)}`);
-    vids.forEach(vid => { const { p, v } = getVar(vid); if (!p||!v) return; v.price = n.toFixed(2); const c = ensureChange(p.id); if (!c.variants[vid]) c.variants[vid] = { id:vid }; c.variants[vid].price = v.price; });
-    renderTable(); updateSaveBtn(); toast(`Price set to ${n.toFixed(2)} on ${vids.length} variants.`);
-  } else if (type === 'tags') {
-    const tag    = $('bv-tag')?.value.trim();
-    const action = $('bv-tag-action')?.value;
-    if (!tag) return toast('Enter a tag.');
-    const pids = getSelPids();
-    pushHist(`Bulk ${action} tag "${tag}"`);
-    pids.forEach(pid => {
-      const p = getProd(pid); if (!p) return;
-      if (action === 'add') { if (!p.tags.includes(tag)) p.tags.push(tag); }
-      else p.tags = p.tags.filter(t => t !== tag);
-      ensureChange(pid).product.tags = [...p.tags];
-    });
+function applyBulkModal(){
+  const type=S.bulkType;
+  if(type==='status'){
+    const val=$('bv-status').value; const pids=getSelPids(); if(!pids.length)return;
+    pushH(`Bulk status → ${val}`);
+    pids.forEach(pid=>{const p=getProd(pid);if(!p)return;p.status=val;ensureC(pid).product.status=val;});
+    renderTable(); updateSaveBtn(); toast(`Status set on ${pids.length} products.`);
+  }else if(type==='price'){
+    const val=$('bv-price')?.value; const n=Number(val);
+    if(!val||isNaN(n)||n<0)return toast('Enter a valid price.');
+    const vids=[...S.selectedVids];
+    pushH(`Bulk price → ${n.toFixed(2)}`);
+    vids.forEach(vid=>{const{p,v}=getVar(vid);if(!p||!v)return;v.price=n.toFixed(2);const c=ensureC(p.id);if(!c.variants[vid])c.variants[vid]={id:vid};c.variants[vid].price=v.price;});
+    renderTable(); updateSaveBtn(); toast(`Price set on ${vids.length} variants.`);
+  }else if(type==='tags'){
+    const tag=$('bv-tag')?.value.trim(); const action=$('bv-tag-action')?.value;
+    if(!tag)return toast('Enter a tag.');
+    const pids=getSelPids();
+    pushH(`Bulk ${action} tag "${tag}"`);
+    pids.forEach(pid=>{const p=getProd(pid);if(!p)return;if(action==='add'){if(!p.tags.includes(tag))p.tags.push(tag);}else p.tags=p.tags.filter(t=>t!==tag);ensureC(pid).product.tags=[...p.tags];});
     renderTable(); updateSaveBtn(); toast(`Tag "${tag}" ${action==='add'?'added to':'removed from'} ${pids.length} products.`);
-  } else if (type === 'metafield') {
-    const ns  = $('bv-mf-ns')?.value.trim() || 'custom';
-    const key = $('bv-mf-key')?.value.trim();
-    const val = $('bv-mf-val')?.value ?? '';
-    const mftype = $('bv-mf-type')?.value || 'single_line_text_field';
-    if (!key) return toast('Enter a metafield key.');
-    const vids = [...S.selectedVids];
-    pushHist(`Bulk metafield ${ns}.${key}`);
-    vids.forEach(vid => {
-      const { p, v } = getVar(vid); if (!p||!v) return;
-      // Update or add metafield on variant
-      const existing = v.metafields.nodes.findIndex(m => m.namespace === ns && m.key === key);
-      if (existing >= 0) { v.metafields.nodes[existing].value = val; }
-      else { v.metafields.nodes.push({ namespace:ns, key, type:mftype, value:val }); }
-      const c = ensureChange(p.id);
-      c.metafields = c.metafields.filter(m => !(m.ownerId === vid && m.namespace === ns && m.key === key));
-      c.metafields.push({ ownerId:vid, namespace:ns, key, type:mftype, value:val });
+  }else if(type==='metafield'){
+    const val=$('bv-mf-val')?.value??'';
+    let ns,key,mftype;
+    if(S.mfDefs.length){
+      const sel=$('bv-mf-def')?.value; if(!sel)return toast('Select a metafield.');
+      [ns,key,mftype]=sel.split('|');
+    }else{
+      ns=$('bv-mf-ns')?.value.trim()||'custom'; key=$('bv-mf-key')?.value.trim(); mftype='single_line_text_field';
+      if(!key)return toast('Enter a key.');
+    }
+    const vids=[...S.selectedVids];
+    pushH(`Bulk metafield ${key}`);
+    vids.forEach(vid=>{
+      const{p,v}=getVar(vid);if(!p||!v)return;
+      const ex=v.metafields.nodes.findIndex(m=>m.namespace===ns&&m.key===key);
+      if(ex>=0)v.metafields.nodes[ex].value=val;
+      else v.metafields.nodes.push({namespace:ns,key,type:mftype,value:val});
+      const c=ensureC(p.id);
+      c.metafields=c.metafields.filter(m=>!(m.ownerId===vid&&m.namespace===ns&&m.key===key));
+      if(val!=='')c.metafields.push({ownerId:vid,namespace:ns,key,type:mftype,value:val});
     });
-    renderTable(); updateSaveBtn(); toast(`Metafield ${ns}.${key} set on ${vids.length} variants.`);
+    renderTable(); updateSaveBtn(); toast(`Metafield "${key}" set on ${vids.length} variants.`);
   }
   closeModal('m-bulk');
 }
 
-/* ─── REVIEW & SAVE MODAL ────────────────── */
-function openSaveModal() {
-  const payloads = Object.values(S.changes);
-  if (!payloads.length) return toast('No changes to save.');
-  $('m-save-sub').textContent = `${payloads.length} product${payloads.length!==1?'s':''} with pending changes`;
-  const list = $('m-save-diff');
-  list.innerHTML = payloads.map(c => {
-    const p = getProd(c.productId); if (!p) return '';
-    const imgSrc = prodImg(p);
-    const imgEl = imgSrc ? `<img class="diff-thumb" src="${esc(imgSrc)}" alt="">` : `<div class="diff-thumb-ph">□</div>`;
-    const orig = S.originals.find(x => x.id === c.productId);
-    const diffs = [];
-    Object.entries(c.product||{}).forEach(([field, newVal]) => {
-      const oldVal = orig ? orig[field] : '?';
-      const oldStr = Array.isArray(oldVal) ? oldVal.join(', ') : String(oldVal ?? '');
-      const newStr = Array.isArray(newVal) ? newVal.join(', ') : String(newVal ?? '');
-      if (oldStr !== newStr) diffs.push(`<div class="diff-row"><span class="diff-field">${esc(field)}</span><span class="diff-old">${esc(oldStr||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(newStr)}</span></div>`);
+/* ── COLLECTIONS ── */
+async function openCollModal(){
+  const pids=getSelPids(); if(!pids.length)return toast('Select products first.');
+  $('m-coll-sub').textContent=`${pids.length} product${pids.length!==1?'s':''} selected`;
+  $('coll-prods').innerHTML=pids.map(pid=>{const p=getProd(pid);return p?`<div class="coll-prod-item">${esc(p.title)}</div>`:''}).join('');
+  openModal('m-coll');
+  if(!S.collsCache){
+    $('coll-loading').textContent='(loading…)';
+    $('coll-select').innerHTML='<option value="">Loading…</option>';
+    try{
+      const r=await api('/api/collections',{first:100});
+      S.collsCache=r.collections;
+    }catch(e){ $('coll-loading').textContent=''; $('coll-select').innerHTML='<option value="">Failed to load</option>'; toast('Could not load collections: '+e.message); return; }
+  }
+  $('coll-loading').textContent='';
+  $('coll-select').innerHTML=!S.collsCache.length
+    ?'<option value="">No collections found</option>'
+    :'<option value="">Select a collection…</option>'+S.collsCache.map(c=>`<option value="${esc(c.id)}">${esc(c.title)} (${c.productsCount?.count??'?'})</option>`).join('');
+}
+
+async function confirmColl(){
+  const collId=$('coll-select').value; const action=$('coll-action').value;
+  if(!collId)return toast('Select a collection.');
+  const pids=getSelPids(); if(!pids.length)return;
+  const btn=$('m-coll-confirm'); btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const path=action==='add'?'/api/collection-add':'/api/collection-remove';
+    await api(path,{collectionId:collId,productIds:pids});
+    const name=S.collsCache?.find(c=>c.id===collId)?.title||'collection';
+    toast(`${pids.length} product${pids.length!==1?'s':''} ${action==='add'?'added to':'removed from'} "${name}".`);
+    closeModal('m-coll');
+  }catch(e){ toast(e.message); }
+  finally{ btn.disabled=false; btn.textContent='Apply →'; }
+}
+
+/* ── REVIEW & SAVE ── */
+function openSaveModal(){
+  const payloads=Object.values(S.changes); if(!payloads.length)return toast('No changes to save.');
+  $('m-save-sub').textContent=`${payloads.length} product${payloads.length!==1?'s':''} with pending changes`;
+  const list=$('m-save-diff');
+  list.innerHTML=payloads.map(c=>{
+    const p=getProd(c.productId); if(!p)return'';
+    const img=prodImg(p);
+    const imgEl=img?`<img class="diff-thumb" src="${esc(img)}" alt="">`:`<div class="diff-thumb-ph">□</div>`;
+    const orig=S.originals.find(x=>x.id===c.productId);
+    const diffs=[];
+    Object.entries(c.product||{}).forEach(([field,newVal])=>{
+      const oldVal=orig?orig[field]:'?';
+      const oldStr=Array.isArray(oldVal)?oldVal.join(', '):String(oldVal??'');
+      const newStr=Array.isArray(newVal)?newVal.join(', '):String(newVal??'');
+      if(oldStr!==newStr)diffs.push(`<div class="diff-row"><span class="diff-field">${esc(field)}</span><span class="diff-old">${esc(oldStr||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(newStr)}</span></div>`);
     });
-    Object.values(c.variants||{}).forEach(v => {
-      let origV = null; if (orig) origV = orig.variants?.nodes?.find(x => x.id === v.id);
-      const vLbl = p.variants.nodes.find(x => x.id === v.id)?.title || 'variant';
-      ['price','compareAtPrice','sku'].forEach(field => {
-        if (v[field] !== undefined) { const old = origV ? String(origV[field]??'') : '?'; const nw = String(v[field]??''); if (old !== nw) diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} ${esc(field)}</span><span class="diff-old">${esc(old||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(nw)}</span></div>`); }
+    Object.values(c.variants||{}).forEach(v=>{
+      const origV=orig?.variants?.nodes?.find(x=>x.id===v.id);
+      const vLbl=p.variants.nodes.find(x=>x.id===v.id)?.title||'variant';
+      ['price','compareAtPrice','sku'].forEach(field=>{
+        if(v[field]!==undefined){const old=origV?String(origV[field]??''):'?';const nw=String(v[field]??'');if(old!==nw)diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} ${esc(field)}</span><span class="diff-old">${esc(old||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(nw)}</span></div>`);}
       });
     });
-    if ((c.metafields||[]).length) diffs.push(`<div class="diff-row"><span class="diff-field">metafields</span><span class="diff-new">${c.metafields.length} change${c.metafields.length!==1?'s':''}</span></div>`);
-    return `<div class="diff-item"><div class="diff-item-head">${imgEl}<span class="diff-title">${esc(p.title)}</span></div><div class="diff-rows">${diffs.length ? diffs.join('') : '<div style="font-size:12px;color:var(--t3)">Variant / metafield changes</div>'}</div></div>`;
+    if((c.metafields||[]).length)diffs.push(`<div class="diff-row"><span class="diff-field">metafields</span><span class="diff-new">${c.metafields.length} change${c.metafields.length!==1?'s':''}</span></div>`);
+    return `<div class="diff-item"><div class="diff-item-head">${imgEl}<span class="diff-title">${esc(p.title)}</span></div><div class="diff-rows">${diffs.length?diffs.join(''):'<span style="font-size:11px;color:var(--t3)">Variant / metafield changes</span>'}</div></div>`;
   }).join('');
   openModal('m-save');
 }
 
-async function confirmSave() {
-  const payloads = Object.values(S.changes); if (!payloads.length) return;
-  const btn = $('m-save-confirm'); btn.disabled = true;
-  setStatus('Saving…', 'saving');
-  try {
-    if (S.demo) { await delay(600); }
-    else {
-      for (const c of payloads) {
-        const mf = (c.metafields||[]).map(({ _idx, ...rest }) => rest);
-        await apiPost('/api/save-product', { productId:c.productId, product:c.product, variants:Object.values(c.variants||{}), metafields:mf });
-      }
+async function confirmSave(){
+  const payloads=Object.values(S.changes); if(!payloads.length)return;
+  const btn=$('m-save-confirm'); btn.disabled=true;
+  setStatus('Saving…','saving');
+  try{
+    for(const c of payloads){
+      const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
+      await api('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});
     }
-    const recap = buildRecap(payloads);
-    const n = payloads.length;
-    S.changes = {}; S.past = []; S.future = [];
-    S.originals = clone(S.products);
-    document.querySelectorAll('.dirty').forEach(el => el.classList.remove('dirty'));
+    const recap=buildRecap(payloads);
+    const n=payloads.length;
+    S.changes={}; S.past=[]; S.future=[];
+    S.originals=clone(S.products);
+    document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
     closeModal('m-save'); renderTable(); updateSaveBtn(); updateUndoUI();
     toast(`${n} product${n!==1?'s':''} saved.`);
-    setStatus('All changes saved', 'ok');
-    downloadText(recap, `bulkedit-recap-${Date.now()}.txt`);
-  } catch(e) { toast(e.message); setStatus('Save failed', 'dirty'); }
-  finally { btn.disabled = false; }
+    setStatus('All changes saved','ok');
+    dlText(recap,`bulkedit-recap-${Date.now()}.txt`);
+  }catch(e){ toast(e.message); setStatus('Save failed','dirty'); }
+  finally{ btn.disabled=false; }
 }
 
-/* ─── RECAP ───────────────────────────────── */
-function buildRecap(payloads) {
-  const lines = ['BulkEdit — Change recap', `Generated: ${new Date().toLocaleString()}`, ''];
-  payloads.forEach(c => {
-    const p = getProd(c.productId); if (!p) return;
+function buildRecap(payloads){
+  const lines=['BulkEdit — Change recap',`Generated: ${new Date().toLocaleString()}`,''];
+  payloads.forEach(c=>{
+    const p=getProd(c.productId); if(!p)return;
     lines.push(`Product: ${p.title}`);
-    const orig = S.originals.find(x => x.id === c.productId);
-    Object.entries(c.product||{}).forEach(([field, newVal]) => {
-      const oldVal = orig ? orig[field] : '?';
-      const oldStr = Array.isArray(oldVal) ? oldVal.join(', ') : String(oldVal??'');
-      const newStr = Array.isArray(newVal) ? newVal.join(', ') : String(newVal??'');
-      if (oldStr !== newStr) lines.push(`  ${field}: "${oldStr}" → "${newStr}"`);
+    const orig=S.originals.find(x=>x.id===c.productId);
+    Object.entries(c.product||{}).forEach(([field,newVal])=>{
+      const oldVal=orig?orig[field]:'?';
+      const oldStr=Array.isArray(oldVal)?oldVal.join(', '):String(oldVal??'');
+      const newStr=Array.isArray(newVal)?newVal.join(', '):String(newVal??'');
+      if(oldStr!==newStr)lines.push(`  ${field}: "${oldStr}" → "${newStr}"`);
     });
-    Object.values(c.variants||{}).forEach(v => {
-      const origV = orig?.variants?.nodes?.find(x => x.id === v.id);
-      const vLbl  = p.variants.nodes.find(x => x.id === v.id)?.title || v.id;
-      ['price','compareAtPrice','sku'].forEach(field => {
-        if (v[field] !== undefined) { const old = origV ? String(origV[field]??'') : '?'; const nw = String(v[field]??''); if (old !== nw) lines.push(`  ${vLbl} ${field}: "${old}" → "${nw}"`); }
+    Object.values(c.variants||{}).forEach(v=>{
+      const origV=orig?.variants?.nodes?.find(x=>x.id===v.id);
+      const vLbl=p.variants.nodes.find(x=>x.id===v.id)?.title||v.id;
+      ['price','compareAtPrice','sku'].forEach(field=>{
+        if(v[field]!==undefined){const old=origV?String(origV[field]??''):'?';const nw=String(v[field]??'');if(old!==nw)lines.push(`  ${vLbl} ${field}: "${old}" → "${nw}"`);}
       });
     });
-    if ((c.metafields||[]).length) lines.push(`  metafields: ${c.metafields.length} change${c.metafields.length!==1?'s':''}`);
+    if((c.metafields||[]).length)lines.push(`  metafields: ${c.metafields.length} change${c.metafields.length!==1?'s':''}`);
     lines.push('');
   });
   return lines.join('\n');
 }
-function downloadText(text, filename) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type:'text/plain' }));
-  a.download = filename; a.click();
-}
-function manualDownloadRecap() { downloadText(buildRecap(Object.values(S.changes)), `bulkedit-recap-${Date.now()}.txt`); }
 
-/* ─── SEARCH ──────────────────────────────── */
-function buildSuggestions() {
-  const q = S.searchQ; const box = $('search-suggest');
-  if (!q) { box.classList.remove('open'); return; }
-  const all = [...new Set(flatRows().flatMap(({ p, v }) => [p.title, p.vendor, v.sku, ...(p.tags||[])]).filter(Boolean))];
-  const hits = all.filter(x => x.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
-  if (!hits.length) { box.classList.remove('open'); return; }
-  const re = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
-  box.innerHTML = hits.map(h => `<div class="suggest-item" data-val="${esc(h)}">${esc(h).replace(re,'<mark>$1</mark>')}</div>`).join('');
+function dlText(text,filename){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'})); a.download=filename; a.click(); }
+function manualRecap(){ dlText(buildRecap(Object.values(S.changes)),`bulkedit-recap-${Date.now()}.txt`); }
+
+/* ── SEARCH ── */
+function buildSuggestions(){
+  const q=S.searchQ; const box=$('search-suggest');
+  if(!q){box.classList.remove('open');return;}
+  const all=[...new Set(flatRows().flatMap(({p,v})=>[p.title,p.vendor,v.sku,...(p.tags||[])]).filter(Boolean))];
+  const hits=all.filter(x=>x.toLowerCase().includes(q.split(',')[0].trim().toLowerCase())).slice(0,6);
+  if(!hits.length){box.classList.remove('open');return;}
+  const re=new RegExp(`(${q.split(',')[0].trim().replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  box.innerHTML=hits.map(h=>`<div class="suggest-item" data-val="${esc(h)}">${esc(h).replace(re,'<mark>$1</mark>')}</div>`).join('');
   box.classList.add('open');
 }
 
-/* ─── FILTER ──────────────────────────────── */
-function setFilter(f) {
-  S.filter = f;
-  document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b.dataset.f === f));
-  renderTable();
+/* ── FILTER ── */
+function setFilter(f){ S.filter=f; document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.f===f)); renderTable(); }
+
+/* ── TABS ── */
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  if(name==='export')updateExportPreview();
 }
 
-/* ─── TABS ────────────────────────────────── */
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-'+name));
-  if (name === 'export') updateExportPreview();
-}
-
-/* ─── EXPORT ──────────────────────────────── */
-const EX_FIELDS = ['id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
-const EX_LABELS = { id:'ID', title:'Title', status:'Status', vendor:'Vendor', tags:'Tags', variant:'Variant', sku:'SKU', price:'Price', compareAtPrice:'Compare at', inventoryQuantity:'Inventory' };
-
-function initExportFields() {
-  const el = $('export-field-list'); if (!el) return;
-  el.innerHTML = EX_FIELDS.map(f =>
-    `<label class="field-chip${S.exportFields.includes(f)?' on':''}"><input type="checkbox" data-ef="${f}" ${S.exportFields.includes(f)?'checked':''}>${EX_LABELS[f]||f}</label>`
-  ).join('');
-  el.querySelectorAll('input[data-ef]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const f = cb.dataset.ef;
-      if (cb.checked) { if (!S.exportFields.includes(f)) S.exportFields.push(f); }
-      else S.exportFields = S.exportFields.filter(x => x !== f);
-      cb.closest('.field-chip').classList.toggle('on', cb.checked);
-      updateExportPreview();
-    });
-  });
+/* ── EXPORT ── */
+const EX_ALL=['id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
+const EX_LBL={id:'ID',title:'Title',status:'Status',vendor:'Vendor',tags:'Tags',variant:'Variant',sku:'SKU',price:'Price',compareAtPrice:'Compare at',inventoryQuantity:'Inventory'};
+function initExportFields(){
+  const el=$('export-field-list'); if(!el)return;
+  el.innerHTML=EX_ALL.map(f=>`<label class="field-chip${S.exportFields.includes(f)?' on':''}"><input type="checkbox" data-ef="${f}" ${S.exportFields.includes(f)?'checked':''}>${EX_LBL[f]||f}</label>`).join('');
+  el.querySelectorAll('input[data-ef]').forEach(cb=>cb.addEventListener('change',()=>{const f=cb.dataset.ef;if(cb.checked){if(!S.exportFields.includes(f))S.exportFields.push(f);}else S.exportFields=S.exportFields.filter(x=>x!==f);cb.closest('.field-chip').classList.toggle('on',cb.checked);updateExportPreview();}));
   updateExportPreview();
 }
-
-function exVal(p, v, f) {
-  if (f==='tags') return (p.tags||[]).join('|');
-  if (f==='variant') return v.title||'Default';
-  if (f==='sku') return v.sku||'';
-  if (f==='price') return v.price||'';
-  if (f==='compareAtPrice') return v.compareAtPrice||'';
-  if (f==='inventoryQuantity') return String(v.inventoryQuantity??'');
+function exVal(p,v,f){
+  if(f==='tags')return(p.tags||[]).join('|');if(f==='variant')return v.title||'Default';
+  if(f==='sku')return v.sku||'';if(f==='price')return v.price||'';
+  if(f==='compareAtPrice')return v.compareAtPrice||'';if(f==='inventoryQuantity')return String(v.inventoryQuantity??'');
   return String(p[f]??'');
 }
-function buildCSV() {
-  const rows = flatRows();
-  return [S.exportFields.join(','), ...rows.map(({ p, v }) =>
-    S.exportFields.map(f => { const val = exVal(p,v,f); return val.includes(',')||val.includes('"') ? `"${val.replace(/"/g,'""')}"` : val; }).join(',')
-  )].join('\n');
-}
-function buildJSON() {
-  return JSON.stringify(flatRows().map(({ p, v }) => { const o={}; S.exportFields.forEach(f => o[f]=exVal(p,v,f)); return o; }), null, 2);
-}
-function updateExportPreview() {
-  const pre = $('export-preview'); if (!pre) return;
-  const rows = flatRows().slice(0,3);
-  pre.textContent = [S.exportFields.join(','), ...rows.map(({ p, v }) =>
-    S.exportFields.map(f => { const val = exVal(p,v,f); return val.includes(',')?`"${val}"`:val; }).join(',')
-  )].join('\n') + (flatRows().length > 3 ? `\n… (${flatRows().length} total rows)` : '');
+function buildCSV(){ return[S.exportFields.join(','),...flatRows().map(({p,v})=>S.exportFields.map(f=>{const val=exVal(p,v,f);return val.includes(',')||val.includes('"')?`"${val.replace(/"/g,'""')}"`:`${val}`;}).join(','))].join('\n'); }
+function buildJSON(){ return JSON.stringify(flatRows().map(({p,v})=>{const o={};S.exportFields.forEach(f=>o[f]=exVal(p,v,f));return o;}),null,2); }
+function updateExportPreview(){
+  const pre=$('export-preview'); if(!pre)return;
+  const rows=flatRows().slice(0,3);
+  pre.textContent=[S.exportFields.join(','),...rows.map(({p,v})=>S.exportFields.map(f=>{const val=exVal(p,v,f);return val.includes(',')?`"${val}"`:val;}).join(','))].join('\n')+(flatRows().length>3?`\n… (${flatRows().length} total rows)`:'');
 }
 
-/* ─── COLLECTIONS ─────────────────────────── */
-let collectionsCache = null;
+/* ── BOOT ── */
+function boot(){
+  // Connect
+  $('btn-connect').addEventListener('click', startOAuth);
+  $('f-shop').addEventListener('keydown', e=>{ if(e.key==='Enter') startOAuth(); });
 
-async function openCollModal() {
-  const n = S.selectedVids.size;
-  if (!n) return toast('Select products first.');
-  const pids = getSelPids();
-  $('m-coll-sub').textContent = `${pids.length} product${pids!==1?'s':''} selected`;
-
-  // Show selected products
-  const prodList = $('coll-selected-products');
-  prodList.innerHTML = pids.map(pid => {
-    const p = getProd(pid); if (!p) return '';
-    return `<div style="padding:6px 10px;background:var(--bg);border:1px solid var(--border,var(--b1));border-radius:6px;font-size:12px;color:var(--t2)">${esc(p.title)}</div>`;
-  }).join('');
-
-  openModal('m-coll');
-
-  // Load collections if not cached
-  if (S.demo) {
-    $('coll-select').innerHTML = '<option value="">Not available in demo mode</option>';
-    return;
-  }
-  if (!collectionsCache) {
-    $('coll-loading').textContent = '(loading…)';
-    $('coll-select').innerHTML = '<option value="">Loading…</option>';
-    try {
-      const r = await apiPost('/api/collections', { first: 100 });
-      collectionsCache = r.collections;
-    } catch(e) {
-      $('coll-loading').textContent = '';
-      $('coll-select').innerHTML = '<option value="">Failed to load — check permissions</option>';
-      toast('Could not load collections: ' + e.message);
-      return;
-    }
-  }
-  $('coll-loading').textContent = '';
-  if (!collectionsCache.length) {
-    $('coll-select').innerHTML = '<option value="">No collections found</option>';
-    return;
-  }
-  $('coll-select').innerHTML = '<option value="">Select a collection…</option>' +
-    collectionsCache.map(c => `<option value="${esc(c.id)}">${esc(c.title)} (${c.productsCount?.count ?? '?'} products)</option>`).join('');
-}
-
-async function confirmCollModal() {
-  const collId = $('coll-select').value;
-  const action = $('coll-action').value;
-  if (!collId) return toast('Select a collection first.');
-  const pids = getSelPids();
-  if (!pids.length) return toast('No products selected.');
-
-  const btn = $('m-coll-confirm');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
-
-  try {
-    if (S.demo) {
-      await new Promise(r => setTimeout(r, 500));
-      toast(`Demo: would ${action} ${pids.length} products to/from collection.`);
-    } else {
-      const path = action === 'add' ? '/api/collection-add' : '/api/collection-remove';
-      const r = await apiPost(path, { collectionId: collId, productIds: pids });
-      const collName = collectionsCache?.find(c => c.id === collId)?.title || 'collection';
-      toast(`${pids.length} product${pids.length!==1?'s':''} ${action==='add'?'added to':'removed from'} "${collName}".`);
-    }
-    closeModal('m-coll');
-  } catch(e) {
-    toast(e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Apply →';
-  }
-}
-
-/* ─── BOOT ────────────────────────────────── */
-function boot() {
-  initSteps();
-  /* Connect screen */
-  $('c-oauth-btn').addEventListener('click', () => showStep('c-oauth'));
-  $('c-token-btn').addEventListener('click', () => showStep('c-token'));
-  $('c-demo-btn').addEventListener('click',  loadDemoMode);
-  $('c-oauth-go').addEventListener('click',  startOAuth);
-  $('c-token-go').addEventListener('click',  connectWithToken);
-  document.querySelectorAll('.c-back').forEach(btn => btn.addEventListener('click', () => showStep('c-choose')));
-  $('f-shop-oauth').addEventListener('keydown', e => { if (e.key==='Enter') startOAuth(); });
-  $('f-shop').addEventListener('keydown',  e => { if (e.key==='Enter') connectWithToken(); });
-  $('f-token').addEventListener('keydown', e => { if (e.key==='Enter') connectWithToken(); });
-
-  /* Topbar */
-  $('btn-undo').addEventListener('click',       undo);
-  $('btn-redo').addEventListener('click',       redo);
+  // Topbar
+  $('btn-undo').addEventListener('click', undo);
+  $('btn-redo').addEventListener('click', redo);
   $('btn-disconnect').addEventListener('click', disconnect);
-  $('btn-demo-exit').addEventListener('click',  disconnect);
-  $('btn-save').addEventListener('click',       openSaveModal);
+  $('btn-save').addEventListener('click', openSaveModal);
 
-  /* Search */
-  $('search').addEventListener('input', e => {
-    S.searchQ = e.target.value.trim(); renderTable();
-    if (!S.demo && S.searchQ.length > 2) { clearTimeout(window._srt); window._srt = setTimeout(() => loadProducts(S.searchQ), 350); }
+  // Search
+  $('search').addEventListener('input', e=>{
+    S.searchQ=e.target.value.trim(); renderTable();
+    if(S.searchQ.length>2){ clearTimeout(window._srt); window._srt=setTimeout(()=>loadProducts(S.searchQ.split(',')[0].trim()),400); }
   });
-  $('search').addEventListener('focus', () => { if (S.searchQ) buildSuggestions(); });
-  $('search-suggest').addEventListener('mousedown', e => {
-    const item = e.target.closest('.suggest-item'); if (!item) return;
-    $('search').value = item.dataset.val; S.searchQ = item.dataset.val.toLowerCase();
-    $('search-suggest').classList.remove('open'); renderTable();
-  });
-  document.addEventListener('click', e => { if (!e.target.closest('.search-box')) $('search-suggest').classList.remove('open'); });
+  $('search').addEventListener('focus',()=>{ if(S.searchQ)buildSuggestions(); });
+  $('search-suggest').addEventListener('mousedown',e=>{ const item=e.target.closest('.suggest-item'); if(!item)return; $('search').value=item.dataset.val; S.searchQ=item.dataset.val.toLowerCase(); $('search-suggest').classList.remove('open'); renderTable(); });
+  document.addEventListener('click',e=>{ if(!e.target.closest('.search-box'))$('search-suggest').classList.remove('open'); });
 
-  /* Filters */
-  document.querySelectorAll('.filter').forEach(btn => btn.addEventListener('click', () => setFilter(btn.dataset.f)));
+  // Filters
+  document.querySelectorAll('.filter').forEach(btn=>btn.addEventListener('click',()=>setFilter(btn.dataset.f)));
 
-  /* Tabs */
-  document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+  // Tabs
+  document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
 
-  /* Select all */
-  $('chk-all').addEventListener('change', e => toggleAllRows(e.target.checked));
+  // Select all
+  $('chk-all').addEventListener('change',e=>toggleAll(e.target.checked));
 
-  /* Undo hint bar */
+  // Undo hint
   $('undo-hint-undo').addEventListener('click', undo);
   $('undo-hint-redo').addEventListener('click', redo);
 
-  /* Bulk bar */
-  $('bulk-status-btn').addEventListener('click', () => openBulkModal('status'));
-  $('bulk-price-btn').addEventListener('click',  () => openBulkModal('price'));
-  $('bulk-tags-btn').addEventListener('click',   () => openBulkModal('tags'));
-  $('bulk-mf-btn').addEventListener('click',     () => openBulkModal('metafield'));
-  $('bulk-coll-btn').addEventListener('click',   () => openCollModal());
+  // Bulk
+  $('bulk-status-btn').addEventListener('click', ()=>openBulkModal('status'));
+  $('bulk-price-btn').addEventListener('click',  ()=>openBulkModal('price'));
+  $('bulk-tags-btn').addEventListener('click',   ()=>openBulkModal('tags'));
+  $('bulk-mf-btn').addEventListener('click',     ()=>openBulkModal('metafield'));
+  $('bulk-coll-btn').addEventListener('click',   ()=>openCollModal());
 
-  /* Collections modal */
-  $('m-coll-confirm').addEventListener('click', confirmCollModal);
-
-  /* Bulk modal */
+  // Bulk modal
   $('m-bulk-apply').addEventListener('click', applyBulkModal);
 
-  /* Save/review modal */
-  $('m-save-confirm').addEventListener('click',    confirmSave);
-  $('btn-dl-recap').addEventListener('click',      manualDownloadRecap);
+  // Save modal
+  $('m-save-confirm').addEventListener('click', confirmSave);
+  $('btn-dl-recap').addEventListener('click', manualRecap);
 
-  // Schedule removed
-  /* Export */
-  $('btn-dl-csv').addEventListener('click',   () => { downloadText(buildCSV(), `shopify-export-${Date.now()}.csv`); toast('CSV downloaded.'); });
-  $('btn-dl-json').addEventListener('click',  () => { downloadText(buildJSON(), `shopify-export-${Date.now()}.json`); toast('JSON downloaded.'); });
-  $('btn-copy-csv').addEventListener('click', () => { navigator.clipboard?.writeText(buildCSV()).then(()=>toast('CSV copied.')).catch(()=>toast('Clipboard not available.')); });
+  // Collections modal
+  $('m-coll-confirm').addEventListener('click', confirmColl);
 
-  /* Generic modal close — data-close attribute */
-  document.addEventListener('click', e => {
-    const closeId = e.target.closest('[data-close]')?.dataset.close;
-    if (closeId) { closeModal(closeId); return; }
-    // close if clicking overlay background
-    if (e.target.classList.contains('overlay')) closeModal(e.target.id);
+  // Export
+  $('btn-dl-csv').addEventListener('click',  ()=>{ dlText(buildCSV(),`shopify-export-${Date.now()}.csv`); toast('CSV downloaded.'); });
+  $('btn-dl-json').addEventListener('click', ()=>{ dlText(buildJSON(),`shopify-export-${Date.now()}.json`); toast('JSON downloaded.'); });
+  $('btn-copy-csv').addEventListener('click',()=>{ navigator.clipboard?.writeText(buildCSV()).then(()=>toast('CSV copied.')).catch(()=>toast('Clipboard not available.')); });
+
+  // Generic close buttons
+  document.addEventListener('click',e=>{
+    const id=e.target.closest('[data-close]')?.dataset.close;
+    if(id)closeModal(id);
+    if(e.target.classList.contains('overlay'))closeModal(e.target.id);
   });
 
-  /* Keyboard */
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') ['m-bulk','m-save','m-coll'].forEach(id => closeModal(id));
-  });
+  // Keyboard
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape')['m-bulk','m-save','m-coll'].forEach(id=>closeModal(id)); });
 
-  /* Table events */
-  bindTableEvents();
+  // Table events
+  bindTable();
 
-  /* OAuth callback — reads ?shop=&token= from URL */
-  (function checkOAuthCallback() {
-    const p = new URLSearchParams(window.location.search);
-    const shop = p.get('shop'), token = p.get('token'), demo = p.get('demo');
-    if (demo === '1') { window.history.replaceState({}, '', '/app'); loadDemoMode(); return; }
-    if (shop && token) {
-      window.history.replaceState({}, '', '/app');
-      S.shop  = decodeURIComponent(shop);
-      S.token = decodeURIComponent(token);
-      S.demo  = false;
-      showScreen('s-loading'); $('loading-msg').textContent = 'Connecting to your store…';
-      apiPost('/api/test').then(t => afterConnect(t.shop.name, false)).catch(e => { showScreen('s-connect'); toast(e.message); });
+  // OAuth callback
+  (function(){
+    const p=new URLSearchParams(window.location.search);
+    const shop=p.get('shop'), token=p.get('token');
+    if(shop&&token){
+      window.history.replaceState({},'','/app');
+      afterOAuth(decodeURIComponent(shop), decodeURIComponent(token));
     }
   })();
 }

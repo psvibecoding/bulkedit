@@ -5,14 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>BulkEdit — App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/styles.css"/>
-  <style>
-    .c-step { display: none; }
-    .c-step:not(.hidden) { display: flex; flex-direction: column; gap: 12px; }
-    #c-choose { display: flex; flex-direction: column; gap: 12px; }
-    #c-choose.hidden { display: none; }
-  </style>
 </head>
 <body>
 <div id="app">
@@ -20,68 +14,42 @@
   <!-- CONNECT -->
   <div id="s-connect" class="screen active">
     <div class="connect-wrap">
-      <div class="connect-logo">
-        <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
-          <span class="logo-mark">BE</span>
-          <span class="logo-name">BulkEdit</span>
-        </a>
-      </div>
+      <a href="/" class="connect-logo">
+        <span class="logo-mark">BE</span>
+        <span class="logo-name">BulkEdit</span>
+      </a>
       <div class="connect-headline">
         <h1>Connect your store</h1>
-        <p>Your token is session-only and never stored on our servers.</p>
+        <p>Log in with your Shopify account.<br>Your credentials are never stored.</p>
       </div>
       <div class="connect-card">
-        <div id="c-choose">
-          <button class="btn-cta" id="c-oauth-btn">Connect with Shopify</button>
-          <button class="btn-secondary" id="c-token-btn">Connect with API token</button>
-          <button class="btn-ghost" id="c-demo-btn">Load demo data</button>
+        <div class="field">
+          <label for="f-shop">Store domain</label>
+          <input id="f-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
         </div>
-        <div id="c-oauth" class="c-step hidden">
-          <div class="field">
-            <label for="f-shop-oauth">Store domain</label>
-            <input id="f-shop-oauth" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
-          </div>
-          <button class="btn-cta" id="c-oauth-go">Continue to Shopify →</button>
-          <button class="btn-ghost c-back">← Back</button>
-        </div>
-        <div id="c-token" class="c-step hidden">
-          <div class="field">
-            <label for="f-shop">Store domain</label>
-            <input id="f-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
-          </div>
-          <div class="field">
-            <label for="f-token">Admin API access token</label>
-            <input id="f-token" type="password" autocomplete="off" placeholder="shpat_xxxxxxxxxxxxxxxx"/>
-          </div>
-          <button class="btn-cta" id="c-token-go">Connect →</button>
-          <button class="btn-ghost c-back">← Back</button>
-          <p class="fine-print">Scopes: <code>read_products write_products read_inventory write_inventory</code></p>
-        </div>
+        <button class="btn-cta" id="btn-connect">Connect with Shopify →</button>
+        <p class="connect-note">🔒 Session only · No data stored · OAuth secured</p>
       </div>
-      <a href="/" style="font-size:12px;color:var(--t3);text-decoration:none;font-family:var(--mono)">← Back to homepage</a>
+      <a href="/" style="font-size:11px;color:var(--t4);text-decoration:none;font-family:var(--mono)">← Back to homepage</a>
     </div>
   </div>
 
   <!-- LOADING -->
   <div id="s-loading" class="screen">
-    <div class="loading-wrap">
-      <div class="spinner"></div>
-      <p id="loading-msg">Connecting…</p>
-    </div>
+    <div class="spinner"></div>
+    <p id="loading-msg">Connecting…</p>
   </div>
 
   <!-- APP -->
   <div id="s-app" class="screen">
+
     <header class="topbar">
       <div class="topbar-l">
-        <a href="/" style="display:flex;align-items:center;text-decoration:none">
-          <span class="logo-mark sm">BE</span>
-        </a>
+        <a href="/" style="text-decoration:none"><span class="logo-mark sm">BE</span></a>
         <span id="store-name" class="store-name"></span>
-        <span id="demo-badge" class="badge-demo hidden">demo</span>
         <div class="search-box">
-          <span class="search-icon">⌕</span>
-          <input id="search" type="text" placeholder="Search products, SKU, tags… (comma for multiple)" autocomplete="off" spellcheck="false"/>
+          <span class="search-ico">⌕</span>
+          <input id="search" type="text" placeholder="Search… (comma for multiple)" autocomplete="off" spellcheck="false"/>
           <div id="search-suggest" class="suggest-list"></div>
         </div>
       </div>
@@ -95,50 +63,54 @@
       </div>
     </header>
 
-    <div id="demo-banner" class="demo-banner hidden">
-      <span><strong>Demo mode</strong> — changes won't be saved to Shopify.</span>
-      <button class="btn-ghost sm" id="btn-demo-exit">Connect real store →</button>
-    </div>
-
     <nav class="tabs">
       <button class="tab active" data-tab="products">Products</button>
       <button class="tab" data-tab="export">Export</button>
     </nav>
 
+    <!-- PRODUCTS -->
     <div id="tab-products" class="tab-panel active">
       <div class="toolbar">
         <div class="filters">
-          <span class="filter-label">Status</span>
+          <span class="filter-lbl">Status</span>
           <button class="filter active" data-f="all">All</button>
           <button class="filter" data-f="ACTIVE">Active</button>
           <button class="filter" data-f="DRAFT">Draft</button>
           <button class="filter" data-f="ARCHIVED">Archived</button>
-          <span class="filter-divider"></span>
+          <span class="filter-div"></span>
           <button class="filter" data-f="changed">Modified</button>
         </div>
         <div id="bulk-bar" class="bulk-bar hidden">
-          <span id="bulk-count" class="bulk-count">0 selected</span>
-          <button class="chip-btn" id="bulk-status-btn">● Status</button>
-          <button class="chip-btn" id="bulk-price-btn">€ Price</button>
-          <button class="chip-btn" id="bulk-tags-btn">⌗ Tags</button>
-          <button class="chip-btn" id="bulk-mf-btn">≡ Metafield</button>
-          <button class="chip-btn" id="bulk-coll-btn">⊞ Collections</button>
+          <span id="bulk-lbl" class="bulk-lbl">0 selected</span>
+          <button class="chip" id="bulk-status-btn">● Status</button>
+          <button class="chip" id="bulk-price-btn">€ Price</button>
+          <button class="chip" id="bulk-tags-btn">⌗ Tags</button>
+          <button class="chip" id="bulk-mf-btn">≡ Metafield</button>
+          <button class="chip amber" id="bulk-coll-btn">⊞ Collections</button>
         </div>
       </div>
+
       <div id="undo-hint" class="undo-hint hidden">
         <span id="undo-hint-msg"></span>
         <button class="link-btn" id="undo-hint-undo">↩ Undo</button>
         <button class="link-btn" id="undo-hint-redo">↪ Redo</button>
       </div>
+
       <div class="table-scroll">
-        <table id="products-table">
+        <table>
           <thead>
             <tr>
-              <th class="th-check"><input type="checkbox" id="chk-all"/></th>
-              <th class="th-img"></th>
-              <th>Product</th><th>Status</th><th>Vendor</th><th>Tags</th>
-              <th>Variant</th><th>SKU</th><th>Price</th><th>Compare at</th>
-              <th>Variant metafields</th>
+              <th><input type="checkbox" id="chk-all"/></th>
+              <th style="width:40px"></th>
+              <th>Product</th>
+              <th>Status</th>
+              <th>Vendor</th>
+              <th>Tags</th>
+              <th>Variant</th>
+              <th>SKU</th>
+              <th>Price</th>
+              <th>Compare at</th>
+              <th>Metafields</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -146,25 +118,15 @@
       </div>
     </div>
 
-        </div>
-        <div class="card grow">
-          <div class="card-header">
-            <h3>Queued tasks</h3>
-            <button class="btn-amber sm" id="btn-new-sched">+ New task</button>
-          </div>
-          <div id="sched-list" class="sched-list"><p class="empty-msg">No scheduled tasks yet.</p></div>
-        </div>
-      </div>
-    </div>
-
+    <!-- EXPORT -->
     <div id="tab-export" class="tab-panel">
       <div class="export-layout">
         <div class="card">
           <h3>Fields to export</h3>
-          <div id="export-field-list" class="field-chips mt-12"></div>
+          <div id="export-field-list" class="field-chips"></div>
         </div>
         <div class="card">
-          <h3>Preview <span class="text-muted">(first 3 rows)</span></h3>
+          <h3>Preview <span style="font-size:12px;color:var(--t3);font-weight:400">(first 3 rows)</span></h3>
           <pre id="export-preview" class="code-preview">Select fields above…</pre>
         </div>
         <div class="btn-row">
@@ -176,7 +138,7 @@
     </div>
 
     <footer class="statusbar">
-      <span id="status-msg" class="status-text">Ready</span>
+      <span id="status-msg" class="status-txt">Ready</span>
       <span class="status-hint">Changes are staged — click "Save changes" to send to Shopify</span>
     </footer>
   </div>
@@ -216,40 +178,11 @@
   </div>
 </div>
 
-      <button class="close-btn" data-close="m-sched">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="field"><label>Task name</label><input id="sched-name" type="text" placeholder="e.g. Black Friday sale"/></div>
-      <div class="field-row">
-        <div class="field"><label>Date</label><input id="sched-date" type="date"/></div>
-        <div class="field"><label>Time <span id="sched-tz" style="font-size:10px;color:var(--t3);text-transform:none;letter-spacing:0"></span></label><input id="sched-time" type="time" value="09:00"/></div>
-      </div>
-      <div class="field"><label>Change type</label><select id="sched-type"><option value="price">Price change</option><option value="status">Status change</option><option value="tags_add">Add tags</option><option value="tags_remove">Remove tags</option></select></div>
-      <div id="sched-value-wrap"></div>
-      <div class="field"><label>Products <span id="sched-prod-count" class="text-muted"></span></label><div id="sched-prod-list" class="sched-prod-list"></div></div>
-      <label class="toggle-row"><input type="checkbox" id="sched-revert"/><div><span>Auto-revert after end time</span><small>Restores original values automatically</small></div></label>
-      <div id="sched-revert-wrap" class="field-row hidden">
-        <div class="field"><label>Revert date</label><input id="sched-rv-date" type="date"/></div>
-        <div class="field"><label>Revert time</label><input id="sched-rv-time" type="time" value="23:59"/></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn-ghost sm" data-close="m-sched">Cancel</button>
-      <button class="btn-amber sm" id="m-sched-confirm">Schedule →</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
 <!-- COLLECTIONS MODAL -->
 <div id="m-coll" class="overlay hidden">
   <div class="modal">
     <div class="modal-head">
-      <div>
-        <h2>Add to collection</h2>
-        <p id="m-coll-sub" class="modal-sub"></p>
-      </div>
+      <div><h2>Collections</h2><p id="m-coll-sub" class="modal-sub"></p></div>
       <button class="close-btn" data-close="m-coll">✕</button>
     </div>
     <div class="modal-body">
@@ -261,12 +194,10 @@
         </select>
       </div>
       <div class="bulk-field">
-        <label>Collection <span id="coll-loading" style="color:var(--t3);font-size:11px"></span></label>
-        <select id="coll-select" style="min-height:40px">
-          <option value="">Loading collections…</option>
-        </select>
+        <label>Collection <span id="coll-loading" style="color:var(--t3);font-size:10px"></span></label>
+        <select id="coll-select"><option value="">Loading…</option></select>
       </div>
-      <div id="coll-selected-products" style="display:flex;flex-direction:column;gap:4px;max-height:180px;overflow-y:auto"></div>
+      <div id="coll-prods" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto"></div>
     </div>
     <div class="modal-foot">
       <button class="btn-ghost sm" data-close="m-coll">Cancel</button>
@@ -275,6 +206,7 @@
   </div>
 </div>
 
-<script src="/app-tool.js?v=7"></script>
+<div id="toast" class="toast"></div>
+<script src="/app-tool.js?v=8"></script>
 </body>
 </html>
