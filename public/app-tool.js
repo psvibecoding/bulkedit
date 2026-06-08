@@ -802,7 +802,6 @@ async function confirmSave(){
       const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
       await api('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});
     }}
-    const recap=buildRecap(payloads);
     const n=payloads.length;
     S.changes={}; S.past=[]; S.future=[];
     S.originals=clone(S.products);
@@ -811,38 +810,43 @@ async function confirmSave(){
     toast(`${n} product${n!==1?'s':''} saved.`);
     setStatus('All changes saved','saved');
     setTimeout(()=>setStatus('Ready','ready'),3000);
-    dlText(recap,`bulkedit-recap-${Date.now()}.txt`);
   }catch(e){ toast(e.message); setStatus('Save failed','dirty'); }
   finally{ btn.disabled=false; }
 }
 
 function buildRecap(payloads){
-  const lines=['BulkEdit — Change recap',`Generated: ${new Date().toLocaleString()}`,''];
+  const rows=[['Product','Variant','Field','Old Value','New Value']];
   payloads.forEach(c=>{
     const p=getProd(c.productId); if(!p)return;
-    lines.push(`Product: ${p.title}`);
     const orig=S.originals.find(x=>x.id===c.productId);
+    const title=p.title;
     Object.entries(c.product||{}).forEach(([field,newVal])=>{
-      const oldVal=orig?orig[field]:'?';
+      const oldVal=orig?orig[field]:'';
       const oldStr=Array.isArray(oldVal)?oldVal.join(', '):String(oldVal??'');
       const newStr=Array.isArray(newVal)?newVal.join(', '):String(newVal??'');
-      if(oldStr!==newStr)lines.push(`  ${field}: "${oldStr}" → "${newStr}"`);
+      if(oldStr!==newStr) rows.push([title,'',field,oldStr,newStr]);
     });
     Object.values(c.variants||{}).forEach(v=>{
       const origV=orig?.variants?.nodes?.find(x=>x.id===v.id);
-      const vLbl=p.variants.nodes.find(x=>x.id===v.id)?.title||v.id;
+      const vLbl=p.variants.nodes.find(x=>x.id===v.id)?.title||'';
       ['price','compareAtPrice','sku'].forEach(field=>{
-        if(v[field]!==undefined){const old=origV?String(origV[field]??''):'?';const nw=String(v[field]??'');if(old!==nw)lines.push(`  ${vLbl} ${field}: "${old}" → "${nw}"`);}
+        if(v[field]!==undefined){
+          const old=origV?String(origV[field]??''):'';
+          const nw=String(v[field]??'');
+          if(old!==nw) rows.push([title,vLbl,field,old,nw]);
+        }
       });
     });
-    if((c.metafields||[]).length)lines.push(`  metafields: ${c.metafields.length} change${c.metafields.length!==1?'s':''}`);
-    lines.push('');
+    (c.metafields||[]).forEach(mf=>{
+      const vLbl=mf.ownerId===c.productId?'':p.variants.nodes.find(v=>v.id===mf.ownerId)?.title||'';
+      rows.push([title,vLbl,`${mf.namespace}.${mf.key}`,'',mf.value??'']);
+    });
   });
-  return lines.join('\n');
+  return rows.map(r=>r.map(v=>csvQuote(String(v??''))).join(',')).join('\n');
 }
 
-function dlText(text,filename){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'})); a.download=filename; a.click(); }
-function manualRecap(){ dlText(buildRecap(Object.values(S.changes)),`bulkedit-recap-${Date.now()}.txt`); }
+function dlText(text,filename,mime='text/plain'){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime})); a.download=filename; a.click(); }
+function manualRecap(){ dlText(buildRecap(Object.values(S.changes)),`bulkedit-recap-${Date.now()}.csv`,'text/csv'); }
 
 /* ── SCHEDULES (server-side) ── */
 function updateSchedBadge(){
