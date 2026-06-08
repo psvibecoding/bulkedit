@@ -107,6 +107,8 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--fon
 .tag-sel{background:var(--white);border:1px solid var(--b1);border-radius:12px;font-size:11px;color:var(--t3);font-family:var(--font);padding:3px 8px;cursor:pointer;outline:none;transition:border-color .15s,color .15s;max-width:140px}
 .tag-sel:focus,.tag-sel:hover{border-color:var(--b3);color:var(--t2)}
 .tag-sel.active{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.btn-refresh{background:none;border:1px solid var(--b1);border-radius:12px;padding:3px 9px;font-size:13px;color:var(--t3);cursor:pointer;line-height:1;transition:color .15s,border-color .15s}
+.btn-refresh:hover{color:var(--t1);border-color:var(--b3)}
 .bulk-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .bulk-lbl{font-size:12px;color:var(--green);font-weight:600;white-space:nowrap;margin-right:2px}
 .chip{padding:3px 10px;border-radius:12px;border:1px solid var(--b2);background:var(--white);font-size:11px;cursor:pointer;color:var(--t2);font-family:var(--font);transition:all .15s}
@@ -127,6 +129,8 @@ tbody tr{border-bottom:1px solid var(--b1);transition:background .1s}
 tbody tr:hover{background:var(--s2)}
 tbody tr.r-changed{background:#f0fdf4}
 tbody tr.r-selected{background:#eff6ff}
+.title-cell{display:flex;flex-direction:column;gap:3px}
+.mod-chip{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#16a34a;background:#dcfce7;border-radius:4px;padding:1px 5px;line-height:1.5;width:fit-content}
 td{padding:5px 10px;vertical-align:middle}
 td:first-child{text-align:center}
 .prod-thumb{width:32px;height:32px;border-radius:var(--r6);object-fit:cover;border:1px solid var(--b1);display:block;background:var(--s3)}

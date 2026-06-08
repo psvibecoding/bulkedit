@@ -219,7 +219,7 @@ function rowHTML(p,v){
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
-<td><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"></td>
+<td><div class="title-cell"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}">${dirty?'<span class="mod-chip">modified</span>':''}</div></td>
 <td><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span></td>
 <td><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div></td>
@@ -731,6 +731,7 @@ function boot(){
   $('btn-redo').addEventListener('click', redo);
   $('btn-disconnect').addEventListener('click', disconnect);
   $('btn-save').addEventListener('click', openSaveModal);
+  $('btn-refresh').addEventListener('click', ()=>{ if(!S.demo) loadProducts(S.searchQ); });
 
   // Search
   $('search').addEventListener('input', e=>{
