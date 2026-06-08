@@ -744,7 +744,7 @@ function openScheduleModal(){
     $('m-sched-revert-toggle').checked=false;
     $('m-sched-revert-dt').style.display='none';
     $('m-sched-revert-hint').style.display='none';
-    const d=new Date(); d.setDate(d.getDate()+1); d.setHours(9,0,0,0);
+    const d=new Date(); d.setHours(d.getHours()+1,0,0,0);
     $('m-sched-dt').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('m-sched-preview').innerHTML=Object.values(S.changes).map(c=>{
       const title=getProd(c.productId)?.title||c.productId;
