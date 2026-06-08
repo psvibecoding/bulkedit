@@ -232,13 +232,32 @@ function rowHTML(p,v){
 }
 
 /* ── METAFIELD RENDERING ── */
+const MEASUREMENT_UNITS = {
+  dimension: ['MILLIMETERS','CENTIMETERS','METERS','INCHES','FEET','YARDS'],
+  weight:    ['GRAMS','KILOGRAMS','OUNCES','POUNDS'],
+  volume:    ['MILLILITERS','CENTILITERS','LITERS','FLUID_OUNCES','PINTS','GALLONS'],
+};
+
 function defRow(def, ownerId, currentVal){
+  const baseType = (def.type||'').replace(/_field$/,'');
+  const units = MEASUREMENT_UNITS[baseType];
+  const attrs = `data-owner-id="${esc(ownerId)}" data-owner-type="${esc(def.ownerType)}" data-ns="${esc(def.namespace)}" data-key="${esc(def.key)}" data-type="${esc(def.type||'single_line_text_field')}"`;
+  if(units){
+    let num='', unit=units[0];
+    try{ const j=JSON.parse(currentVal); num=j.value??''; unit=j.unit??units[0]; }catch{}
+    return `<div class="mf-def-row mf-meas">
+      <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
+      <div class="mf-meas-wrap">
+        <input class="mf-val-inp mf-num" type="number" step="any" placeholder="0" ${attrs} data-mf="measure-num" value="${esc(String(num))}">
+        <select class="mf-unit-sel" ${attrs} data-mf="measure-unit">
+          ${units.map(u=>`<option value="${u}"${u===unit?' selected':''}>${u.replace(/_/g,' ')}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+  }
   return `<div class="mf-def-row">
     <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
-    <input class="mf-val-inp" placeholder="—"
-      data-owner-id="${esc(ownerId)}" data-owner-type="${esc(def.ownerType)}"
-      data-ns="${esc(def.namespace)}" data-key="${esc(def.key)}" data-type="${esc(def.type||'single_line_text_field')}"
-      data-mf="smart" value="${esc(currentVal)}">
+    <input class="mf-val-inp" placeholder="—" ${attrs} data-mf="smart" value="${esc(currentVal)}">
   </div>`;
 }
 
@@ -268,13 +287,15 @@ function bindTable(){
   const tbody=$('tbody');
   tbody.addEventListener('change',e=>{
     if(e.target.classList.contains('row-chk')) toggleRowSel(e.target.dataset.vid,e.target.checked);
+    if(e.target.dataset.mf==='measure-unit'){ markMfMeasure(e.target); return; }
   });
   tbody.addEventListener('input',e=>{
     const el=e.target;
     if(el.dataset.field){  markProd(el.dataset.pid,el.dataset.field,el.value,el); return; }
     if(el.dataset.vf){     markVar(el.dataset.vid,el.dataset.vf,el.value,el); return; }
-    if(el.dataset.mf==='smart'){ markMfSmart(el); return; }
-    if(el.dataset.mf&&el.dataset.mf!=='smart'){ markMfRaw(el); return; }
+    if(el.dataset.mf==='smart'){       markMfSmart(el); return; }
+    if(el.dataset.mf==='measure-num'){ markMfMeasure(el); return; }
+    if(el.dataset.mf&&el.dataset.mf!=='smart'&&el.dataset.mf!=='measure-num'){ markMfRaw(el); return; }
   });
   tbody.addEventListener('click',e=>{
     const el=e.target;
@@ -305,11 +326,8 @@ function markVar(vid,field,value,el){
   if(el)el.classList.add('dirty');
   updateSaveBtn();
 }
-function markMfSmart(el){
-  const ownerId=el.dataset.ownerId, ownerType=el.dataset.ownerType;
-  const ns=el.dataset.ns, key=el.dataset.key, type=el.dataset.type, val=el.value;
+function applyMfChange(ownerId, ownerType, ns, key, type, val, dirtyEl){
   pushH(`Edit metafield ${key}`);
-
   let p, ownerNodes;
   if(ownerType==='PRODUCT'){
     p=getProd(ownerId); if(!p)return;
@@ -318,18 +336,28 @@ function markMfSmart(el){
     const r=getVar(ownerId); p=r.p; if(!p||!r.v)return;
     ownerNodes=r.v.metafields.nodes;
   }
-
   const existing=ownerNodes.find(m=>m.namespace===ns&&m.key===key);
   if(existing) existing.value=val;
   else ownerNodes.push({namespace:ns,key,type,value:val});
-
   const c=ensureC(p.id);
   c.metafields=c.metafields.filter(m=>!(m.ownerId===ownerId&&m.namespace===ns&&m.key===key));
   if(val!=='') c.metafields.push({ownerId,namespace:ns,key,type,value:val});
-  if(el) el.classList.add('dirty');
-  // Re-render se product-level: lo stesso metafield appare su ogni riga variante
+  if(dirtyEl) dirtyEl.classList.add('dirty');
   if(ownerType==='PRODUCT') renderTable();
   else updateSaveBtn();
+}
+function markMfSmart(el){
+  const{ownerId,ownerType,ns,key,type}=el.dataset;
+  applyMfChange(ownerId,ownerType,ns,key,type,el.value,el);
+}
+function markMfMeasure(el){
+  const row=el.closest('.mf-meas'); if(!row)return;
+  const numEl=row.querySelector('[data-mf="measure-num"]');
+  const unitEl=row.querySelector('[data-mf="measure-unit"]');
+  const num=parseFloat(numEl.value);
+  if(isNaN(num)) return;
+  const{ownerId,ownerType,ns,key,type}=numEl.dataset;
+  applyMfChange(ownerId,ownerType,ns,key,type,JSON.stringify({value:num,unit:unitEl.value}),numEl);
 }
 function markMfRaw(el){
   const{p,v}=getVar(el.dataset.vid); if(!p||!v)return;

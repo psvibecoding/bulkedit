@@ -123,6 +123,12 @@ function money(v, name) {
   return n.toFixed(2);
 }
 
+// Metafield types that require a JSON object value
+const JSON_MF_TYPES = new Set([
+  'dimension','weight','volume','capacity','rating',
+  'money_field','rich_text_field',
+]);
+
 function safeMetafields(mf = []) {
   if (!Array.isArray(mf) || mf.length > 50) throw new Error('Invalid metafields');
   return mf.map(m => {
@@ -130,12 +136,19 @@ function safeMetafields(mf = []) {
     const namespace = String(m.namespace || '').trim();
     const key       = String(m.key || '').trim();
     const type      = String(m.type || '').trim();
-    const value     = String(m.value ?? '');
+    let   value     = String(m.value ?? '');
     if (!ownerId.match(/^gid:\/\/shopify\/(Product|ProductVariant)\//)) throw new Error('Invalid metafield owner');
     if (!/^[a-zA-Z0-9_-]{2,64}$/.test(namespace)) throw new Error('Invalid namespace');
     if (!/^[a-zA-Z0-9_-]{2,64}$/.test(key))       throw new Error('Invalid key');
     if (!/^[a-zA-Z0-9_.-]{2,80}$/.test(type))     throw new Error('Invalid type');
     if (value.length > 5000)                        throw new Error('Value too long');
+    // JSON-based types: value must already be valid JSON
+    const baseType = type.replace(/_field$/, '').replace(/_value$/, '');
+    if (JSON_MF_TYPES.has(baseType) || JSON_MF_TYPES.has(type)) {
+      try { JSON.parse(value); } catch {
+        throw new Error(`Metafield "${key}" has type "${type}" which requires a JSON value (e.g. {"value":5,"unit":"CENTIMETERS"}). Got: ${value.slice(0,80)}`);
+      }
+    }
     return { ownerId, namespace, key, type, value };
   });
 }
@@ -309,16 +322,16 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
         const pid = productId;
         if (!byProduct[pid]) byProduct[pid] = [];
         const input = { id: v.id };
-        if (v.price       !== undefined) input.price          = money(v.price, 'price');
+        if (v.price          !== undefined) input.price          = money(v.price, 'price');
         if (v.compareAtPrice !== undefined) input.compareAtPrice = money(v.compareAtPrice, 'compareAtPrice');
-        if (v.sku         !== undefined) input.sku             = String(v.sku || '').slice(0, 255);
+        if (v.sku            !== undefined) input.inventoryItem  = { sku: String(v.sku || '').slice(0, 255) };
         byProduct[pid].push(input);
       }
       for (const [pid, variantInputs] of Object.entries(byProduct)) {
         const d = await gql(s, `
           mutation VariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
             productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-              productVariants { id price compareAtPrice sku }
+              productVariants { id price compareAtPrice inventoryItem { sku } }
               userErrors { field message }
             }
           }`, { productId: pid, variants: variantInputs });
