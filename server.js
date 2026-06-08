@@ -48,7 +48,7 @@ app.use(helmet({
   contentSecurityPolicy: false,   // handled via meta tag in HTML for flexibility
   crossOriginEmbedderPolicy: false,
   referrerPolicy: { policy: 'no-referrer' },
-  hsts: IS_PROD ? { maxAge: 15552000, includeSubDomains: true, preload: false } : false
+  hsts: IS_PROD ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false
 }));
 
 app.use(express.json({ limit: '256kb', strict: true }));
@@ -192,7 +192,10 @@ function writeSchedules(arr) {
     const dir = path.dirname(SCHED_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(SCHED_FILE, JSON.stringify(arr));
-  } catch (e) { console.error('[scheduler] write error:', e.message); }
+  } catch (e) {
+    console.error('[scheduler] write error:', e.message);
+    throw e;
+  }
 }
 function schedFileStatus() {
   try { fs.accessSync(path.dirname(SCHED_FILE), fs.constants.W_OK); return 'writable'; } catch { return 'NOT writable'; }
@@ -342,7 +345,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       : `<div style="font-size:13px;color:#9ca3af;margin-top:6px">—</div>`;
 
     const imgBlock = imgUrl
-      ? `<img src="${imgUrl}" width="44" height="44" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #f0f0ec;flex-shrink:0"/>`
+      ? `<img src="${imgUrl.replace(/"/g,'&quot;')}" width="44" height="44" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #f0f0ec;flex-shrink:0"/>`
       : `<div style="width:44px;height:44px;border-radius:8px;background:#f0f0ec;flex-shrink:0"></div>`;
 
     return `
@@ -581,16 +584,16 @@ async function runDueSchedules() {
     const due = schedules.filter(s => s.status === 'pending' && new Date(s.scheduledFor) <= new Date());
     if (due.length) {
       console.log(`[scheduler] ${due.length} due schedule(s)`);
-      for (const s of due) await executeSchedule(s, schedules);
+      await Promise.all(due.map(s => executeSchedule(s, schedules)));
     }
   } finally { _schedRunning = false; }
 }
 
 // Recover schedules stuck in 'running' from a previous crash/restart
-recoverStuckSchedules();
+try { recoverStuckSchedules(); } catch (e) { console.error('[scheduler] recovery error:', e.message); }
 // Prune schedules older than 30 days on startup, then daily
-pruneSchedules();
-setInterval(() => pruneSchedules(), 24 * 60 * 60 * 1000).unref();
+try { pruneSchedules(); } catch (e) { console.error('[scheduler] prune error:', e.message); }
+setInterval(() => { try { pruneSchedules(); } catch {} }, 24 * 60 * 60 * 1000).unref();
 
 // Primary: check every 30s — no .unref() so it always fires
 setInterval(() => runDueSchedules().catch(e => console.error('[scheduler]', e.message)), 30_000);
