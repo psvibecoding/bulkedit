@@ -842,7 +842,7 @@ app.post('/api/inventory-set', apiLimiter, writeLimiter, async (req, res) => {
           inventoryAdjustmentGroup { id }
           userErrors { field message }
         }
-      }`, { input: { name: 'available', reason: 'correction', quantities: items } });
+      }`, { input: { name: 'available', reason: 'correction', ignoreCompareQuantity: true, quantities: items } });
     const errs = d.inventorySetQuantities?.userErrors || [];
     if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
     res.json({ ok: true });
