@@ -248,10 +248,8 @@ function fmtField(field, v) {
 
 function buildEmailHtml(sched, success, linkedRevert = null) {
   const tz = sched.timezone || NOTIFY_TZ;
-  const tzLabel = tz === 'UTC' ? 'UTC' : tz.split('/').pop().replace(/_/g, ' ');
   const dt = new Date(sched.executedAt || sched.scheduledFor)
-    .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz })
-    + ` (${tzLabel})`;
+    .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz });
   const n = (sched.changes || []).length;
 
   const FIELD_LABELS = { status: 'Status', vendor: 'Vendor', title: 'Title', tags: 'Tags', productType: 'Type', price: 'Price', compareAtPrice: 'Compare at' };
@@ -333,8 +331,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
   const revertBanner = (linkedRevert && success && !isRevert) ? (() => {
     const revertDt = new Date(linkedRevert.scheduledFor)
-      .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz })
-      + ` (${tzLabel})`;
+      .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz });
     return `
     <div style="margin:24px 40px 0;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:18px 20px">
       <table style="border-collapse:collapse;width:100%"><tr>
@@ -394,9 +391,9 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       <div style="display:inline-block;background:${badgeBg};border:1px solid ${badgeBdr};border-radius:50%;width:52px;height:52px;line-height:52px;text-align:center;margin-bottom:16px">
         <span style="font-size:20px;color:${badgeTxt}">${icon}</span>
       </div>
-      <h1 style="margin:0 0 6px;font-size:22px;font-weight:700;color:#0e0e0c;letter-spacing:-.02em">${headline}</h1>
-      <p style="margin:0;font-size:15px;color:#6b7280">${sched.label}</p>
-      <p style="margin:6px 0 0;font-size:13px;color:#9ca3af">${dt} &nbsp;·&nbsp; ${sched.shop}</p>
+      <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#0e0e0c;letter-spacing:-.02em">${headline}</h1>
+      <div style="margin:0 0 8px"><span style="display:inline-block;background:${badgeBg};border:1.5px solid ${badgeBdr};border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;color:${badgeTxt};letter-spacing:-.01em">${sched.label}</span></div>
+      <p style="margin:0;font-size:13px;color:#9ca3af">${dt} &nbsp;·&nbsp; ${sched.shop}</p>
     </div>
 
     ${!success ? `
