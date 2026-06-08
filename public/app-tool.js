@@ -23,6 +23,51 @@ let S = {
 };
 const MAX_H = 80;
 
+/* ── DEMO DATA ── */
+const DEMO_MF_DEFS = [
+  { namespace:'custom', key:'material',       name:'Material',      type:'single_line_text_field' },
+  { namespace:'custom', key:'campaign_label', name:'Campaign label', type:'single_line_text_field' },
+  { namespace:'custom', key:'thickness_mm',   name:'Thickness (mm)', type:'number_integer' },
+  { namespace:'seo',    key:'custom_title',   name:'SEO title',     type:'single_line_text_field' },
+];
+const DEMO_PRODUCTS = [
+  { id:'gid://shopify/Product/1', title:'Merino Wool Crew Neck Sweater', status:'ACTIVE', vendor:'NordWear', tags:['knitwear','winter','new-arrivals'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, metafields:{ nodes:[{ namespace:'custom', key:'material', type:'single_line_text_field', value:'100% Merino Wool' }] } },
+      { id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28, metafields:{ nodes:[] } },
+    ]}},
+  { id:'gid://shopify/Product/2', title:'Leather Crossbody Bag — Tan', status:'ACTIVE', vendor:'StudioLeather', tags:['bags','accessories','sale'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, metafields:{ nodes:[{ namespace:'custom', key:'campaign_label', type:'single_line_text_field', value:'Summer Sale' }] } },
+    ]}},
+  { id:'gid://shopify/Product/3', title:'Organic Cotton Oversized Tee', status:'ACTIVE', vendor:'EarthBasics', tags:['apparel','sustainable','basics'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,  metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/32', title:'S / White',  sku:'EB-TEE-S-WHT',  price:'34.00', compareAtPrice:'', inventoryQuantity:55, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/33', title:'M / Black',  sku:'EB-TEE-M-BLK',  price:'34.00', compareAtPrice:'', inventoryQuantity:40, metafields:{ nodes:[] } },
+    ]}},
+  { id:'gid://shopify/Product/4', title:'Ceramic Pour-Over Coffee Set', status:'DRAFT', vendor:'KitchenStudio', tags:['kitchen','coffee','gifts'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/41', title:'White',       sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, metafields:{ nodes:[{ namespace:'seo', key:'custom_title', type:'single_line_text_field', value:'' }] } },
+      { id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, metafields:{ nodes:[] } },
+    ]}},
+  { id:'gid://shopify/Product/5', title:'Natural Rubber Yoga Mat 6mm', status:'ACTIVE', vendor:'MoveWell', tags:['fitness','yoga','eco'],
+    featuredImage:{ url:'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=80&q=70' },
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, metafields:{ nodes:[{ namespace:'custom', key:'thickness_mm', type:'number_integer', value:'6' }] } },
+    ]}},
+  { id:'gid://shopify/Product/6', title:'Linen Duvet Cover Set — King', status:'ARCHIVED', vendor:'HomeTextile', tags:['bedding','linen','home'],
+    featuredImage:null,
+    variants:{ nodes:[
+      { id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, metafields:{ nodes:[] } },
+    ]}},
+];
+
 /* ── HELPERS ── */
 function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),3000); }
 function setStatus(msg,cls=''){ const el=$('status-msg'); el.textContent=msg; el.className='status-txt'+(cls?' '+cls:''); }
@@ -86,10 +131,22 @@ function normProd(p){
   };
 }
 
+function loadDemoMode(){
+  S.shop='demo.myshopify.com'; S.token='demo'; S.demo=true;
+  S.products=DEMO_PRODUCTS.map(normProd); S.originals=clone(S.products);
+  S.mfDefs=DEMO_MF_DEFS;
+  $('store-name').textContent='Demo Store';
+  $('demo-banner').classList.remove('hidden');
+  renderTable(); initExportFields();
+  showScreen('s-app');
+  toast('Demo loaded — changes won\'t be saved.');
+}
+
 function disconnect(){
   Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,past:[],future:[],filter:'all',searchQ:'',bulkType:null});
   S.selectedVids=new Set();
   $('f-shop').value='';
+  $('demo-banner').classList.add('hidden');
   showScreen('s-connect');
   updateUndoUI(); updateSaveBtn();
   toast('Disconnected.');
@@ -274,11 +331,25 @@ function removeTag(pid,tag){
   rerenderTags(pid,p.tags); updateSaveBtn();
 }
 function addTagPrompt(pid){
-  const tag=prompt('New tag:'); if(!tag?.trim())return;
-  const p=getProd(pid); if(!p||(p.tags||[]).includes(tag.trim()))return;
-  pushH(`Add tag "${tag.trim()}"`);
-  p.tags=[...(p.tags||[]),tag.trim()]; ensureC(pid).product.tags=[...p.tags];
-  rerenderTags(pid,p.tags); updateSaveBtn();
+  const cell=$(`tw-${pid}`); if(!cell)return;
+  const addBtn=cell.querySelector('.tag-add'); if(!addBtn)return;
+  const inp=document.createElement('input');
+  inp.className='tag-inp'; inp.placeholder='new tag'; inp.type='text';
+  addBtn.replaceWith(inp); inp.focus();
+  let done=false;
+  function commit(){
+    if(done)return; done=true;
+    const tag=inp.value.trim(); inp.replaceWith(addBtn);
+    if(!tag)return;
+    const p=getProd(pid); if(!p)return;
+    if((p.tags||[]).includes(tag))return toast('Tag already exists.');
+    pushH(`Add tag "${tag}"`);
+    p.tags=[...(p.tags||[]),tag]; ensureC(pid).product.tags=[...p.tags];
+    rerenderTags(pid,p.tags); updateSaveBtn();
+  }
+  function cancel(){ if(done)return; done=true; inp.replaceWith(addBtn); }
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();commit();} if(e.key==='Escape')cancel(); });
+  inp.addEventListener('blur',commit);
 }
 function rerenderTags(pid,tags){
   const cell=$(`tw-${pid}`); if(!cell)return;
@@ -401,6 +472,11 @@ async function openCollModal(){
   $('m-coll-sub').textContent=`${pids.length} product${pids.length!==1?'s':''} selected`;
   $('coll-prods').innerHTML=pids.map(pid=>{const p=getProd(pid);return p?`<div class="coll-prod-item">${esc(p.title)}</div>`:''}).join('');
   openModal('m-coll');
+  if(S.demo){
+    $('coll-loading').textContent='';
+    $('coll-select').innerHTML='<option value="">Not available in demo mode</option>';
+    return;
+  }
   if(!S.collsCache){
     $('coll-loading').textContent='(loading…)';
     $('coll-select').innerHTML='<option value="">Loading…</option>';
@@ -465,10 +541,11 @@ async function confirmSave(){
   const btn=$('m-save-confirm'); btn.disabled=true;
   setStatus('Saving…','saving');
   try{
-    for(const c of payloads){
+    if(S.demo){ await delay(600); }
+    else{ for(const c of payloads){
       const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
       await api('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});
-    }
+    }}
     const recap=buildRecap(payloads);
     const n=payloads.length;
     S.changes={}; S.past=[]; S.future=[];
@@ -560,6 +637,8 @@ function boot(){
   // Connect
   $('btn-connect').addEventListener('click', startOAuth);
   $('f-shop').addEventListener('keydown', e=>{ if(e.key==='Enter') startOAuth(); });
+  $('btn-demo').addEventListener('click', loadDemoMode);
+  $('btn-demo-exit').addEventListener('click', disconnect);
 
   // Topbar
   $('btn-undo').addEventListener('click', undo);
@@ -624,10 +703,11 @@ function boot(){
   // Table events
   bindTable();
 
-  // OAuth callback
+  // OAuth callback / demo URL
   (function(){
     const p=new URLSearchParams(window.location.search);
-    const shop=p.get('shop'), token=p.get('token');
+    const shop=p.get('shop'), token=p.get('token'), demo=p.get('demo');
+    if(demo==='1'){ window.history.replaceState({},'','/app'); loadDemoMode(); return; }
     if(shop&&token){
       window.history.replaceState({},'','/app');
       afterOAuth(decodeURIComponent(shop), decodeURIComponent(token));
