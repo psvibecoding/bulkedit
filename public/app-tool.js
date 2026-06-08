@@ -234,8 +234,8 @@ function rowHTML(p,v){
 <td><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span></td>
 <td><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div></td>
-<td style="color:var(--t2);font-size:12px;white-space:nowrap">${esc(v.title||'Default')}</td>
-<td><input class="ce" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"></td>
+<td class="v-title">${esc(v.title||'Default')}</td>
+<td><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"></td>
 <td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}"></td>
 <td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"></td>
 <td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
@@ -298,7 +298,7 @@ function initColResize(){
   const table=document.querySelector('table'); if(!table)return;
   table.style.tableLayout='fixed';
   const ths=[...document.querySelectorAll('thead th')];
-  const widths=[34,44,220,90,110,150,80,90,80,90,220];
+  const widths=[34,44,240,90,110,160,110,100,82,90,220];
   ths.forEach((th,i)=>{
     th.style.width=(widths[i]||100)+'px';
     if(i<2)return;
