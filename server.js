@@ -192,9 +192,10 @@ function writeSchedules(arr) {
     const dir = path.dirname(SCHED_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(SCHED_FILE, JSON.stringify(arr));
+    return true;
   } catch (e) {
     console.error('[scheduler] write error:', e.message);
-    throw e;
+    return false;
   }
 }
 function schedFileStatus() {
@@ -1022,7 +1023,7 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
     };
     const schedules = readSchedules();
     schedules.push(sched);
-    writeSchedules(schedules);
+    if (!writeSchedules(schedules)) throw new Error('Could not save schedule. On Railway, mount a Volume and set SCHED_FILE=/data/schedules.json');
     const { encToken: _, ...safe } = sched;
     res.json({ ok: true, schedule: safe });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
