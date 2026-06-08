@@ -922,16 +922,38 @@ async function confirmSchedule(){
 }
 
 let _schedTab='pending';
+let _editingSchedId=null;
 function schedRowHTML(s){
+  const isRevert=!!s.linkedTo;
+  // Inline edit form
+  if(s.id===_editingSchedId&&s.status==='pending'){
+    const d=new Date(s.scheduledFor);
+    const dtVal=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    return `<div class="sched-row${isRevert?' sched-revert':''}" style="flex-direction:column;align-items:stretch;gap:10px;padding:14px 16px">
+      <span style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em">Editing schedule</span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <input class="sched-input" id="se-label-${s.id}" value="${esc(s.label)}" placeholder="Label" style="font-size:13px"/>
+        <input class="sched-input" type="datetime-local" id="se-dt-${s.id}" value="${dtVal}" style="font-size:13px"/>
+        <input class="sched-input" type="email" id="se-email-${s.id}" value="${esc(s.notifyEmail||'')}" placeholder="Notification email (optional)" style="font-size:13px"/>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn-ghost xs" data-sched-edit-cancel="${s.id}">Cancel</button>
+        <button class="btn-cta xs" data-sched-edit-save="${s.id}">Save changes</button>
+      </div>
+    </div>`;
+  }
   const dt=new Date(s.scheduledFor).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
   const n=s.changes.length;
   const overdue=s.status==='pending'&&new Date(s.scheduledFor)<new Date();
   const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
   const sLbl={pending:overdue?'Overdue':'Pending',executed:'Done',failed:'Failed',running:'Running',cancelled:'Cancelled'}[s.status]||s.status;
-  const isRevert=!!s.linkedTo;
   const btns=s.status==='pending'
-    ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
-    :['failed','cancelled'].includes(s.status)?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button>`:'';
+    ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-edit="${s.id}">Edit</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
+    :s.status==='failed'
+      ?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button><button class="btn-ghost xs" style="color:var(--red)" data-sched-delete="${s.id}">Delete</button>`
+      :s.status==='cancelled'
+        ?`<button class="btn-ghost xs" style="color:var(--red)" data-sched-delete="${s.id}">Delete</button>`
+        :'';
   const firstImg=(s.changes||[]).reduce((acc,c)=>acc||(c.productImage||getProd(c.productId)?.featuredImage?.url||''),'');
   const imgBlock=firstImg
     ?`<img src="${esc(firstImg)}" style="width:36px;height:36px;border-radius:7px;object-fit:cover;border:1px solid var(--b1);flex-shrink:0" alt=""/>`
@@ -1112,7 +1134,9 @@ function boot(){
   });
   $('m-sched-jobs').addEventListener('click', async e=>{
     if(e.target.dataset.schedTab){ _schedTab=e.target.dataset.schedTab; renderSchedTabs(S.schedules); return; }
-    const id=e.target.dataset.schedRun||e.target.dataset.schedCancel||e.target.dataset.schedRetry;
+    if(e.target.dataset.schedEdit){ _editingSchedId=e.target.dataset.schedEdit; renderSchedTabs(S.schedules); return; }
+    if(e.target.dataset.schedEditCancel){ _editingSchedId=null; renderSchedTabs(S.schedules); return; }
+    const id=e.target.dataset.schedRun||e.target.dataset.schedCancel||e.target.dataset.schedRetry||e.target.dataset.schedDelete||e.target.dataset.schedEditSave;
     if(!id)return;
     const btn=e.target; btn.disabled=true;
     try{
@@ -1122,6 +1146,23 @@ function boot(){
         await api('/api/schedule/cancel',{id});
       } else if(e.target.dataset.schedRetry){
         await api('/api/schedule/run',{id});
+      } else if(e.target.dataset.schedDelete){
+        await api('/api/schedule/delete',{id});
+      } else if(e.target.dataset.schedEditSave){
+        const labelEl=document.getElementById(`se-label-${id}`);
+        const dtEl=document.getElementById(`se-dt-${id}`);
+        const emailEl=document.getElementById(`se-email-${id}`);
+        const scheduledFor=new Date(dtEl?.value||'');
+        if(isNaN(scheduledFor.getTime())){ btn.disabled=false; return toast('Invalid date.'); }
+        if(scheduledFor<=new Date()){ btn.disabled=false; return toast('Scheduled time must be in the future.'); }
+        await api('/api/schedule/update',{
+          id,
+          label:(labelEl?.value||'').trim(),
+          scheduledFor:scheduledFor.toISOString(),
+          timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
+          notifyEmail:(emailEl?.value||'').trim()||undefined,
+        });
+        _editingSchedId=null;
       }
       await renderSchedJobsList();
     }catch(err){ toast(err.message); btn.disabled=false; }

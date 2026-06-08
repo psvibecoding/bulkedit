@@ -1007,6 +1007,53 @@ app.post('/api/schedule/list', apiLimiter, (req, res) => {
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
+app.post('/api/schedule/update', apiLimiter, (req, res) => {
+  try {
+    const { shop } = getSession(req);
+    const { id, label, scheduledFor, notifyEmail: providedEmail, timezone: clientTz } = req.body || {};
+    if (!id) throw new Error('Missing id');
+    const schedules = readSchedules();
+    const sched = schedules.find(s => s.id === id && s.shop === shop);
+    if (!sched) throw new Error('Schedule not found');
+    if (sched.status !== 'pending') throw new Error('Only pending schedules can be edited');
+    if (label !== undefined) {
+      if (!String(label).trim()) throw new Error('Label is required');
+      sched.label = String(label).trim().slice(0, 120);
+    }
+    if (scheduledFor !== undefined) {
+      const dt = new Date(scheduledFor);
+      if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
+      if (dt <= new Date()) throw new Error('Scheduled time must be in the future');
+      sched.scheduledFor = dt.toISOString();
+    }
+    if (providedEmail !== undefined) {
+      sched.notifyEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(providedEmail).trim())
+        ? String(providedEmail).trim().slice(0, 200) : '';
+    }
+    if (clientTz && typeof clientTz === 'string') {
+      try { Intl.DateTimeFormat(undefined, { timeZone: clientTz }); sched.timezone = clientTz; } catch {}
+    }
+    writeSchedules(schedules);
+    const { encToken: _, ...safe } = sched;
+    res.json({ ok: true, schedule: safe });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
+app.post('/api/schedule/delete', apiLimiter, (req, res) => {
+  try {
+    const { shop } = getSession(req);
+    const { id } = req.body || {};
+    if (!id) throw new Error('Missing id');
+    const schedules = readSchedules();
+    const idx = schedules.findIndex(s => s.id === id && s.shop === shop);
+    if (idx === -1) throw new Error('Schedule not found');
+    if (!['failed', 'cancelled'].includes(schedules[idx].status)) throw new Error('Only failed or cancelled schedules can be deleted');
+    schedules.splice(idx, 1);
+    writeSchedules(schedules);
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
 app.post('/api/schedule/cancel', apiLimiter, (req, res) => {
   try {
     const { shop } = getSession(req);
