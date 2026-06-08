@@ -23,6 +23,7 @@ const SCHED_SECRET        = process.env.SCHED_SECRET || '';
 const SCHED_FILE          = process.env.SCHED_FILE || path.join(__dirname, 'schedules.json');
 const BREVO_API_KEY       = process.env.BREVO_API_KEY || '';
 const NOTIFY_FROM         = process.env.NOTIFY_FROM || 'noreply@bulkedit.app';
+const CONTACT_TO          = process.env.CONTACT_TO || '';
 
 // In-memory OAuth state (stateless — no DB)
 const oauthStates = new Map();
@@ -77,10 +78,11 @@ function rateLimit({ windowMs, max, keyFn }) {
 }
 setInterval(() => { const n = Date.now(); for (const [k,v] of buckets) if (n > v.resetAt) buckets.delete(k); }, 60000).unref();
 
-const byIpShop  = req => `${req.ip}:${req.headers['x-shopify-shop']||'?'}`;
-const apiLimiter   = rateLimit({ windowMs: 60000, max: 120, keyFn: byIpShop });
-const writeLimiter = rateLimit({ windowMs: 60000, max: 30,  keyFn: req => byIpShop(req)+':w' });
-const authLimiter  = rateLimit({ windowMs: 60000, max: 20,  keyFn: req => req.ip });
+const byIpShop     = req => `${req.ip}:${req.headers['x-shopify-shop']||'?'}`;
+const apiLimiter     = rateLimit({ windowMs: 60000,  max: 120, keyFn: byIpShop });
+const writeLimiter   = rateLimit({ windowMs: 60000,  max: 30,  keyFn: req => byIpShop(req)+':w' });
+const authLimiter    = rateLimit({ windowMs: 60000,  max: 20,  keyFn: req => req.ip });
+const contactLimiter = rateLimit({ windowMs: 900000, max: 5,   keyFn: req => req.ip });
 
 // ── HELPERS ───────────────────────────────────────────────
 function safeErr(err) {
@@ -340,6 +342,35 @@ function maybeRunSchedules() {
   _lastSchedCheck = now;
   runDueSchedules().catch(() => {});
 }
+
+app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
+app.get('/terms',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+
+app.post('/api/contact', contactLimiter, async (req, res) => {
+  try {
+    if (!BREVO_API_KEY || !CONTACT_TO) throw new Error('Contact form not available right now.');
+    const name    = String(req.body?.name    || '').trim().slice(0, 100);
+    const email   = String(req.body?.email   || '').trim().slice(0, 200);
+    const message = String(req.body?.message || '').trim().slice(0, 2000);
+    if (!name)    throw new Error('Name is required.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Valid email is required.');
+    if (!message) throw new Error('Message is required.');
+    const htmlContent = `<div style="font-family:sans-serif;max-width:520px;color:#111"><h2 style="margin:0 0 16px">New message from BulkEdit contact form</h2><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p style="margin-top:12px"><strong>Message:</strong></p><p style="white-space:pre-wrap;background:#f5f5f3;padding:12px;border-radius:8px;margin-top:6px">${message}</p></div>`;
+    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
+      body: JSON.stringify({
+        sender:  { name: 'BulkEdit Contact', email: NOTIFY_FROM },
+        to:      [{ email: CONTACT_TO }],
+        replyTo: { email, name },
+        subject: `BulkEdit: message from ${name}`,
+        htmlContent,
+      }),
+    });
+    if (!r.ok) throw new Error('Could not send message. Please try again later.');
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e) }); }
+});
 
 // Shopify admin opens apps inside an iframe — break out immediately to standalone
 app.get('/shopify-open', (req, res) => {
