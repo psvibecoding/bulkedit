@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
 const app        = express();
 const PORT       = Number(process.env.PORT || 8787);
-const API_VERSION= process.env.SHOPIFY_API_VERSION || '2025-01';
+const API_VERSION= process.env.SHOPIFY_API_VERSION || '2026-01';
 const NODE_ENV   = process.env.NODE_ENV || 'development';
 const IS_PROD    = NODE_ENV === 'production';
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || (IS_PROD ? '' : 'http://localhost:8787,http://127.0.0.1:8787'))
@@ -23,7 +23,9 @@ const SCHED_SECRET        = process.env.SCHED_SECRET || '';
 const SCHED_FILE          = process.env.SCHED_FILE || path.join(__dirname, 'schedules.json');
 const RESEND_API_KEY      = process.env.RESEND_API_KEY || '';
 const NOTIFY_FROM         = process.env.NOTIFY_FROM || 'noreply@bulkedit.app';
-const CONTACT_TO          = process.env.CONTACT_TO || '';
+const NOTIFY_TZ           = process.env.NOTIFY_TZ   || 'UTC';
+const CONTACT_TO          = process.env.CONTACT_TO  || '';
+const PING_SECRET         = process.env.PING_SECRET || '';
 
 // In-memory OAuth state (stateless — no DB)
 const oauthStates = new Map();
@@ -196,6 +198,34 @@ function schedFileStatus() {
   try { fs.accessSync(path.dirname(SCHED_FILE), fs.constants.W_OK); return 'writable'; } catch { return 'NOT writable'; }
 }
 
+function pruneSchedules() {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const schedules = readSchedules();
+  const before = schedules.length;
+  const keep = schedules.filter(s =>
+    s.status === 'pending' ||
+    (s.executedAt || s.scheduledFor) > cutoff
+  );
+  if (keep.length < before) {
+    writeSchedules(keep);
+    console.log(`[scheduler] pruned ${before - keep.length} old schedule(s)`);
+  }
+}
+
+function recoverStuckSchedules() {
+  const schedules = readSchedules();
+  let changed = false;
+  for (const s of schedules) {
+    if (s.status === 'running') {
+      s.status = 'failed';
+      s.error = 'Interrupted by server restart. Please retry.';
+      changed = true;
+      console.log(`[scheduler] recovered stuck schedule: ${s.id}`);
+    }
+  }
+  if (changed) writeSchedules(schedules);
+}
+
 function fmtStatus(v) {
   return { ACTIVE: 'Active', DRAFT: 'Draft', ARCHIVED: 'Archived' }[v] || v || '—';
 }
@@ -217,8 +247,10 @@ function fmtField(field, v) {
 }
 
 function buildEmailHtml(sched, success, linkedRevert = null) {
+  const tzLabel = NOTIFY_TZ === 'UTC' ? 'UTC' : NOTIFY_TZ.split('/').pop().replace(/_/g, ' ');
   const dt = new Date(sched.executedAt || sched.scheduledFor)
-    .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+    .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: NOTIFY_TZ })
+    + ` (${tzLabel})`;
   const n = (sched.changes || []).length;
 
   const FIELD_LABELS = { status: 'Status', vendor: 'Vendor', title: 'Title', tags: 'Tags', productType: 'Type', price: 'Price', compareAtPrice: 'Compare at' };
@@ -300,7 +332,8 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
   const revertBanner = (linkedRevert && success && !isRevert) ? (() => {
     const revertDt = new Date(linkedRevert.scheduledFor)
-      .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' });
+      .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: NOTIFY_TZ })
+      + ` (${tzLabel})`;
     return `
     <div style="margin:24px 40px 0;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:18px 20px">
       <table style="border-collapse:collapse;width:100%"><tr>
@@ -525,6 +558,12 @@ async function runDueSchedules() {
   } finally { _schedRunning = false; }
 }
 
+// Recover schedules stuck in 'running' from a previous crash/restart
+recoverStuckSchedules();
+// Prune schedules older than 30 days on startup, then daily
+pruneSchedules();
+setInterval(() => pruneSchedules(), 24 * 60 * 60 * 1000).unref();
+
 // Primary: check every 30s — no .unref() so it always fires
 setInterval(() => runDueSchedules().catch(e => console.error('[scheduler]', e.message)), 30_000);
 // Also run immediately on startup
@@ -662,15 +701,17 @@ app.post('/api/test', apiLimiter, async (req, res) => {
 app.post('/api/products', apiLimiter, async (req, res) => {
   try {
     const s = getSession(req);
-    const raw = String(req.body?.query || '').trim().slice(0, 250);
+    const raw   = String(req.body?.query || '').trim().slice(0, 250);
+    const after = req.body?.after ? String(req.body.after) : null;
     const terms = raw ? raw.split(',').map(t => t.trim().replace(/[^\w\s-]/g, '')).filter(Boolean) : [];
     const first = Math.min(Math.max(Number(req.body?.first || 50), 1), 100);
     const search = terms.length
       ? terms.map(t => `(title:*${t}* OR tag:${t} OR vendor:${t}* OR sku:${t}*)`).join(' OR ')
       : null;
     const d = await gql(s, `
-      query Products($first:Int!, $query:String) {
-        products(first:$first, query:$query, sortKey:UPDATED_AT, reverse:true) {
+      query Products($first:Int!, $query:String, $after:String) {
+        products(first:$first, query:$query, after:$after, sortKey:UPDATED_AT, reverse:true) {
+          pageInfo { hasNextPage endCursor }
           nodes {
             id title status vendor tags
             featuredImage { url }
@@ -683,8 +724,8 @@ app.post('/api/products', apiLimiter, async (req, res) => {
             }
           }
         }
-      }`, { first, query: search });
-    res.json({ ok: true, products: d.products.nodes });
+      }`, { first, query: search, after });
+    res.json({ ok: true, products: d.products.nodes, pageInfo: d.products.pageInfo });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
@@ -854,6 +895,9 @@ app.post('/api/collection-remove', apiLimiter, writeLimiter, async (req, res) =>
 // Used by external cron services (cron-job.org, UptimeRobot) to keep server alive
 // and trigger schedule checks even when no users are active
 app.get('/api/schedule/ping', async (req, res) => {
+  if (PING_SECRET && req.query.secret !== PING_SECRET) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized. Provide ?secret=PING_SECRET' });
+  }
   const before = readSchedules();
   const pendingBefore = before.filter(s => s.status === 'pending').length;
   await runDueSchedules().catch(e => console.error('[ping]', e.message));
@@ -1004,7 +1048,13 @@ app.listen(PORT, () => {
     console.log(`Scheduling: ENABLED — file: ${SCHED_FILE} (${schedFileStatus()})`);
     const existing = readSchedules();
     console.log(`Scheduling: ${existing.length} schedule(s) on disk, ${existing.filter(s=>s.status==='pending').length} pending`);
+    if (IS_PROD && SCHED_FILE === path.join(__dirname, 'schedules.json')) {
+      console.warn('[scheduler] WARNING: SCHED_FILE is at the default location (project root). On Railway this will be LOST on every deploy. Set SCHED_FILE=/data/schedules.json and mount a Volume in Railway.');
+    }
   } else {
     console.log(`Scheduling: DISABLED (set SCHED_SECRET)`);
   }
+  console.log(`Email timezone: ${NOTIFY_TZ}`);
+  if (PING_SECRET) console.log(`Ping endpoint: protected`);
+  else console.log(`Ping endpoint: OPEN (set PING_SECRET to protect it)`);
 });
