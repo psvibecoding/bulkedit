@@ -818,13 +818,25 @@ async function confirmSchedule(){
   const btn=$('m-sched-confirm'); btn.disabled=true; btn.textContent='Scheduling…';
   try{
     const notifyEmail=($('m-sched-email')?.value||'').trim()||undefined;
-    const changesWithTitles=Object.values(S.changes).map(c=>({
-      ...c, productTitle: getProd(c.productId)?.title||''
-    }));
+
+    // Enrich changes with product title + original values (for before/after email)
+    const changesWithMeta=Object.values(S.changes).map(c=>{
+      const prod=getProd(c.productId);
+      const orig=S.originals.find(p=>p.id===c.productId);
+      const before={};
+      if(orig) Object.keys(c.product||{}).forEach(f=>{ before[f]=orig[f]; });
+      const variantsBefore={};
+      if(orig) Object.keys(c.variants||{}).forEach(varId=>{
+        const ov=(orig.variants?.nodes||[]).find(v=>v.id===varId);
+        if(ov) variantsBefore[varId]={title:ov.title,price:ov.price,compareAtPrice:ov.compareAtPrice};
+      });
+      return{...c, productTitle:prod?.title||'', before, variantsBefore};
+    });
+
     const r=await api('/api/schedule/create',{
       scheduledFor:scheduledFor.toISOString(),
       label:label||undefined,
-      changes:changesWithTitles,
+      changes:changesWithMeta,
       notifyEmail,
     });
     S.schedules=[r.schedule,...(S.schedules||[])];
@@ -832,11 +844,26 @@ async function confirmSchedule(){
     if(revertAt){
       const revertChanges=buildRevertChanges();
       if(revertChanges.length){
+        // Add before values (= what the main schedule will set) for the revert email
+        const revertWithMeta=revertChanges.map(c=>{
+          const prod=getProd(c.productId);
+          const staged=S.changes[c.productId];
+          const before={};
+          if(staged) Object.keys(c.product||{}).forEach(f=>{ before[f]=staged.product?.[f]; });
+          const variantsBefore={};
+          if(staged) Object.keys(c.variants||{}).forEach(varId=>{
+            const sv=staged.variants?.[varId];
+            const ov=(S.originals.find(p=>p.id===c.productId)?.variants?.nodes||[]).find(v=>v.id===varId);
+            if(sv) variantsBefore[varId]={title:ov?.title||'',price:sv.price,compareAtPrice:sv.compareAtPrice};
+          });
+          return{...c, productTitle:prod?.title||'', before, variantsBefore};
+        });
         const r2=await api('/api/schedule/create',{
           scheduledFor:revertAt.toISOString(),
           label:(label?`↩ ${label}`:'↩ Revert'),
-          changes:revertChanges,
-          linkedTo:r.schedule.id
+          changes:revertWithMeta,
+          linkedTo:r.schedule.id,
+          notifyEmail,
         });
         S.schedules=[r2.schedule,...S.schedules];
       }
