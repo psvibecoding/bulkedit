@@ -270,7 +270,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
           <td style="padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top;white-space:nowrap">${label}</td>
           <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top;word-break:break-word">${before}</td>
           <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
-          <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:top;word-break:break-word">${after}</td>
+          <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#1a5c38;vertical-align:top;word-break:break-word">${after}</td>
         </tr>`);
     });
 
@@ -285,7 +285,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
             <td style="${prefixStyle}">${varLabel ? `Price · ${varLabel}` : 'Price'}</td>
             <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top">${fmtPrice(vb?.price)}</td>
             <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
-            <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:top">${fmtPrice(v.price)}</td>
+            <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#1a5c38;vertical-align:top">${fmtPrice(v.price)}</td>
           </tr>`);
       }
       if (v.compareAtPrice !== undefined) {
@@ -294,7 +294,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
             <td style="${prefixStyle}">${varLabel ? `Compare · ${varLabel}` : 'Compare at'}</td>
             <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top">${fmtPrice(vb?.compareAtPrice)}</td>
             <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
-            <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#0e0e0c;vertical-align:top">${fmtPrice(v.compareAtPrice)}</td>
+            <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:#1a5c38;vertical-align:top">${fmtPrice(v.compareAtPrice)}</td>
           </tr>`);
       }
     });
