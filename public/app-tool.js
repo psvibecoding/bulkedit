@@ -663,7 +663,7 @@ function updateSaveBtn(){
 function openBulkModal(type){
   S.bulkType=type;
   const n=S.selectedVids.size;
-  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',tags:'Edit Tags',metafield:'Edit Metafields',seo:'Edit SEO',collections:'Add / Remove Collection'}[type]||'Bulk action';
+  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',tags:'Edit Tags',metafield:'Edit Metafields',description:'Edit Description',seo:'Edit SEO',collections:'Add / Remove Collection'}[type]||'Bulk action';
   $('m-bulk-sub').textContent=type==='seo'?`Applied to ${getSelPids().length} product${getSelPids().length!==1?'s':''}`:`Applied to ${n} selected variant${n!==1?'s':''}`;
   const body=$('m-bulk-body');
   if(type==='status'){
@@ -689,6 +689,10 @@ function openBulkModal(type){
     }else{
       body.innerHTML=`<div class="bulk-field"><label>Namespace</label><input id="bv-mf-ns" type="text" value="custom"></div><div class="bulk-field"><label>Key</label><input id="bv-mf-key" type="text" placeholder="e.g. material" autofocus></div><div class="bulk-field"><label>Value</label><input id="bv-mf-val" type="text" placeholder="Value"></div>`;
     }
+  }
+  if(type==='description'){
+    body.innerHTML=`<div class="bulk-field"><label>Description <span style="color:var(--t4);font-weight:400">(HTML allowed · replaces current)</span></label><textarea id="bv-desc" rows="6" placeholder="Product description…" style="resize:vertical;min-height:120px;font-family:var(--mono);font-size:12px" autofocus></textarea></div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="bv-desc-clear" style="accent-color:var(--red)"> Clear description (set empty)</label></div>`;
+    $('bv-desc-clear')?.addEventListener('change',e=>{ const ta=$('bv-desc'); if(ta){ta.disabled=e.target.checked;ta.style.opacity=e.target.checked?'.35':'1';} });
   }
   if(type==='seo'){
     body.innerHTML=`<div class="bulk-field"><label>SEO Title <span style="color:var(--t4);font-weight:400">(leave blank to keep current)</span></label><input id="bv-seo-title" type="text" maxlength="320" placeholder="e.g. Product Name | Store Name" autofocus></div><div class="bulk-field"><label>SEO Description</label><textarea id="bv-seo-desc" rows="3" maxlength="5000" placeholder="Brief description for search engines…" style="resize:vertical;min-height:72px"></textarea></div>`;
@@ -764,6 +768,15 @@ function applyBulkModal(){
       });
       renderTable(); updateSaveBtn(); toast(`Metafield "${key}" set on ${vids.length} variants.`);
     }
+  }
+  if(type==='description'){
+    const clear=$('bv-desc-clear')?.checked;
+    const val=clear?'':($('bv-desc')?.value||'');
+    if(!clear&&!val.trim())return toast('Enter a description or check "Clear".');
+    const pids=getSelPids(); if(!pids.length)return toast('Select products first.');
+    pushH('Bulk description update');
+    pids.forEach(pid=>{const p=getProd(pid);if(!p)return;p.bodyHtml=val;ensureC(pid).product.bodyHtml=val;});
+    renderTable(); updateSaveBtn(); toast(`Description updated on ${pids.length} product${pids.length!==1?'s':''}.`);
   }
   if(type==='seo'){
     const title=($('bv-seo-title')?.value||'').trim();
@@ -1313,6 +1326,7 @@ function boot(){
   $('bulk-price-btn').addEventListener('click',  ()=>openBulkModal('price'));
   $('bulk-tags-btn').addEventListener('click',   ()=>openBulkModal('tags'));
   $('bulk-mf-btn').addEventListener('click',     ()=>openBulkModal('metafield'));
+  $('bulk-desc-btn').addEventListener('click',   ()=>openBulkModal('description'));
   $('bulk-seo-btn').addEventListener('click',    ()=>openBulkModal('seo'));
   $('bulk-coll-btn').addEventListener('click',   ()=>openCollModal());
 

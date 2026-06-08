@@ -110,12 +110,13 @@ function getSession(req) {
 }
 
 function safeProductInput(p = {}) {
-  const allowed = new Set(['title','status','vendor','tags']);
+  const allowed = new Set(['title','status','vendor','tags','bodyHtml']);
   const clean = {};
   for (const [k, v] of Object.entries(p)) {
     if (!allowed.has(k)) continue; // skip seo/altText — handled separately
     if (k === 'status' && !['ACTIVE','DRAFT','ARCHIVED'].includes(String(v).toUpperCase())) throw new Error('Invalid status');
     if (k === 'tags' && !Array.isArray(v)) throw new Error('Tags must be array');
+    if (k === 'bodyHtml') { clean[k] = String(v || '').slice(0, 100000); continue; }
     clean[k] = k === 'status' ? String(v).toUpperCase() : v;
   }
   return clean;
@@ -759,7 +760,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
         products(first:$first, query:$query, after:$after, sortKey:UPDATED_AT, reverse:true) {
           pageInfo { hasNextPage endCursor }
           nodes {
-            id title status vendor tags
+            id title status vendor tags bodyHtml
             seo { title description }
             featuredImage { id url altText }
             metafields(first:50) { nodes { id namespace key type value } }
