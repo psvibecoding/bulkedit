@@ -653,8 +653,8 @@ app.get('/api/schedule/ping', async (req, res) => {
   const now = new Date();
   const pendingList = after
     .filter(s => s.status === 'pending')
-    .map(({ id, label, scheduledFor }) => ({
-      id, label, scheduledFor,
+    .map(({ id, label, scheduledFor, notifyEmail }) => ({
+      id, label, scheduledFor, notifyEmail: notifyEmail || '(none)',
       overdue: new Date(scheduledFor) <= now,
       secondsUntilDue: Math.round((new Date(scheduledFor) - now) / 1000),
     }));
@@ -665,6 +665,8 @@ app.get('/api/schedule/ping', async (req, res) => {
     schedFile: SCHED_FILE,
     fileExists,
     dirWritable,
+    emailConfigured: !!BREVO_API_KEY,
+    notifyFrom: NOTIFY_FROM || 'not set',
     totalSchedules:    after.length,
     pendingSchedules:  after.filter(s => s.status === 'pending').length,
     executedSchedules: after.filter(s => s.status === 'executed').length,
@@ -672,6 +674,33 @@ app.get('/api/schedule/ping', async (req, res) => {
     justExecuted:      pendingBefore - after.filter(s => s.status === 'pending').length,
     pending: pendingList,
   });
+});
+
+// Test email endpoint — sends a real email so we can verify Brevo config
+app.post('/api/notify-test', apiLimiter, async (req, res) => {
+  try {
+    const { shop } = getSession(req);
+    const { email } = req.body || {};
+    if (!BREVO_API_KEY) return res.json({ ok: false, error: 'BREVO_API_KEY not set on server', emailConfigured: false });
+    if (!NOTIFY_FROM)  return res.json({ ok: false, error: 'NOTIFY_FROM not set on server', emailConfigured: true });
+    const to = (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email)))
+      ? String(email).trim()
+      : null;
+    if (!to) return res.status(400).json({ ok: false, error: 'Provide a valid email address' });
+    const r = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': BREVO_API_KEY },
+      body: JSON.stringify({
+        sender: { name: 'BulkEdit', email: NOTIFY_FROM },
+        to: [{ email: to }],
+        subject: '✅ BulkEdit — email test',
+        htmlContent: `<p style="font-family:sans-serif">Test email from BulkEdit.<br>Shop: <strong>${shop}</strong><br>Sender: <strong>${NOTIFY_FROM}</strong></p>`,
+      }),
+    });
+    const body = await r.text();
+    if (!r.ok) return res.json({ ok: false, error: `Brevo error (${r.status}): ${body}`, to, from: NOTIFY_FROM });
+    res.json({ ok: true, sent: true, to, from: NOTIFY_FROM });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
 // ── SCHEDULE API ─────────────────────────────────────────

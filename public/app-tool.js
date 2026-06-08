@@ -877,7 +877,8 @@ function renderSchedTabs(all){
   const listHTML=list.length
     ?list.map(schedRowHTML).join('')
     :`<p class="sched-empty">${_schedTab==='pending'?'No pending schedules.':'No completed schedules yet.'}</p>`;
-  body.innerHTML=tabsHTML+`<div class="sched-list-inner">${listHTML}</div>`;
+  body.innerHTML=tabsHTML+`<div class="sched-list-inner">${listHTML}</div>`
+    +`<div class="sched-test-row"><span class="sched-test-lbl">Email notifications</span><button class="btn-ghost xs" id="btn-notify-test">Send test email</button></div>`;
 }
 
 async function renderSchedJobsList(){
@@ -1007,6 +1008,18 @@ function boot(){
   // Schedule
   $('btn-schedule').addEventListener('click', openScheduleModal);
   $('m-sched-confirm').addEventListener('click', confirmSchedule);
+  $('btn-notify-test-inline').addEventListener('click', async ()=>{
+    const emailVal=($('m-sched-email')?.value||'').trim();
+    const email=emailVal||prompt('Email address to send the test to:','');
+    if(!email)return;
+    const btn=$('btn-notify-test-inline'); btn.disabled=true; btn.textContent='Sending…';
+    try{
+      const r=await api('/api/notify-test',{email});
+      if(r.ok) toast(`Test email sent to ${r.to} — check your inbox (and spam folder).`);
+      else toast(`Email error: ${r.error}`);
+    }catch(err){ toast(err.message); }
+    btn.disabled=false; btn.textContent='Test email';
+  });
   $('m-sched-revert-toggle').addEventListener('change', e=>{
     const on=e.target.checked;
     $('m-sched-revert-dt').style.display=on?'':'none';
@@ -1020,6 +1033,18 @@ function boot(){
   });
   $('m-sched-jobs').addEventListener('click', async e=>{
     if(e.target.dataset.schedTab){ _schedTab=e.target.dataset.schedTab; renderSchedTabs(S.schedules); return; }
+    if(e.target.id==='btn-notify-test'){
+      const email=prompt('Email address to send the test to:','');
+      if(!email)return;
+      const btn=e.target; btn.disabled=true; btn.textContent='Sending…';
+      try{
+        const r=await api('/api/notify-test',{email});
+        if(r.ok) toast(`Test email sent to ${r.to} — check your inbox (and spam folder).`);
+        else toast(`Error: ${r.error}`);
+      }catch(err){ toast(err.message); }
+      btn.disabled=false; btn.textContent='Send test email';
+      return;
+    }
     const id=e.target.dataset.schedRun||e.target.dataset.schedCancel||e.target.dataset.schedRetry;
     if(!id)return;
     const btn=e.target; btn.disabled=true;
