@@ -181,7 +181,14 @@ function readSchedules() {
   try { return JSON.parse(fs.readFileSync(SCHED_FILE, 'utf8')); } catch { return []; }
 }
 function writeSchedules(arr) {
-  try { fs.writeFileSync(SCHED_FILE, JSON.stringify(arr)); } catch (e) { console.error('schedules write error:', e.message); }
+  try {
+    const dir = path.dirname(SCHED_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(SCHED_FILE, JSON.stringify(arr));
+  } catch (e) { console.error('[scheduler] write error:', e.message); }
+}
+function schedFileStatus() {
+  try { fs.accessSync(path.dirname(SCHED_FILE), fs.constants.W_OK); return 'writable'; } catch { return 'NOT writable'; }
 }
 
 // Extracted save logic shared by /api/save-product and the schedule executor
@@ -552,16 +559,24 @@ app.post('/api/collection-remove', apiLimiter, writeLimiter, async (req, res) =>
 // Used by external cron services (cron-job.org, UptimeRobot) to keep server alive
 // and trigger schedule checks even when no users are active
 app.get('/api/schedule/ping', async (req, res) => {
-  const allSchedules = readSchedules();
-  const pending = allSchedules.filter(s => s.status === 'pending');
+  const before = readSchedules();
+  const pendingBefore = before.filter(s => s.status === 'pending').length;
   await runDueSchedules().catch(e => console.error('[ping]', e.message));
+  const after = readSchedules();
+  const fileExists   = (() => { try { return fs.existsSync(SCHED_FILE); } catch { return false; } })();
+  const dirWritable  = schedFileStatus() === 'writable';
   res.json({
     ok: true,
     ts: new Date().toISOString(),
     schedEnabled: !!SCHED_SECRET,
     schedFile: SCHED_FILE,
-    totalSchedules: allSchedules.length,
-    pendingSchedules: pending.length,
+    fileExists,
+    dirWritable,
+    totalSchedules:    after.length,
+    pendingSchedules:  after.filter(s => s.status === 'pending').length,
+    executedSchedules: after.filter(s => s.status === 'executed').length,
+    failedSchedules:   after.filter(s => s.status === 'failed').length,
+    justExecuted:      pendingBefore - after.filter(s => s.status === 'pending').length,
   });
 });
 
@@ -650,5 +665,11 @@ app.use((err, req, res, _n) => res.status(err.status || 500).json({ ok: false, e
 app.listen(PORT, () => {
   console.log(`BulkEdit on http://localhost:${PORT}`);
   console.log(`OAuth: ${SHOPIFY_CLIENT_ID ? 'OK' : 'NOT configured'}`);
-  console.log(`Scheduling: ${SCHED_SECRET ? `OK — file: ${SCHED_FILE}` : 'DISABLED (set SCHED_SECRET)'}`);
+  if (SCHED_SECRET) {
+    console.log(`Scheduling: ENABLED — file: ${SCHED_FILE} (${schedFileStatus()})`);
+    const existing = readSchedules();
+    console.log(`Scheduling: ${existing.length} schedule(s) on disk, ${existing.filter(s=>s.status==='pending').length} pending`);
+  } else {
+    console.log(`Scheduling: DISABLED (set SCHED_SECRET)`);
+  }
 });
