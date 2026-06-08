@@ -133,6 +133,10 @@ tbody tr:hover{background:var(--s2)}
 tbody tr.r-changed{background:#f0fdf4;border-left:2px solid var(--green)}
 tbody tr.r-selected{background:#eff6ff}
 .title-cell{display:flex;flex-direction:column;gap:3px}
+.title-row{display:flex;align-items:center;gap:4px}
+.title-row .ce{flex:1;min-width:0}
+.shopify-link{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:11px;color:var(--t4);border-radius:4px;text-decoration:none;transition:color .15s,background .15s;line-height:1}
+.shopify-link:hover{color:var(--green);background:var(--green-bg)}
 .mod-chip{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#16a34a;background:#dcfce7;border-radius:20px;padding:1px 7px;line-height:1.6;width:fit-content;border:1px solid rgba(22,163,74,.2)}
 td{padding:6px 10px;vertical-align:middle}
 td:first-child{text-align:center}

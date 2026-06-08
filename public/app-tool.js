@@ -211,6 +211,10 @@ function renderTable(){
   updateSaveBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview();
 }
 
+function shopifyAdminUrl(gid){
+  const numId=gid.split('/').pop();
+  return `https://${S.shop}/admin/products/${numId}`;
+}
 function rowHTML(p,v){
   const dirty=!!S.changes[p.id], sel=S.selectedVids.has(v.id);
   const cls=[dirty?'r-changed':'',sel?'r-selected':''].filter(Boolean).join(' ');
@@ -220,10 +224,11 @@ function rowHTML(p,v){
   const stLbl={ACTIVE:'● Active',DRAFT:'○ Draft',ARCHIVED:'⊘ Archived'}[p.status]||p.status;
   const tagsHTML=(p.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
   const mfHTML=buildMfHTML(p,v);
+  const shopUrl=shopifyAdminUrl(p.id);
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
-<td><div class="title-cell"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}">${dirty?'<span class="mod-chip">modified</span>':''}</div></td>
+<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a></div>${dirty?'<span class="mod-chip">modified</span>':''}</div></td>
 <td><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span></td>
 <td><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div></td>
@@ -335,12 +340,22 @@ function bindTable(){
 }
 
 /* ── MARK CHANGES ── */
+function addModChip(el){
+  const tr=el?.closest('tr'); if(!tr)return;
+  tr.classList.add('r-changed');
+  const tc=tr.querySelector('.title-cell');
+  if(tc&&!tc.querySelector('.mod-chip')){
+    const c=document.createElement('span');
+    c.className='mod-chip'; c.textContent='modified';
+    tc.appendChild(c);
+  }
+}
 function markProd(pid,field,value,el){
   pushH(`Edit ${field}`);
   const p=getProd(pid); if(!p)return;
   p[field]=field==='tags'?value.split(',').map(x=>x.trim()).filter(Boolean):value;
   ensureC(pid).product[field]=p[field];
-  if(el)el.classList.add('dirty');
+  if(el){ el.classList.add('dirty'); addModChip(el); }
   updateSaveBtn();
 }
 function markVar(vid,field,value,el){
@@ -350,7 +365,7 @@ function markVar(vid,field,value,el){
   const c=ensureC(p.id);
   if(!c.variants[vid])c.variants[vid]={id:vid};
   c.variants[vid][field]=value;
-  if(el)el.classList.add('dirty');
+  if(el){ el.classList.add('dirty'); addModChip(el); }
   updateSaveBtn();
 }
 function applyMfChange(ownerId, ownerType, ns, key, type, val, dirtyEl){
