@@ -741,6 +741,9 @@ function openScheduleModal(){
     $('m-bulk-title2').textContent='Schedule edit';
     $('m-sched-sub').textContent=`${Object.keys(S.changes).length} product${Object.keys(S.changes).length!==1?'s':''} with staged changes`;
     $('m-sched-label').value='';
+    $('m-sched-revert-toggle').checked=false;
+    $('m-sched-revert-dt').style.display='none';
+    $('m-sched-revert-hint').style.display='none';
     const d=new Date(); d.setDate(d.getDate()+1); d.setHours(9,0,0,0);
     $('m-sched-dt').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('m-sched-preview').innerHTML=Object.values(S.changes).map(c=>{
@@ -766,27 +769,80 @@ function openScheduleModal(){
   openModal('m-sched');
 }
 
+function buildRevertChanges(){
+  return Object.values(S.changes).map(c=>{
+    const orig=S.originals.find(p=>p.id===c.productId); if(!orig)return null;
+    const productRevert={};
+    Object.keys(c.product||{}).forEach(field=>{ productRevert[field]=orig[field]; });
+    const variantsRevert={};
+    Object.entries(c.variants||{}).forEach(([vid,v])=>{
+      const origV=orig.variants?.nodes?.find(x=>x.id===vid); if(!origV)return;
+      const rv={id:vid};
+      ['price','compareAtPrice','sku'].forEach(f=>{ if(v[f]!==undefined)rv[f]=origV[f]??''; });
+      variantsRevert[vid]=rv;
+    });
+    const metafieldsRevert=(c.metafields||[]).map(mf=>{
+      let origVal='';
+      if(mf.ownerId===c.productId){
+        origVal=orig.metafields?.nodes?.find(m=>m.namespace===mf.namespace&&m.key===mf.key)?.value??'';
+      } else {
+        const origV=orig.variants?.nodes?.find(v=>v.id===mf.ownerId);
+        origVal=origV?.metafields?.nodes?.find(m=>m.namespace===mf.namespace&&m.key===mf.key)?.value??'';
+      }
+      return{...mf,value:origVal};
+    });
+    return{productId:c.productId,product:productRevert,variants:variantsRevert,metafields:metafieldsRevert};
+  }).filter(Boolean);
+}
+
 async function confirmSchedule(){
   const dtVal=$('m-sched-dt').value;
   if(!dtVal)return toast('Select a date and time.');
   const scheduledFor=new Date(dtVal);
   if(isNaN(scheduledFor.getTime()))return toast('Invalid date.');
   if(scheduledFor<=new Date())return toast('Scheduled time must be in the future.');
+
+  const revertEnabled=$('m-sched-revert-toggle')?.checked;
+  const revertDtVal=$('m-sched-revert-dt')?.value;
+  let revertAt=null;
+  if(revertEnabled){
+    if(!revertDtVal)return toast('Select a revert time.');
+    revertAt=new Date(revertDtVal);
+    if(isNaN(revertAt.getTime()))return toast('Invalid revert time.');
+    if(revertAt<=scheduledFor)return toast('Revert time must be after the schedule time.');
+  }
+
   const btn=$('m-sched-confirm'); btn.disabled=true; btn.textContent='Scheduling…';
+  const label=$('m-sched-label').value.trim();
   try{
     const r=await api('/api/schedule/create',{
       scheduledFor:scheduledFor.toISOString(),
-      label:$('m-sched-label').value.trim()||undefined,
+      label:label||undefined,
       changes:Object.values(S.changes)
     });
     S.schedules=[r.schedule,...(S.schedules||[])];
+
+    if(revertAt){
+      const revertChanges=buildRevertChanges();
+      if(revertChanges.length){
+        const r2=await api('/api/schedule/create',{
+          scheduledFor:revertAt.toISOString(),
+          label:(label?`↩ ${label}`:'↩ Revert'),
+          changes:revertChanges,
+          linkedTo:r.schedule.id
+        });
+        S.schedules=[r2.schedule,...S.schedules];
+      }
+    }
+
     updateSchedBadge();
     S.changes={}; S.past=[]; S.future=[];
     S.originals=clone(S.products);
     closeModal('m-sched');
     renderTable(); updateSaveBtn(); updateUndoUI();
     document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
-    toast(`Scheduled for ${scheduledFor.toLocaleString()}.`);
+    const msg=revertAt?`Scheduled for ${scheduledFor.toLocaleString()} · reverts at ${revertAt.toLocaleString()}.`:`Scheduled for ${scheduledFor.toLocaleString()}.`;
+    toast(msg);
   }catch(e){ toast(e.message); }
   finally{ btn.disabled=false; btn.textContent='Schedule →'; }
 }
@@ -805,10 +861,11 @@ async function renderSchedJobsList(){
       const overdue=s.status==='pending'&&new Date(s.scheduledFor)<new Date();
       const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
       const sLbl={pending:overdue?'Overdue':'Pending',executed:'Done',failed:'Failed',running:'Running',cancelled:'Cancelled'}[s.status]||s.status;
+      const isRevert=!!s.linkedTo;
       const btns=s.status==='pending'
         ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
         :['failed','cancelled'].includes(s.status)?`<button class="btn-ghost xs" data-sched-retry="${s.id}">Retry</button>`:'';
-      return `<div class="sched-row"><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
+      return `<div class="sched-row${isRevert?' sched-revert':''}"><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
     }).join('');
   }catch(e){ body.innerHTML=`<p class="sched-empty" style="color:var(--red)">${esc(e.message)}</p>`; }
 }
@@ -929,6 +986,17 @@ function boot(){
   // Schedule
   $('btn-schedule').addEventListener('click', openScheduleModal);
   $('m-sched-confirm').addEventListener('click', confirmSchedule);
+  $('m-sched-revert-toggle').addEventListener('change', e=>{
+    const on=e.target.checked;
+    $('m-sched-revert-dt').style.display=on?'':'none';
+    $('m-sched-revert-hint').style.display=on?'':'none';
+    if(on && $('m-sched-dt').value){
+      // Default revert time: apply time + 3 hours
+      const base=new Date($('m-sched-dt').value);
+      base.setHours(base.getHours()+3);
+      $('m-sched-revert-dt').value=new Date(base-base.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    }
+  });
   $('m-sched-jobs').addEventListener('click', async e=>{
     const id=e.target.dataset.schedRun||e.target.dataset.schedCancel||e.target.dataset.schedRetry;
     if(!id)return;

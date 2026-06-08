@@ -552,8 +552,17 @@ app.post('/api/collection-remove', apiLimiter, writeLimiter, async (req, res) =>
 // Used by external cron services (cron-job.org, UptimeRobot) to keep server alive
 // and trigger schedule checks even when no users are active
 app.get('/api/schedule/ping', async (req, res) => {
-  await runDueSchedules().catch(() => {});
-  res.json({ ok: true, ts: new Date().toISOString() });
+  const allSchedules = readSchedules();
+  const pending = allSchedules.filter(s => s.status === 'pending');
+  await runDueSchedules().catch(e => console.error('[ping]', e.message));
+  res.json({
+    ok: true,
+    ts: new Date().toISOString(),
+    schedEnabled: !!SCHED_SECRET,
+    schedFile: SCHED_FILE,
+    totalSchedules: allSchedules.length,
+    pendingSchedules: pending.length,
+  });
 });
 
 // ── SCHEDULE API ─────────────────────────────────────────
@@ -562,7 +571,7 @@ app.post('/api/schedule/create', apiLimiter, (req, res) => {
   try {
     if (!SCHED_SECRET) throw new Error('Scheduling not enabled. Set SCHED_SECRET in environment variables.');
     const { shop, token } = getSession(req);
-    const { scheduledFor, label, changes } = req.body || {};
+    const { scheduledFor, label, changes, linkedTo } = req.body || {};
     if (!scheduledFor) throw new Error('Missing scheduledFor');
     const dt = new Date(scheduledFor);
     if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
@@ -574,6 +583,7 @@ app.post('/api/schedule/create', apiLimiter, (req, res) => {
       createdAt: new Date().toISOString(),
       scheduledFor: dt.toISOString(),
       label: String(label || `${changes.length} product${changes.length !== 1 ? 's' : ''}`).slice(0, 120),
+      linkedTo: linkedTo || null,
       changes,
       encToken: encryptToken(token),
       status: 'pending',
