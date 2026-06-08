@@ -150,7 +150,7 @@ async function loadProducts(q='', append=false){
   if(!append) S.pageInfo={hasNextPage:false,endCursor:null};
   setStatus(append?'Loading more…':'Loading…');
   try{
-    const r=await api('/api/products',{query:buildShopifyQuery(q),first:50,after:append?S.pageInfo.endCursor:null});
+    const r=await api('/api/products',{query:q,first:50,after:append?S.pageInfo.endCursor:null});
     const newProds=r.products.map(normProd);
     if(append){
       S.products=[...S.products,...newProds];
@@ -200,6 +200,7 @@ async function loadMfDefs(){
 function normProd(p){
   return { ...p,
     featuredImage: p.featuredImage||null,
+    seo: p.seo||{title:'',description:''},
     metafields: { nodes: p.metafields?.nodes||[] },
     variants:{ nodes:(p.variants?.nodes||[]).map(v=>({...v, metafields:{nodes:v.metafields?.nodes||[]}})) }
   };
@@ -326,7 +327,11 @@ function rowHTML(p,v){
   const hasSched=schedList.length>0;
   const cls=[dirty?'r-changed':'',sel?'r-selected':'',hasSched?'r-scheduled':''].filter(Boolean).join(' ');
   const imgSrc=prodImg(p);
-  const imgCell=imgSrc?`<img class="prod-thumb" src="${esc(imgSrc)}" alt="" loading="lazy">`:`<div class="prod-thumb-ph">□</div>`;
+  const altVal=esc(p.featuredImage?.altText||'');
+  const imgId=esc(p.featuredImage?.id||'');
+  const imgCell=imgSrc
+    ?`<div class="thumb-wrap"><img class="prod-thumb" src="${esc(imgSrc)}" alt="${altVal}" loading="lazy"><input class="alt-inp" data-pid="${esc(p.id)}" data-image-id="${imgId}" placeholder="Alt text…" value="${altVal}" title="Image alt text"></div>`
+    :`<div class="prod-thumb-ph">□</div>`;
   const stCls={ACTIVE:'ACTIVE',DRAFT:'DRAFT',ARCHIVED:'ARCHIVED'}[p.status]||'DRAFT';
   const stLbl={ACTIVE:'● Active',DRAFT:'○ Draft',ARCHIVED:'⊘ Archived'}[p.status]||p.status;
   const tagsHTML=(p.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
@@ -346,10 +351,13 @@ function rowHTML(p,v){
     if(removed.length) parts.push(`<div class="sched-val-badge-red">- ${esc(removed.join(', '))} scheduled</div>`);
     return parts.join('');
   }).join('');
+  const seoTitle=esc(p.seo?.title||''); const seoDesc=esc(p.seo?.description||'');
+  const seoMissing=!p.seo?.title&&!p.seo?.description;
+  const seoIndicator=seoMissing?`<span class="seo-missing" title="No SEO title/description set">SEO</span>`:'';
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
-<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a></div><span class="mod-chip">modified</span></div></td>
+<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div><div class="seo-row"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-title" placeholder="SEO title…" value="${seoTitle}"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-desc" placeholder="SEO description…" value="${seoDesc}"></div><span class="mod-chip">modified</span></div></td>
 <td><div><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span>${statusBadge}</div></td>
 <td><div><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></div>${vendorBadge}</td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div>${tagsBadge}</td>
@@ -372,23 +380,35 @@ function measureUnits(type){ return MEASUREMENT_UNITS[(type||'').replace(/^list\
 function defRow(def, ownerId, currentVal){
   const units = measureUnits(def.type||'');
   const attrs = `data-owner-id="${esc(ownerId)}" data-owner-type="${esc(def.ownerType)}" data-ns="${esc(def.namespace)}" data-key="${esc(def.key)}" data-type="${esc(def.type||'single_line_text_field')}"`;
+  const lbl = `<span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>`;
   if(units){
     let num='', unit=units[0];
     try{ const j=JSON.parse(currentVal); num=j.value??''; unit=j.unit??units[0]; }catch{}
-    return `<div class="mf-def-row mf-meas">
-      <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
-      <div class="mf-meas-wrap">
+    return `<div class="mf-def-row mf-meas">${lbl}<div class="mf-meas-wrap">
         <input class="mf-val-inp mf-num" type="number" step="any" placeholder="0" ${attrs} data-mf="measure-num" value="${esc(String(num))}">
         <select class="mf-unit-sel" ${attrs} data-mf="measure-unit">
           ${units.map(u=>`<option value="${u}"${u===unit?' selected':''}>${u.replace(/_/g,' ')}</option>`).join('')}
-        </select>
-      </div>
-    </div>`;
+        </select></div></div>`;
   }
-  return `<div class="mf-def-row">
-    <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
-    <input class="mf-val-inp" placeholder="—" ${attrs} data-mf="smart" value="${esc(currentVal)}">
-  </div>`;
+  const t=def.type||'single_line_text_field';
+  if(t==='boolean'){
+    const checked=currentVal==='true';
+    return `<div class="mf-def-row">${lbl}<label class="mf-bool-wrap"><input type="checkbox" class="mf-bool" ${attrs} data-mf="smart" ${checked?'checked':''}><span class="mf-bool-lbl">${checked?'true':'false'}</span></label></div>`;
+  }
+  if(t==='date'){
+    return `<div class="mf-def-row">${lbl}<input class="mf-val-inp" type="date" ${attrs} data-mf="smart" value="${esc(currentVal)}"></div>`;
+  }
+  if(t==='date_time'){
+    const dtVal=currentVal?currentVal.replace(' ','T').slice(0,16):'';
+    return `<div class="mf-def-row">${lbl}<input class="mf-val-inp" type="datetime-local" ${attrs} data-mf="smart" value="${esc(dtVal)}"></div>`;
+  }
+  if(t==='json'){
+    return `<div class="mf-def-row">${lbl}<textarea class="mf-val-inp mf-json" rows="2" ${attrs} data-mf="smart">${esc(currentVal)}</textarea></div>`;
+  }
+  if(t==='multi_line_text_field'){
+    return `<div class="mf-def-row">${lbl}<textarea class="mf-val-inp" rows="2" ${attrs} data-mf="smart">${esc(currentVal)}</textarea></div>`;
+  }
+  return `<div class="mf-def-row">${lbl}<input class="mf-val-inp" placeholder="—" ${attrs} data-mf="smart" value="${esc(currentVal)}"></div>`;
 }
 
 function buildMfHTML(p, v){
@@ -440,10 +460,17 @@ function bindTable(){
   const tbody=$('tbody');
   tbody.addEventListener('change',e=>{
     if(e.target.classList.contains('row-chk')) toggleRowSel(e.target.dataset.vid,e.target.checked);
+    if(e.target.classList.contains('mf-bool')){
+      const lbl=e.target.nextElementSibling; if(lbl)lbl.textContent=e.target.checked?'true':'false';
+      const fake={...e.target, value:e.target.checked?'true':'false', dataset:e.target.dataset};
+      markMfSmart(fake); return;
+    }
     if(e.target.dataset.mf==='measure-unit'){ markMfMeasure(e.target); return; }
   });
   tbody.addEventListener('input',e=>{
     const el=e.target;
+    if(el.classList.contains('alt-inp')){ markAltText(el); return; }
+    if(el.dataset.field==='seo-title'||el.dataset.field==='seo-desc'){ markSeo(el); return; }
     if(el.dataset.field){  markProd(el.dataset.pid,el.dataset.field,el.value,el); return; }
     if(el.dataset.vf){     markVar(el.dataset.vid,el.dataset.vf,el.value,el); return; }
     if(el.dataset.mf==='smart'){       markMfSmart(el); return; }
@@ -471,6 +498,22 @@ function markProd(pid,field,value,el){
   ensureC(pid).product[field]=p[field];
   if(el){ el.classList.add('dirty'); addModChip(el); }
   updateSaveBtn();
+}
+function markSeo(el){
+  const pid=el.dataset.pid; const p=getProd(pid); if(!p)return;
+  pushH('Edit SEO'); if(!p.seo)p.seo={title:'',description:''};
+  const isTitle=el.dataset.field==='seo-title';
+  if(isTitle)p.seo.title=el.value; else p.seo.description=el.value;
+  const c=ensureC(pid); if(!c.product.seo)c.product.seo={};
+  if(isTitle)c.product.seo.title=el.value; else c.product.seo.description=el.value;
+  el.classList.add('dirty'); addModChip(el); updateSaveBtn();
+}
+function markAltText(el){
+  const pid=el.dataset.pid; const imageId=el.dataset.imageId; const p=getProd(pid); if(!p)return;
+  pushH('Edit alt text');
+  if(p.featuredImage)p.featuredImage.altText=el.value;
+  const c=ensureC(pid); c.product.altText=el.value; c.product.imageId=imageId;
+  el.classList.add('dirty'); addModChip(el); updateSaveBtn();
 }
 function markVar(vid,field,value,el){
   const{p,v}=getVar(vid); if(!p||!v)return;
@@ -620,8 +663,8 @@ function updateSaveBtn(){
 function openBulkModal(type){
   S.bulkType=type;
   const n=S.selectedVids.size;
-  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',tags:'Edit Tags',metafield:'Edit Metafields',collections:'Add / Remove Collection'}[type]||'Bulk action';
-  $('m-bulk-sub').textContent=`Applied to ${n} selected variant${n!==1?'s':''}`;
+  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',tags:'Edit Tags',metafield:'Edit Metafields',seo:'Edit SEO',collections:'Add / Remove Collection'}[type]||'Bulk action';
+  $('m-bulk-sub').textContent=type==='seo'?`Applied to ${getSelPids().length} product${getSelPids().length!==1?'s':''}`:`Applied to ${n} selected variant${n!==1?'s':''}`;
   const body=$('m-bulk-body');
   if(type==='status'){
     body.innerHTML=`<div class="bulk-field"><label>New status</label><select id="bv-status"><option value="ACTIVE">● Active</option><option value="DRAFT">○ Draft</option><option value="ARCHIVED">⊘ Archived</option></select></div>`;
@@ -647,8 +690,11 @@ function openBulkModal(type){
       body.innerHTML=`<div class="bulk-field"><label>Namespace</label><input id="bv-mf-ns" type="text" value="custom"></div><div class="bulk-field"><label>Key</label><input id="bv-mf-key" type="text" placeholder="e.g. material" autofocus></div><div class="bulk-field"><label>Value</label><input id="bv-mf-val" type="text" placeholder="Value"></div>`;
     }
   }
+  if(type==='seo'){
+    body.innerHTML=`<div class="bulk-field"><label>SEO Title <span style="color:var(--t4);font-weight:400">(leave blank to keep current)</span></label><input id="bv-seo-title" type="text" maxlength="320" placeholder="e.g. Product Name | Store Name" autofocus></div><div class="bulk-field"><label>SEO Description</label><textarea id="bv-seo-desc" rows="3" maxlength="5000" placeholder="Brief description for search engines…" style="resize:vertical;min-height:72px"></textarea></div>`;
+  }
   openModal('m-bulk');
-  setTimeout(()=>body.querySelector('input,select')?.focus(),60);
+  setTimeout(()=>body.querySelector('input,select,textarea')?.focus(),60);
 }
 
 function applyBulkModal(){
@@ -718,6 +764,21 @@ function applyBulkModal(){
       });
       renderTable(); updateSaveBtn(); toast(`Metafield "${key}" set on ${vids.length} variants.`);
     }
+  }
+  if(type==='seo'){
+    const title=($('bv-seo-title')?.value||'').trim();
+    const desc=($('bv-seo-desc')?.value||'').trim();
+    if(!title&&!desc)return toast('Enter at least a SEO title or description.');
+    const pids=getSelPids(); if(!pids.length)return toast('Select products first.');
+    pushH('Bulk SEO update');
+    pids.forEach(pid=>{
+      const p=getProd(pid); if(!p)return;
+      if(!p.seo)p.seo={title:'',description:''};
+      const c=ensureC(pid); if(!c.product.seo)c.product.seo={};
+      if(title){p.seo.title=title;c.product.seo.title=title;}
+      if(desc){p.seo.description=desc;c.product.seo.description=desc;}
+    });
+    renderTable(); updateSaveBtn(); toast(`SEO updated on ${pids.length} products.`);
   }
   closeModal('m-bulk');
 }
@@ -857,13 +918,20 @@ function updateSchedBadge(){
 
 async function loadSchedules(){
   if(S.demo){S.schedules=[];return;}
-  try{ const r=await api('/api/schedule/list',{}); S.schedules=r.schedules||[]; }
-  catch{ S.schedules=[]; }
+  try{
+    const r=await api('/api/schedule/list',{});
+    S.schedules=r.schedules||[];
+    S.schedPersistWarning=!!r.persistWarning;
+  }catch{ S.schedules=[]; }
   updateSchedBadge();
   renderTable();
 }
 
 function openScheduleModal(){
+  if(S.schedPersistWarning){
+    const warn=$('sched-persist-warn');
+    if(warn)warn.style.display='';
+  }
   const hasChanges=Object.keys(S.changes).length>0;
   if(hasChanges){
     // Show create form
@@ -1245,6 +1313,7 @@ function boot(){
   $('bulk-price-btn').addEventListener('click',  ()=>openBulkModal('price'));
   $('bulk-tags-btn').addEventListener('click',   ()=>openBulkModal('tags'));
   $('bulk-mf-btn').addEventListener('click',     ()=>openBulkModal('metafield'));
+  $('bulk-seo-btn').addEventListener('click',    ()=>openBulkModal('seo'));
   $('bulk-coll-btn').addEventListener('click',   ()=>openCollModal());
 
   // Bulk modal

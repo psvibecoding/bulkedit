@@ -299,5 +299,24 @@ input[type="checkbox"]{width:13px;height:13px;accent-color:var(--green);cursor:p
 .sched-val-badge{display:inline-block;font-size:10px;font-family:var(--mono);color:var(--green);background:var(--green-bg);border:1px solid var(--green-brd);border-radius:4px;padding:1px 5px;margin-top:2px;word-break:break-word}
 .sched-val-badge-red{display:inline-block;font-size:10px;font-family:var(--mono);color:var(--red);background:var(--red-bg);border:1px solid var(--red-brd);border-radius:4px;padding:1px 5px;margin-top:2px;word-break:break-word}
 
+/* Alt text + thumbnail wrap */
+.thumb-wrap{position:relative;display:inline-block}
+.alt-inp{position:absolute;bottom:-26px;left:0;width:120px;font-size:10px;padding:2px 6px;border:1px solid var(--b2);border-radius:var(--r4);background:var(--white);color:var(--t2);font-family:var(--mono);opacity:0;pointer-events:none;transition:opacity .15s;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb-wrap:hover .alt-inp,.alt-inp:focus{opacity:1;pointer-events:all}
+.alt-inp:focus{border-color:var(--green);box-shadow:0 0 0 2px var(--green-bg);outline:none}
+
+/* SEO inline inputs */
+.seo-row{display:flex;gap:4px;margin-top:3px}
+.seo-inp{font-size:11px!important;padding:3px 6px!important;color:var(--t3)!important}
+.seo-inp:focus{color:var(--tx)!important}
+.seo-missing{display:inline-flex;align-items:center;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:3px;background:#fef3c7;color:#d97706;border:1px solid #fde68a;margin-left:4px;cursor:default}
+
+/* Metafield boolean */
+.mf-bool-wrap{display:flex;align-items:center;gap:6px;cursor:pointer}
+.mf-bool-wrap input[type=checkbox]{width:14px;height:14px;accent-color:var(--green);cursor:pointer}
+.mf-bool-lbl{font-size:11px;font-family:var(--mono);color:var(--t2)}
+/* Metafield json/multiline */
+.mf-json{min-height:48px;resize:vertical;font-size:11px!important}
+
 .hidden{display:none!important}
 @media(max-width:700px){.topbar{flex-direction:column;align-items:flex-start}.topbar-l,.topbar-r{width:100%}.search-box{max-width:100%}}

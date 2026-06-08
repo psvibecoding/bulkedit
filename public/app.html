@@ -6,7 +6,7 @@
   <title>BulkEdit — App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/styles.css?v=19"/>
+  <link rel="stylesheet" href="/styles.css?v=20"/>
   <script>if(sessionStorage.getItem('be_shop')&&sessionStorage.getItem('be_token'))document.documentElement.setAttribute('data-restoring','1');</script>
 </head>
 <body>
@@ -100,6 +100,7 @@
           <button class="chip" id="bulk-price-btn">Change Prices</button>
           <button class="chip" id="bulk-tags-btn">Edit Tags</button>
           <button class="chip" id="bulk-mf-btn">Edit Metafields</button>
+          <button class="chip" id="bulk-seo-btn">Edit SEO</button>
           <button class="chip amber" id="bulk-coll-btn">Add / Remove Collection</button>
         </div>
       </div>
@@ -228,6 +229,11 @@
       <button class="close-btn" data-close="m-sched">✕</button>
     </div>
 
+    <!-- Persistence warning (shown if SCHED_FILE env var not set) -->
+    <div id="sched-persist-warn" style="display:none;margin:12px 18px 0;padding:10px 14px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#78350f;line-height:1.5">
+      ⚠️ <strong>Schedules may not persist across deploys.</strong> Set the <code>SCHED_FILE</code> environment variable to a mounted volume path (e.g. <code>/data/schedules.json</code>) in your Railway settings.
+    </div>
+
     <!-- CREATE VIEW -->
     <div id="m-sched-create" class="modal-body">
       <div class="bulk-field">
@@ -291,6 +297,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=30"></script>
+<script src="/app-tool.js?v=31"></script>
 </body>
 </html>

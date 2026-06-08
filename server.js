@@ -113,12 +113,19 @@ function safeProductInput(p = {}) {
   const allowed = new Set(['title','status','vendor','tags']);
   const clean = {};
   for (const [k, v] of Object.entries(p)) {
-    if (!allowed.has(k)) throw new Error(`Field not allowed: ${k}`);
+    if (!allowed.has(k)) continue; // skip seo/altText — handled separately
     if (k === 'status' && !['ACTIVE','DRAFT','ARCHIVED'].includes(String(v).toUpperCase())) throw new Error('Invalid status');
     if (k === 'tags' && !Array.isArray(v)) throw new Error('Tags must be array');
     clean[k] = k === 'status' ? String(v).toUpperCase() : v;
   }
   return clean;
+}
+function safeSeo(seo = {}) {
+  if (!seo || typeof seo !== 'object') return null;
+  const clean = {};
+  if (seo.title       !== undefined) clean.title       = String(seo.title       || '').slice(0, 320);
+  if (seo.description !== undefined) clean.description = String(seo.description || '').slice(0, 5000);
+  return Object.keys(clean).length ? clean : null;
 }
 
 function gid(v, type) {
@@ -502,13 +509,20 @@ async function execSaveProduct(session, { productId, product = {}, variants = []
   if (productId && product && Object.keys(product).length) {
     gid(productId, 'Product');
     const input = { id: productId, ...safeProductInput(product) };
-    const d = await gql(session, `
-      mutation ProductUpdate($input: ProductInput!) {
-        productUpdate(input:$input) { product { id } userErrors { field message } }
-      }`, { input });
-    const errs = d.productUpdate.userErrors;
-    if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
-    results.push({ type: 'product', id: productId });
+    const seo = safeSeo(product.seo);
+    if (seo) input.seo = seo;
+    if (product.altText !== undefined && product.imageId) {
+      input.images = [{ id: String(product.imageId), altText: String(product.altText || '').slice(0, 512) }];
+    }
+    if (Object.keys(input).length > 1) {
+      const d = await gql(session, `
+        mutation ProductUpdate($input: ProductInput!) {
+          productUpdate(input:$input) { product { id } userErrors { field message } }
+        }`, { input });
+      const errs = d.productUpdate.userErrors;
+      if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+      results.push({ type: 'product', id: productId });
+    }
   }
   if (Array.isArray(variants) && variants.length) {
     if (variants.length > 100) throw new Error('Too many variants');
@@ -746,7 +760,8 @@ app.post('/api/products', apiLimiter, async (req, res) => {
           pageInfo { hasNextPage endCursor }
           nodes {
             id title status vendor tags
-            featuredImage { url }
+            seo { title description }
+            featuredImage { id url altText }
             metafields(first:50) { nodes { id namespace key type value } }
             variants(first:100) {
               nodes {
@@ -794,16 +809,23 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
     if (productId && product && Object.keys(product).length) {
       gid(productId, 'Product');
       const input = { id: productId, ...safeProductInput(product) };
-      const d = await gql(s, `
-        mutation ProductUpdate($input: ProductInput!) {
-          productUpdate(input:$input) {
-            product { id title status }
-            userErrors { field message }
-          }
-        }`, { input });
-      const errs = d.productUpdate.userErrors;
-      if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
-      results.push({ type: 'product', id: productId });
+      const seo = safeSeo(product.seo);
+      if (seo) input.seo = seo;
+      if (product.altText !== undefined && product.imageId) {
+        input.images = [{ id: String(product.imageId), altText: String(product.altText || '').slice(0, 512) }];
+      }
+      if (Object.keys(input).length > 1) {
+        const d = await gql(s, `
+          mutation ProductUpdate($input: ProductInput!) {
+            productUpdate(input:$input) {
+              product { id title status }
+              userErrors { field message }
+            }
+          }`, { input });
+        const errs = d.productUpdate.userErrors;
+        if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+        results.push({ type: 'product', id: productId });
+      }
     }
 
     // Update variants using productVariantsBulkUpdate
@@ -1037,7 +1059,8 @@ app.post('/api/schedule/list', apiLimiter, (req, res) => {
       .filter(s => s.shop === shop)
       .map(({ encToken: _, ...rest }) => rest)
       .sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor));
-    res.json({ ok: true, schedules: mine });
+    const persistWarning = !process.env.SCHED_FILE; // warn if using default (non-persistent) path
+    res.json({ ok: true, schedules: mine, persistWarning });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
