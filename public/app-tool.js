@@ -232,32 +232,13 @@ function rowHTML(p,v){
 }
 
 /* ── METAFIELD RENDERING ── */
-const MEASUREMENT_UNITS = {
-  dimension: ['MILLIMETERS','CENTIMETERS','METERS','INCHES','FEET','YARDS'],
-  weight:    ['GRAMS','KILOGRAMS','OUNCES','POUNDS'],
-  volume:    ['MILLILITERS','CENTILITERS','LITERS','FLUID_OUNCES','PINTS','GALLONS'],
-};
-
 function defRow(def, ownerId, currentVal){
-  const baseType = (def.type||'').replace(/_field$/,'');
-  const units = MEASUREMENT_UNITS[baseType];
-  const attrs = `data-owner-id="${esc(ownerId)}" data-owner-type="${esc(def.ownerType)}" data-ns="${esc(def.namespace)}" data-key="${esc(def.key)}" data-type="${esc(def.type||'single_line_text_field')}"`;
-  if(units){
-    let num='', unit=units[0];
-    try{ const j=JSON.parse(currentVal); num=j.value??''; unit=j.unit??units[0]; }catch{}
-    return `<div class="mf-def-row mf-meas">
-      <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
-      <div class="mf-meas-wrap">
-        <input class="mf-val-inp mf-num" type="number" step="any" placeholder="0" ${attrs} data-mf="measure-num" value="${esc(String(num))}">
-        <select class="mf-unit-sel" ${attrs} data-mf="measure-unit">
-          ${units.map(u=>`<option value="${u}"${u===unit?' selected':''}>${u.replace(/_/g,' ')}</option>`).join('')}
-        </select>
-      </div>
-    </div>`;
-  }
   return `<div class="mf-def-row">
     <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
-    <input class="mf-val-inp" placeholder="—" ${attrs} data-mf="smart" value="${esc(currentVal)}">
+    <input class="mf-val-inp" placeholder="—"
+      data-owner-id="${esc(ownerId)}" data-owner-type="${esc(def.ownerType)}"
+      data-ns="${esc(def.namespace)}" data-key="${esc(def.key)}" data-type="${esc(def.type||'single_line_text_field')}"
+      data-mf="smart" value="${esc(currentVal)}">
   </div>`;
 }
 
@@ -287,15 +268,13 @@ function bindTable(){
   const tbody=$('tbody');
   tbody.addEventListener('change',e=>{
     if(e.target.classList.contains('row-chk')) toggleRowSel(e.target.dataset.vid,e.target.checked);
-    if(e.target.dataset.mf==='measure-unit'){ markMfMeasure(e.target); return; }
   });
   tbody.addEventListener('input',e=>{
     const el=e.target;
     if(el.dataset.field){  markProd(el.dataset.pid,el.dataset.field,el.value,el); return; }
     if(el.dataset.vf){     markVar(el.dataset.vid,el.dataset.vf,el.value,el); return; }
-    if(el.dataset.mf==='smart'){       markMfSmart(el); return; }
-    if(el.dataset.mf==='measure-num'){ markMfMeasure(el); return; }
-    if(el.dataset.mf&&el.dataset.mf!=='smart'&&el.dataset.mf!=='measure-num'){ markMfRaw(el); return; }
+    if(el.dataset.mf==='smart'){ markMfSmart(el); return; }
+    if(el.dataset.mf&&el.dataset.mf!=='smart'){ markMfRaw(el); return; }
   });
   tbody.addEventListener('click',e=>{
     const el=e.target;
@@ -349,15 +328,6 @@ function applyMfChange(ownerId, ownerType, ns, key, type, val, dirtyEl){
 function markMfSmart(el){
   const{ownerId,ownerType,ns,key,type}=el.dataset;
   applyMfChange(ownerId,ownerType,ns,key,type,el.value,el);
-}
-function markMfMeasure(el){
-  const row=el.closest('.mf-meas'); if(!row)return;
-  const numEl=row.querySelector('[data-mf="measure-num"]');
-  const unitEl=row.querySelector('[data-mf="measure-unit"]');
-  const num=parseFloat(numEl.value);
-  if(isNaN(num)) return;
-  const{ownerId,ownerType,ns,key,type}=numEl.dataset;
-  applyMfChange(ownerId,ownerType,ns,key,type,JSON.stringify({value:num,unit:unitEl.value}),numEl);
 }
 function markMfRaw(el){
   const{p,v}=getVar(el.dataset.vid); if(!p||!v)return;
@@ -462,7 +432,7 @@ function openBulkModal(type){
   }else if(type==='metafield'){
     // Use store definitions if available
     if(S.mfDefs.length){
-      const opts=S.mfDefs.map(d=>`<option value="${esc(d.namespace)}|${esc(d.key)}|${esc(d.type||'single_line_text_field')}">${esc(d.name)}</option>`).join('');
+      const opts=S.mfDefs.map(d=>`<option value="${esc(d.namespace)}|${esc(d.key)}|${esc(d.type||'single_line_text_field')}|${esc(d.ownerType||'PRODUCTVARIANT')}">${esc(d.name)}${d.ownerType==='PRODUCT'?' (product)':''}</option>`).join('');
       body.innerHTML=`<div class="bulk-field"><label>Metafield</label><select id="bv-mf-def"><option value="">Select metafield…</option>${opts}</select></div><div class="bulk-field"><label>Value</label><input id="bv-mf-val" type="text" placeholder="Value" autofocus></div>`;
     }else{
       body.innerHTML=`<div class="bulk-field"><label>Namespace</label><input id="bv-mf-ns" type="text" value="custom"></div><div class="bulk-field"><label>Key</label><input id="bv-mf-key" type="text" placeholder="e.g. material" autofocus></div><div class="bulk-field"><label>Value</label><input id="bv-mf-val" type="text" placeholder="Value"></div>`;
@@ -495,26 +465,42 @@ function applyBulkModal(){
     renderTable(); updateSaveBtn(); toast(`Tag "${tag}" ${action==='add'?'added to':'removed from'} ${pids.length} products.`);
   }else if(type==='metafield'){
     const val=$('bv-mf-val')?.value??'';
-    let ns,key,mftype;
+    let ns,key,mftype,ownerType;
     if(S.mfDefs.length){
       const sel=$('bv-mf-def')?.value; if(!sel)return toast('Select a metafield.');
-      [ns,key,mftype]=sel.split('|');
+      [ns,key,mftype,ownerType]=sel.split('|');
+      ownerType=ownerType||'PRODUCTVARIANT';
     }else{
-      ns=$('bv-mf-ns')?.value.trim()||'custom'; key=$('bv-mf-key')?.value.trim(); mftype='single_line_text_field';
+      ns=$('bv-mf-ns')?.value.trim()||'custom'; key=$('bv-mf-key')?.value.trim();
+      mftype='single_line_text_field'; ownerType='PRODUCTVARIANT';
       if(!key)return toast('Enter a key.');
     }
-    const vids=[...S.selectedVids];
     pushH(`Bulk metafield ${key}`);
-    vids.forEach(vid=>{
-      const{p,v}=getVar(vid);if(!p||!v)return;
-      const ex=v.metafields.nodes.findIndex(m=>m.namespace===ns&&m.key===key);
-      if(ex>=0)v.metafields.nodes[ex].value=val;
-      else v.metafields.nodes.push({namespace:ns,key,type:mftype,value:val});
-      const c=ensureC(p.id);
-      c.metafields=c.metafields.filter(m=>!(m.ownerId===vid&&m.namespace===ns&&m.key===key));
-      if(val!=='')c.metafields.push({ownerId:vid,namespace:ns,key,type:mftype,value:val});
-    });
-    renderTable(); updateSaveBtn(); toast(`Metafield "${key}" set on ${vids.length} variants.`);
+    if(ownerType==='PRODUCT'){
+      const pids=[...new Set([...S.selectedVids].map(vid=>getVar(vid).p?.id).filter(Boolean))];
+      pids.forEach(pid=>{
+        const p=getProd(pid); if(!p)return;
+        const ex=p.metafields.nodes.findIndex(m=>m.namespace===ns&&m.key===key);
+        if(ex>=0) p.metafields.nodes[ex].value=val;
+        else p.metafields.nodes.push({namespace:ns,key,type:mftype,value:val});
+        const c=ensureC(pid);
+        c.metafields=c.metafields.filter(m=>!(m.ownerId===pid&&m.namespace===ns&&m.key===key));
+        if(val!=='') c.metafields.push({ownerId:pid,namespace:ns,key,type:mftype,value:val});
+      });
+      renderTable(); updateSaveBtn(); toast(`Metafield "${key}" set on ${pids.length} products.`);
+    }else{
+      const vids=[...S.selectedVids];
+      vids.forEach(vid=>{
+        const{p,v}=getVar(vid);if(!p||!v)return;
+        const ex=v.metafields.nodes.findIndex(m=>m.namespace===ns&&m.key===key);
+        if(ex>=0)v.metafields.nodes[ex].value=val;
+        else v.metafields.nodes.push({namespace:ns,key,type:mftype,value:val});
+        const c=ensureC(p.id);
+        c.metafields=c.metafields.filter(m=>!(m.ownerId===vid&&m.namespace===ns&&m.key===key));
+        if(val!=='')c.metafields.push({ownerId:vid,namespace:ns,key,type:mftype,value:val});
+      });
+      renderTable(); updateSaveBtn(); toast(`Metafield "${key}" set on ${vids.length} variants.`);
+    }
   }
   closeModal('m-bulk');
 }
