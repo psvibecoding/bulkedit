@@ -275,14 +275,32 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       if (field === 'bodyHtml') return; // skip description, too long
       const label  = FIELD_LABELS[field] || field;
       const before = fmtField(field, c.before?.[field]);
-      const after  = fmtField(field, newVal);
-      const color  = afterColor(field, c.before?.[field], newVal);
+
+      let afterHtml;
+      if (field === 'tags') {
+        const toArr = v => Array.isArray(v) ? v : (v ? String(v).split(',').map(t=>t.trim()).filter(Boolean) : []);
+        const bTags = toArr(c.before?.[field]);
+        const aTags = toArr(newVal);
+        const kept    = aTags.filter(t =>  bTags.includes(t));
+        const removed = bTags.filter(t => !aTags.includes(t));
+        const added   = aTags.filter(t => !bTags.includes(t));
+        const parts = [
+          ...kept.map(t    => `<span style="color:#1a5c38;font-weight:600">${t}</span>`),
+          ...removed.map(t => `<span style="color:#dc2626;text-decoration:line-through">${t}</span>`),
+          ...added.map(t   => `<span style="color:#1a5c38;font-weight:700">+${t}</span>`),
+        ];
+        afterHtml = parts.join('<span style="color:#9ca3af">, </span>') || '—';
+      } else {
+        const color = afterColor(field, c.before?.[field], newVal);
+        afterHtml = `<span style="color:${color};font-weight:600">${fmtField(field, newVal)}</span>`;
+      }
+
       rows.push(`
         <tr>
           <td style="padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top;word-break:break-word">${label}</td>
           <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top;word-break:break-word">${before}</td>
           <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
-          <td style="padding:5px 0;width:35%;font-size:13px;font-weight:600;color:${color};vertical-align:top;word-break:break-word">${after}</td>
+          <td style="padding:5px 0;width:35%;font-size:13px;vertical-align:top;word-break:break-word">${afterHtml}</td>
         </tr>`);
     });
 
