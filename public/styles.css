@@ -104,6 +104,9 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--fon
 .filter:hover{border-color:var(--b3);color:var(--t2)}
 .filter.active{border-color:var(--green);color:var(--green);background:var(--green-bg)}
 .filter-div{width:1px;height:14px;background:var(--b2);margin:0 2px}
+.tag-sel{background:var(--white);border:1px solid var(--b1);border-radius:12px;font-size:11px;color:var(--t3);font-family:var(--font);padding:3px 8px;cursor:pointer;outline:none;transition:border-color .15s,color .15s;max-width:140px}
+.tag-sel:focus,.tag-sel:hover{border-color:var(--b3);color:var(--t2)}
+.tag-sel.active{border-color:var(--green);color:var(--green);background:var(--green-bg)}
 .bulk-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .bulk-lbl{font-size:12px;color:var(--green);font-weight:600;white-space:nowrap;margin-right:2px}
 .chip{padding:3px 10px;border-radius:12px;border:1px solid var(--b2);background:var(--white);font-size:11px;cursor:pointer;color:var(--t2);font-family:var(--font);transition:all .15s}

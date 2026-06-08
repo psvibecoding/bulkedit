@@ -16,7 +16,7 @@ let S = {
   mfDefs:[],         // metafield definitions from store
   collsCache:null,   // collections cache
   past:[], future:[],
-  filter:'all', searchQ:'',
+  filter:'all', searchQ:'', tagFilter:'',
   selectedVids: new Set(),
   bulkType: null,
   exportFields:['title','status','vendor','tags','variant','sku','price','compareAtPrice'],
@@ -112,7 +112,7 @@ async function loadProducts(q=''){
   try{
     const r=await api('/api/products',{query:q,first:50});
     S.products=r.products.map(normProd); S.originals=clone(S.products);
-    renderTable(); initExportFields();
+    renderTable(); initExportFields(); buildTagFilter();
     setStatus(`${S.products.length} products loaded`);
   }catch(e){ toast(e.message); setStatus('Load failed','dirty'); }
 }
@@ -139,13 +139,13 @@ function loadDemoMode(){
   S.mfDefs=DEMO_MF_DEFS;
   $('store-name').textContent='Demo Store';
   $('demo-banner').classList.remove('hidden');
-  renderTable(); initExportFields();
+  renderTable(); initExportFields(); buildTagFilter();
   showScreen('s-app');
   toast('Demo loaded — changes won\'t be saved.');
 }
 
 function disconnect(){
-  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,past:[],future:[],filter:'all',searchQ:'',bulkType:null});
+  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',bulkType:null});
   S.selectedVids=new Set();
   $('f-shop').value='';
   $('demo-banner').classList.add('hidden');
@@ -186,8 +186,17 @@ function getFiltered(){
     const hay=[p.title,p.vendor,(p.tags||[]).join(' '),v.title,v.sku].join(' ').toLowerCase();
     const ms=!terms.length||terms.some(t=>hay.includes(t));
     const mf=S.filter==='all'?true:S.filter==='changed'?!!S.changes[p.id]:p.status===S.filter;
-    return ms&&mf;
+    const mt=!S.tagFilter||(p.tags||[]).includes(S.tagFilter);
+    return ms&&mf&&mt;
   });
+}
+
+function buildTagFilter(){
+  const sel=$('tag-filter'); if(!sel)return;
+  const prev=S.tagFilter;
+  const tags=[...new Set(S.products.flatMap(p=>p.tags||[]))].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML='<option value="">All tags</option>'+tags.map(t=>`<option value="${esc(t)}"${t===prev?' selected':''}>${esc(t)}</option>`).join('');
+  if(!tags.includes(prev)) S.tagFilter='';
 }
 
 /* ── RENDER ── */
@@ -663,7 +672,11 @@ function boot(){
   // Search
   $('search').addEventListener('input', e=>{
     S.searchQ=e.target.value.trim(); renderTable();
-    if(S.searchQ.length>2){ clearTimeout(window._srt); window._srt=setTimeout(()=>loadProducts(S.searchQ.split(',')[0].trim()),400); }
+    if(!S.demo){
+      clearTimeout(window._srt);
+      if(S.searchQ.length>2)      window._srt=setTimeout(()=>loadProducts(S.searchQ.split(',')[0].trim()),400);
+      else if(S.searchQ.length===0) loadProducts('');
+    }
   });
   $('search').addEventListener('focus',()=>{ if(S.searchQ)buildSuggestions(); });
   $('search-suggest').addEventListener('mousedown',e=>{ const item=e.target.closest('.suggest-item'); if(!item)return; $('search').value=item.dataset.val; S.searchQ=item.dataset.val.toLowerCase(); $('search-suggest').classList.remove('open'); renderTable(); });
@@ -671,6 +684,11 @@ function boot(){
 
   // Filters
   document.querySelectorAll('.filter').forEach(btn=>btn.addEventListener('click',()=>setFilter(btn.dataset.f)));
+  $('tag-filter').addEventListener('change', e=>{
+    S.tagFilter=e.target.value;
+    $('tag-filter').classList.toggle('active', !!S.tagFilter);
+    renderTable();
+  });
 
   // Tabs
   document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
