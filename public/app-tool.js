@@ -262,15 +262,19 @@ function rowHTML(p,v){
   const tagsHTML=(p.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
   const mfHTML=buildMfHTML(p,v);
   const shopUrl=shopifyAdminUrl(p.id);
-  const priceBadge=schedList.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">→ new price $${Number(b.vf.price).toFixed(2)}</div>`).join('');
-  const catBadge=schedList.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?`$${Number(b.vf.compareAtPrice).toFixed(2)}`:'removed';return`<div class="sched-val-badge">→ compare at ${esc(val)}</div>`;}).join('');
-  const statusBadge=schedList.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">→ ${esc(b.pf.status)}</div>`).join('');
-  const vendorBadge=schedList.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">→ ${esc(b.pf.vendor||'(none)')}</div>`).join('');
+  const priceBadge=schedList.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">new price $${Number(b.vf.price).toFixed(2)} scheduled</div>`).join('');
+  const catBadge=schedList.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?`$${Number(b.vf.compareAtPrice).toFixed(2)}`:'removed';return`<div class="sched-val-badge">compare at ${esc(val)} scheduled</div>`;}).join('');
+  const statusBadge=schedList.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">${esc(b.pf.status)} scheduled</div>`).join('');
+  const vendorBadge=schedList.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('');
   const tagsBadge=schedList.filter(b=>b.pf.tags!==undefined).map(b=>{
     const cur=p.tags||[];
     const nxt=Array.isArray(b.pf.tags)?b.pf.tags:String(b.pf.tags).split(',').map(t=>t.trim()).filter(Boolean);
-    const cls2=nxt.length<cur.length?'sched-val-badge-red':'sched-val-badge';
-    return`<div class="${cls2}">→ ${esc(nxt.join(', ')||'(no tags)')}</div>`;
+    const added=nxt.filter(t=>!cur.includes(t));
+    const removed=cur.filter(t=>!nxt.includes(t));
+    const parts=[];
+    if(added.length) parts.push(`<div class="sched-val-badge">+ ${esc(added.join(', '))} scheduled</div>`);
+    if(removed.length) parts.push(`<div class="sched-val-badge-red">- ${esc(removed.join(', '))} scheduled</div>`);
+    return parts.join('');
   }).join('');
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
