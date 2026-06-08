@@ -225,6 +225,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
   const productBlocks = (sched.changes || []).map(c => {
     const prodTitle = c.productTitle || c.productId.split('/').pop();
+    const imgUrl    = c.productImage || '';
     const rows = [];
 
     // Product-level field changes with before/after
@@ -279,10 +280,19 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       ? `<table style="width:100%;border-collapse:collapse;margin-top:8px">${rows.join('')}</table>`
       : `<div style="font-size:13px;color:#9ca3af;margin-top:6px">—</div>`;
 
+    const imgBlock = imgUrl
+      ? `<img src="${imgUrl}" width="44" height="44" alt="" style="width:44px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #f0f0ec;flex-shrink:0"/>`
+      : `<div style="width:44px;height:44px;border-radius:8px;background:#f0f0ec;flex-shrink:0"></div>`;
+
     return `
       <div style="padding:18px 0;border-bottom:1px solid #f0f0ec">
-        <div style="font-size:14px;font-weight:600;color:#0e0e0c;letter-spacing:-.01em">${prodTitle}</div>
-        ${innerTable}
+        <table style="border-collapse:collapse;width:100%"><tr>
+          <td style="vertical-align:top;padding-right:14px;width:44px">${imgBlock}</td>
+          <td style="vertical-align:top">
+            <div style="font-size:14px;font-weight:600;color:#0e0e0c;letter-spacing:-.01em;margin-bottom:2px">${prodTitle}</div>
+            ${innerTable}
+          </td>
+        </tr></table>
       </div>`;
   }).join('');
 
@@ -370,6 +380,12 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
     </div>
 
     ${revertBanner}
+
+    <!-- Feedback nudge -->
+    <div style="margin:8px 40px 0;background:#f9f9f7;border-radius:12px;padding:16px 20px;text-align:center">
+      <p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.5">Enjoying BulkEdit? We're in early access and your opinion shapes what we build next.</p>
+      <a href="https://tally.so/r/D4abPX" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px">Share feedback — 1 question →</a>
+    </div>
 
     <!-- Footer -->
     <div style="margin:8px 40px 0;padding:20px 0;border-top:1px solid #f3f3f1">

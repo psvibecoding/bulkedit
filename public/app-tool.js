@@ -836,7 +836,7 @@ async function confirmSchedule(){
         const ov=(orig.variants?.nodes||[]).find(v=>v.id===varId);
         if(ov) variantsBefore[varId]={title:ov.title,price:ov.price,compareAtPrice:ov.compareAtPrice};
       });
-      return{...c, productTitle:prod?.title||'', before, variantsBefore};
+      return{...c, productTitle:prod?.title||'', productImage:prod?.featuredImage?.url||'', before, variantsBefore};
     });
 
     const r=await api('/api/schedule/create',{
@@ -862,7 +862,7 @@ async function confirmSchedule(){
             const ov=(S.originals.find(p=>p.id===c.productId)?.variants?.nodes||[]).find(v=>v.id===varId);
             if(sv) variantsBefore[varId]={title:ov?.title||'',price:sv.price,compareAtPrice:sv.compareAtPrice};
           });
-          return{...c, productTitle:prod?.title||'', before, variantsBefore};
+          return{...c, productTitle:prod?.title||'', productImage:prod?.featuredImage?.url||'', before, variantsBefore};
         });
         const r2=await api('/api/schedule/create',{
           scheduledFor:revertAt.toISOString(),
