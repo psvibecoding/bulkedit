@@ -306,9 +306,10 @@ input[type="checkbox"]{width:13px;height:13px;accent-color:var(--green);cursor:p
 .alt-inp:focus{border-color:var(--green);box-shadow:0 0 0 2px var(--green-bg);outline:none}
 
 /* SEO inline inputs */
-.seo-row{display:flex;gap:4px;margin-top:3px}
-.seo-inp{font-size:11px!important;padding:3px 6px!important;color:var(--t3)!important}
+.seo-row{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+.seo-inp{font-size:11px!important;padding:3px 6px!important;color:var(--t3)!important;width:100%}
 .seo-inp:focus{color:var(--tx)!important}
+.seo-inp[data-field="seo-desc"]{color:var(--t4)!important}
 .seo-missing{display:inline-flex;align-items:center;font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:3px;background:#fef3c7;color:#d97706;border:1px solid #fde68a;margin-left:4px;cursor:default}
 
 /* Metafield boolean */
