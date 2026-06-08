@@ -261,16 +261,33 @@ async function executeSchedule(sched, schedules) {
   writeSchedules(schedules);
 }
 
+let _schedRunning = false;
 async function runDueSchedules() {
-  if (!SCHED_SECRET) return;
-  const schedules = readSchedules();
-  const due = schedules.filter(s => s.status === 'pending' && new Date(s.scheduledFor) <= new Date());
-  if (!due.length) return;
-  console.log(`[scheduler] Running ${due.length} due schedule(s)`);
-  for (const s of due) await executeSchedule(s, schedules);
+  if (!SCHED_SECRET || _schedRunning) return;
+  _schedRunning = true;
+  try {
+    const schedules = readSchedules();
+    const due = schedules.filter(s => s.status === 'pending' && new Date(s.scheduledFor) <= new Date());
+    if (due.length) {
+      console.log(`[scheduler] ${due.length} due schedule(s)`);
+      for (const s of due) await executeSchedule(s, schedules);
+    }
+  } finally { _schedRunning = false; }
 }
 
-setInterval(() => runDueSchedules().catch(e => console.error('[scheduler]', e.message)), 60_000).unref();
+// Primary: check every 30s — no .unref() so it always fires
+setInterval(() => runDueSchedules().catch(e => console.error('[scheduler]', e.message)), 30_000);
+// Also run immediately on startup
+runDueSchedules().catch(e => console.error('[scheduler] startup:', e.message));
+
+// Debounced trigger: also run on any authenticated API request (catches server wakeups)
+let _lastSchedCheck = 0;
+function maybeRunSchedules() {
+  const now = Date.now();
+  if (now - _lastSchedCheck < 30_000) return;
+  _lastSchedCheck = now;
+  runDueSchedules().catch(() => {});
+}
 
 // Serve /app
 app.get('/app', (req, res) => {
@@ -332,6 +349,9 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
 });
 
 // ── API ───────────────────────────────────────────────────
+// Piggyback schedule check on every API call (catches server wakeups from sleep)
+app.use('/api/', (req, res, next) => { maybeRunSchedules(); next(); });
+
 app.post('/api/test', apiLimiter, async (req, res) => {
   try {
     const s = getSession(req);
@@ -612,4 +632,5 @@ app.use((err, req, res, _n) => res.status(err.status || 500).json({ ok: false, e
 app.listen(PORT, () => {
   console.log(`BulkEdit on http://localhost:${PORT}`);
   console.log(`OAuth: ${SHOPIFY_CLIENT_ID ? 'OK' : 'NOT configured'}`);
+  console.log(`Scheduling: ${SCHED_SECRET ? `OK — file: ${SCHED_FILE}` : 'DISABLED (set SCHED_SECRET)'}`);
 });
