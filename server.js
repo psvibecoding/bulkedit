@@ -565,9 +565,17 @@ app.get('/api/schedule/ping', async (req, res) => {
   const after = readSchedules();
   const fileExists   = (() => { try { return fs.existsSync(SCHED_FILE); } catch { return false; } })();
   const dirWritable  = schedFileStatus() === 'writable';
+  const now = new Date();
+  const pendingList = after
+    .filter(s => s.status === 'pending')
+    .map(({ id, label, scheduledFor }) => ({
+      id, label, scheduledFor,
+      overdue: new Date(scheduledFor) <= now,
+      secondsUntilDue: Math.round((new Date(scheduledFor) - now) / 1000),
+    }));
   res.json({
     ok: true,
-    ts: new Date().toISOString(),
+    ts: now.toISOString(),
     schedEnabled: !!SCHED_SECRET,
     schedFile: SCHED_FILE,
     fileExists,
@@ -577,6 +585,7 @@ app.get('/api/schedule/ping', async (req, res) => {
     executedSchedules: after.filter(s => s.status === 'executed').length,
     failedSchedules:   after.filter(s => s.status === 'failed').length,
     justExecuted:      pendingBefore - after.filter(s => s.status === 'pending').length,
+    pending: pendingList,
   });
 });
 
