@@ -15,6 +15,7 @@ let S = {
   products:[], originals:[], changes:{},
   mfDefs:[],
   collsCache:null,
+  locations:null,
   past:[], future:[],
   filter:'all', searchQ:'', tagFilter:'',
   selectedVids: new Set(),
@@ -36,37 +37,37 @@ const DEMO_PRODUCTS = [
   { id:'gid://shopify/Product/1', title:'Merino Wool Crew Neck Sweater', status:'ACTIVE', vendor:'NordWear', tags:['knitwear','winter','new-arrivals'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, metafields:{ nodes:[{ namespace:'custom', key:'material', type:'single_line_text_field', value:'100% Merino Wool' }] } },
-      { id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, inventoryItem:{id:'gid://shopify/InventoryItem/11'}, metafields:{ nodes:[{ namespace:'custom', key:'material', type:'single_line_text_field', value:'100% Merino Wool' }] } },
+      { id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, inventoryItem:{id:'gid://shopify/InventoryItem/12'}, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/13', title:'L', sku:'NW-MERINO-L', price:'89.00', compareAtPrice:'', inventoryQuantity:28, inventoryItem:{id:'gid://shopify/InventoryItem/13'}, metafields:{ nodes:[] } },
     ]}},
   { id:'gid://shopify/Product/2', title:'Leather Crossbody Bag — Tan', status:'ACTIVE', vendor:'StudioLeather', tags:['bags','accessories','sale'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, metafields:{ nodes:[{ namespace:'custom', key:'campaign_label', type:'single_line_text_field', value:'Summer Sale' }] } },
+      { id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, inventoryItem:{id:'gid://shopify/InventoryItem/21'}, metafields:{ nodes:[{ namespace:'custom', key:'campaign_label', type:'single_line_text_field', value:'Summer Sale' }] } },
     ]}},
   { id:'gid://shopify/Product/3', title:'Organic Cotton Oversized Tee', status:'ACTIVE', vendor:'EarthBasics', tags:['apparel','sustainable','basics'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,  metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/32', title:'S / White',  sku:'EB-TEE-S-WHT',  price:'34.00', compareAtPrice:'', inventoryQuantity:55, metafields:{ nodes:[] } },
-      { id:'gid://shopify/ProductVariant/33', title:'M / Black',  sku:'EB-TEE-M-BLK',  price:'34.00', compareAtPrice:'', inventoryQuantity:40, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,  inventoryItem:{id:'gid://shopify/InventoryItem/31'}, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/32', title:'S / White',  sku:'EB-TEE-S-WHT',  price:'34.00', compareAtPrice:'', inventoryQuantity:55, inventoryItem:{id:'gid://shopify/InventoryItem/32'}, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/33', title:'M / Black',  sku:'EB-TEE-M-BLK',  price:'34.00', compareAtPrice:'', inventoryQuantity:40, inventoryItem:{id:'gid://shopify/InventoryItem/33'}, metafields:{ nodes:[] } },
     ]}},
   { id:'gid://shopify/Product/4', title:'Ceramic Pour-Over Coffee Set', status:'DRAFT', vendor:'KitchenStudio', tags:['kitchen','coffee','gifts'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/41', title:'White',       sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, metafields:{ nodes:[{ namespace:'seo', key:'custom_title', type:'single_line_text_field', value:'' }] } },
-      { id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/41', title:'White',       sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, inventoryItem:{id:'gid://shopify/InventoryItem/41'}, metafields:{ nodes:[{ namespace:'seo', key:'custom_title', type:'single_line_text_field', value:'' }] } },
+      { id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, inventoryItem:{id:'gid://shopify/InventoryItem/42'}, metafields:{ nodes:[] } },
     ]}},
   { id:'gid://shopify/Product/5', title:'Natural Rubber Yoga Mat 6mm', status:'ACTIVE', vendor:'MoveWell', tags:['fitness','yoga','eco'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=80&q=70' },
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, metafields:{ nodes:[{ namespace:'custom', key:'thickness_mm', type:'number_integer', value:'6' }] } },
+      { id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, inventoryItem:{id:'gid://shopify/InventoryItem/51'}, metafields:{ nodes:[{ namespace:'custom', key:'thickness_mm', type:'number_integer', value:'6' }] } },
     ]}},
   { id:'gid://shopify/Product/6', title:'Linen Duvet Cover Set — King', status:'ARCHIVED', vendor:'HomeTextile', tags:['bedding','linen','home'],
     featuredImage:null,
     variants:{ nodes:[
-      { id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, metafields:{ nodes:[] } },
+      { id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, inventoryItem:{id:'gid://shopify/InventoryItem/61'}, metafields:{ nodes:[] } },
     ]}},
 ];
 
@@ -202,7 +203,7 @@ function normProd(p){
     featuredImage: p.featuredImage||null,
     seo: p.seo||{title:'',description:''},
     metafields: { nodes: p.metafields?.nodes||[] },
-    variants:{ nodes:(p.variants?.nodes||[]).map(v=>({...v, metafields:{nodes:v.metafields?.nodes||[]}})) }
+    variants:{ nodes:(p.variants?.nodes||[]).map(v=>({...v, inventoryItem:v.inventoryItem||null, metafields:{nodes:v.metafields?.nodes||[]}})) }
   };
 }
 
@@ -247,7 +248,7 @@ function disconnect(){
   sessionStorage.removeItem('be_shop');
   sessionStorage.removeItem('be_token');
   sessionStorage.removeItem('be_cache');
-  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
+  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
   const lm=document.getElementById('load-more-wrap'); if(lm)lm.style.display='none';
   S.selectedVids=new Set();
   $('f-shop').value='';
@@ -279,8 +280,22 @@ document.addEventListener('keydown',e=>{
 /* ── LOOKUP ── */
 function getProd(id){ return S.products.find(p=>p.id===id); }
 function getVar(vid){ for(const p of S.products){ const v=p.variants.nodes.find(v=>v.id===vid); if(v)return{p,v}; } return{}; }
-function ensureC(pid){ if(!S.changes[pid])S.changes[pid]={productId:pid,product:{},variants:{},metafields:[]}; return S.changes[pid]; }
+function getOrigV(pid,vid){ return S.originals.find(p=>p.id===pid)?.variants?.nodes?.find(v=>v.id===vid)||null; }
+function ensureC(pid){ if(!S.changes[pid])S.changes[pid]={productId:pid,product:{},variants:{},metafields:[],inventory:{}}; return S.changes[pid]; }
 function prodImg(p){ return p.featuredImage?.url||null; }
+function applyPriceRule(current,rule,value){
+  const p=parseFloat(current)||0, v=parseFloat(value)||0;
+  switch(rule){
+    case 'set':      return Math.max(0,v).toFixed(2);
+    case 'pct-up':   return (p*(1+v/100)).toFixed(2);
+    case 'pct-down': return Math.max(0,p*(1-v/100)).toFixed(2);
+    case 'amt-up':   return Math.max(0,p+v).toFixed(2);
+    case 'amt-down': return Math.max(0,p-v).toFixed(2);
+    case 'round99':  return p===0?'0.00':Math.max(0.99,Math.ceil(p)-0.01).toFixed(2);
+    case 'round00':  return Math.round(p).toFixed(2);
+    default:         return p.toFixed(2);
+  }
+}
 
 /* ── FILTER/SEARCH ── */
 function buildShopifyQuery(q){
@@ -312,7 +327,7 @@ function buildTagFilter(){
 /* ── RENDER ── */
 function renderTable(){
   const rows=getFiltered(); const tbody=$('tbody');
-  if(!rows.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; return; }
+  if(!rows.length){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; return; }
   tbody.innerHTML=rows.map(({p,v})=>rowHTML(p,v)).join('');
   updateSaveBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview();
 }
@@ -365,6 +380,7 @@ function rowHTML(p,v){
 <td><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"></td>
 <td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}">${priceBadge}</td>
 <td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}">${catBadge}</td>
+<td><input class="ce ce-num" type="number" min="0" step="1" data-vid="${esc(v.id)}" data-vf="inventoryQuantity" value="${esc(String(v.inventoryQuantity??0))}"></td>
 <td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
 </tr>`;
 }
@@ -437,7 +453,7 @@ function initColResize(){
   const table=document.querySelector('table'); if(!table)return;
   table.style.tableLayout='fixed';
   const ths=[...document.querySelectorAll('thead th')];
-  const widths=[34,44,240,90,110,160,110,100,82,90,220];
+  const widths=[34,44,240,90,110,160,110,100,82,90,72,220];
   ths.forEach((th,i)=>{
     th.style.width=(widths[i]||100)+'px';
     if(i<2)return;
@@ -518,8 +534,17 @@ function markAltText(el){
 function markVar(vid,field,value,el){
   const{p,v}=getVar(vid); if(!p||!v)return;
   pushH(`Edit ${field}`);
-  v[field]=value;
   const c=ensureC(p.id);
+  if(field==='inventoryQuantity'){
+    const qty=parseInt(value,10);
+    if(isNaN(qty)||qty<0)return;
+    v.inventoryQuantity=qty;
+    if(!c.inventory)c.inventory={};
+    c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',quantity:qty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
+    if(el){ el.classList.add('dirty'); addModChip(el); }
+    updateSaveBtn(); return;
+  }
+  v[field]=value;
   if(!c.variants[vid])c.variants[vid]={id:vid};
   c.variants[vid][field]=value;
   if(el){ el.classList.add('dirty'); addModChip(el); }
@@ -669,7 +694,14 @@ function openBulkModal(type){
   if(type==='status'){
     body.innerHTML=`<div class="bulk-field"><label>New status</label><select id="bv-status"><option value="ACTIVE">● Active</option><option value="DRAFT">○ Draft</option><option value="ARCHIVED">⊘ Archived</option></select></div>`;
   }else if(type==='price'){
-    body.innerHTML=`<div class="bulk-field"><label>New price</label><input id="bv-price" type="number" step=".01" min="0" placeholder="0.00" autofocus></div>`;
+    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-price-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount ($)</option><option value="amt-down">Decrease by amount ($)</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option></select></div><div class="bulk-field" id="bv-price-val-wrap"><label id="bv-price-val-lbl">New price ($)</label><input id="bv-price-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="checkbox" id="bv-also-compare"> Also apply to Compare at price</label></div>`;
+    body.querySelector('#bv-price-rule').addEventListener('change',e=>{
+      const rule=e.target.value;
+      const wrap=$('bv-price-val-wrap'),lbl=$('bv-price-val-lbl');
+      const isRound=rule==='round99'||rule==='round00';
+      if(wrap)wrap.style.display=isRound?'none':'';
+      if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount ($)';}
+    });
   }else if(type==='tags'){
     body.innerHTML=`<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
   }else if(type==='metafield'){
@@ -709,12 +741,27 @@ function applyBulkModal(){
     pids.forEach(pid=>{const p=getProd(pid);if(!p)return;p.status=val;ensureC(pid).product.status=val;});
     renderTable(); updateSaveBtn(); toast(`Status set on ${pids.length} products.`);
   }else if(type==='price'){
-    const val=$('bv-price')?.value; const n=Number(val);
-    if(!val||isNaN(n)||n<0)return toast('Enter a valid price.');
+    const rule=$('bv-price-rule')?.value||'set';
+    const isRound=rule==='round99'||rule==='round00';
+    const val=$('bv-price-val')?.value;
+    const n=isRound?0:Number(val);
+    if(!isRound&&(val===''||val==null||isNaN(n)))return toast('Enter a valid number.');
+    const alsoCompare=$('bv-also-compare')?.checked;
     const vids=[...S.selectedVids];
-    pushH(`Bulk price → ${n.toFixed(2)}`);
-    vids.forEach(vid=>{const{p,v}=getVar(vid);if(!p||!v)return;v.price=n.toFixed(2);const c=ensureC(p.id);if(!c.variants[vid])c.variants[vid]={id:vid};c.variants[vid].price=v.price;});
-    renderTable(); updateSaveBtn(); toast(`Price set on ${vids.length} variants.`);
+    pushH(`Bulk price rule: ${rule}`);
+    vids.forEach(vid=>{
+      const{p,v}=getVar(vid); if(!p||!v)return;
+      const newPrice=applyPriceRule(v.price,rule,n);
+      v.price=newPrice;
+      const c=ensureC(p.id);
+      if(!c.variants[vid])c.variants[vid]={id:vid};
+      c.variants[vid].price=newPrice;
+      if(alsoCompare&&v.compareAtPrice){
+        const newCat=applyPriceRule(v.compareAtPrice,rule,n);
+        v.compareAtPrice=newCat; c.variants[vid].compareAtPrice=newCat;
+      }
+    });
+    renderTable(); updateSaveBtn(); toast(`Price updated on ${vids.length} variant${vids.length!==1?'s':''}.`);
   }else if(type==='tags'){
     const tag=$('bv-tag')?.value.trim(); const action=$('bv-tag-action')?.value;
     if(!tag)return toast('Enter a tag.');
@@ -861,6 +908,10 @@ function openSaveModal(){
       });
     });
     if((c.metafields||[]).length)diffs.push(`<div class="diff-row"><span class="diff-field">metafields</span><span class="diff-new">${c.metafields.length} change${c.metafields.length!==1?'s':''}</span></div>`);
+    Object.entries(c.inventory||{}).forEach(([vid,inv])=>{
+      const vLbl=p.variants.nodes.find(x=>x.id===vid)?.title||'variant';
+      diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} inventory</span><span class="diff-old">${esc(String(inv.oldQuantity))}</span><span class="diff-arr">→</span><span class="diff-new">${esc(String(inv.quantity))}</span></div>`);
+    });
     return `<div class="diff-item"><div class="diff-item-head">${imgEl}<span class="diff-title">${esc(p.title)}</span></div><div class="diff-rows">${diffs.length?diffs.join(''):'<span style="font-size:11px;color:var(--t3)">Variant / metafield changes</span>'}</div></div>`;
   }).join('');
   openModal('m-save');
@@ -872,10 +923,25 @@ async function confirmSave(){
   setStatus('Saving…','saving');
   try{
     if(S.demo){ await delay(600); }
-    else{ for(const c of payloads){
-      const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
-      await api('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});
-    }}
+    else{
+      for(const c of payloads){
+        const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
+        await api('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});
+      }
+      // Inventory changes — separate API (requires location ID)
+      const invItems=[];
+      for(const c of payloads){
+        Object.entries(c.inventory||{}).forEach(([_vid,inv])=>{
+          if(inv.inventoryItemId) invItems.push({inventoryItemId:inv.inventoryItemId,quantity:inv.quantity});
+        });
+      }
+      if(invItems.length){
+        if(!S.locations){const lr=await api('/api/locations');S.locations=lr.locations||[];}
+        const loc=S.locations[0];
+        if(!loc)throw new Error('No active inventory location found in your Shopify store.');
+        await api('/api/inventory-set',{locationId:loc.id,quantities:invItems});
+      }
+    }
     const n=payloads.length;
     S.changes={}; S.past=[]; S.future=[];
     S.originals=clone(S.products);
@@ -914,6 +980,10 @@ function buildRecap(payloads){
     (c.metafields||[]).forEach(mf=>{
       const vLbl=mf.ownerId===c.productId?'':p.variants.nodes.find(v=>v.id===mf.ownerId)?.title||'';
       rows.push([title,vLbl,`${mf.namespace}.${mf.key}`,'',mf.value??'']);
+    });
+    Object.entries(c.inventory||{}).forEach(([vid,inv])=>{
+      const vLbl=p.variants.nodes.find(v=>v.id===vid)?.title||'';
+      rows.push([title,vLbl,'inventoryQuantity',String(inv.oldQuantity),String(inv.quantity)]);
     });
   });
   return rows.map(r=>r.map(v=>csvQuote(String(v??''))).join(',')).join('\n');
