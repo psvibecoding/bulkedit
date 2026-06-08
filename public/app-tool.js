@@ -166,6 +166,14 @@ async function loadProducts(q='', append=false){
   }catch(e){ toast(e.message); setStatus('Load failed','dirty'); }
 }
 
+async function loadAllProducts(q=''){
+  while(S.pageInfo.hasNextPage){
+    setStatus(`Loading… ${S.products.length} products, fetching more…`);
+    await loadProducts(q, true);
+  }
+  setStatus(`${S.products.length} product${S.products.length!==1?'s':''} loaded`);
+}
+
 function renderLoadMore(){
   let wrap=document.getElementById('load-more-wrap');
   if(!wrap){
@@ -173,8 +181,8 @@ function renderLoadMore(){
     wrap.id='load-more-wrap';
     wrap.style.cssText='padding:12px 16px;border-top:1px solid var(--b1);display:flex;justify-content:center';
     const btn=document.createElement('button');
-    btn.className='btn-ghost sm'; btn.textContent='Load more products ↓';
-    btn.addEventListener('click',()=>loadProducts(S.searchQ,true));
+    btn.className='btn-ghost sm'; btn.textContent='Load all products ↓';
+    btn.addEventListener('click',()=>loadAllProducts(S.searchQ));
     wrap.appendChild(btn);
     document.querySelector('.table-scroll')?.after(wrap);
   }
@@ -223,8 +231,11 @@ async function refreshInBackground(){
   try{
     const t=await api('/api/test');
     $('store-name').textContent=t.shop.name;
-    await Promise.all([loadProducts(),loadMfDefs()]);
-    saveProductsCache(t.shop.name);
+    // Only refresh if no unsaved changes (avoid overwriting user's work)
+    if(Object.keys(S.changes).length===0){
+      await Promise.all([loadProducts(),loadMfDefs()]);
+      saveProductsCache(t.shop.name);
+    }
   }catch{
     sessionStorage.removeItem('be_shop'); sessionStorage.removeItem('be_token'); sessionStorage.removeItem('be_cache');
     showScreen('s-connect'); toast('Session expired — please reconnect.');
@@ -569,7 +580,15 @@ function toggleRowSel(vid,checked){
   const row=document.querySelector(`tr[data-vid="${vid}"]`);
   if(row)row.classList.toggle('r-selected',checked);
 }
-function toggleAll(checked){ document.querySelectorAll('.row-chk').forEach(cb=>{cb.checked=checked;toggleRowSel(cb.dataset.vid,checked);}); }
+async function toggleAll(checked){
+  if(checked && S.pageInfo.hasNextPage){
+    const chkAll=$('chk-all');
+    if(chkAll){chkAll.disabled=true;chkAll.indeterminate=true;}
+    await loadAllProducts(S.searchQ);
+    if(chkAll){chkAll.disabled=false;chkAll.indeterminate=false;chkAll.checked=true;}
+  }
+  document.querySelectorAll('.row-chk').forEach(cb=>{cb.checked=checked;toggleRowSel(cb.dataset.vid,checked);});
+}
 function updateBulkBar(){
   const n=S.selectedVids.size;
   $('bulk-bar').classList.toggle('hidden',n===0);
