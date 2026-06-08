@@ -768,7 +768,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
             variants(first:100) {
               nodes {
                 id title sku price compareAtPrice inventoryQuantity
-                inventoryItem { id }
+                inventoryItem { id inventoryLevels(first:5) { nodes { location { id } } } }
                 metafields(first:50) { nodes { id namespace key type value } }
               }
             }
@@ -814,15 +814,14 @@ app.post('/api/locations', apiLimiter, async (req, res) => {
 app.post('/api/inventory-set', apiLimiter, writeLimiter, async (req, res) => {
   try {
     const s = getSession(req);
-    const { locationId, quantities } = req.body || {};
-    if (!locationId) throw new Error('Missing locationId');
-    gid(locationId, 'Location');
+    const { quantities } = req.body || {};
     if (!Array.isArray(quantities) || !quantities.length || quantities.length > 100) throw new Error('Invalid quantities');
     const items = quantities.map(q => {
       gid(q.inventoryItemId, 'InventoryItem');
+      gid(q.locationId, 'Location');
       const qty = Math.floor(Number(q.quantity));
       if (!Number.isFinite(qty) || qty < 0 || qty > 999999) throw new Error('Invalid quantity');
-      return { inventoryItemId: q.inventoryItemId, locationId, quantity: qty };
+      return { inventoryItemId: q.inventoryItemId, locationId: q.locationId, quantity: qty };
     });
     const d = await gql(s, `
       mutation InventorySet($input: InventorySetQuantitiesInput!) {
