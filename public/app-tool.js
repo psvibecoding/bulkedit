@@ -128,6 +128,7 @@ async function loadMfDefs(){
 function normProd(p){
   return { ...p,
     featuredImage: p.featuredImage||null,
+    metafields: { nodes: p.metafields?.nodes||[] },
     variants:{ nodes:(p.variants?.nodes||[]).map(v=>({...v, metafields:{nodes:v.metafields?.nodes||[]}})) }
   };
 }
@@ -205,7 +206,7 @@ function rowHTML(p,v){
   const stCls={ACTIVE:'ACTIVE',DRAFT:'DRAFT',ARCHIVED:'ARCHIVED'}[p.status]||'DRAFT';
   const stLbl={ACTIVE:'● Active',DRAFT:'○ Draft',ARCHIVED:'⊘ Archived'}[p.status]||p.status;
   const tagsHTML=(p.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
-  const mfHTML=buildMfHTML(v);
+  const mfHTML=buildMfHTML(p,v);
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
@@ -222,32 +223,31 @@ function rowHTML(p,v){
 }
 
 /* ── METAFIELD RENDERING ── */
-function getMfLabel(ns, key){
-  const def=S.mfDefs.find(d=>d.namespace===ns&&d.key===key);
-  return def ? def.name : key.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+function defRow(def, ownerId, currentVal){
+  return `<div class="mf-def-row">
+    <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
+    <input class="mf-val-inp" placeholder="—"
+      data-owner-id="${esc(ownerId)}" data-owner-type="${esc(def.ownerType)}"
+      data-ns="${esc(def.namespace)}" data-key="${esc(def.key)}" data-type="${esc(def.type||'single_line_text_field')}"
+      data-mf="smart" value="${esc(currentVal)}">
+  </div>`;
 }
 
-function buildMfHTML(v){
-  // If we have store definitions — show only defined fields with readable names
+function buildMfHTML(p, v){
   if(S.mfDefs.length){
-    const rows=S.mfDefs.map((def,i)=>{
-      const existing=v.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key);
-      const val=existing?.value??'';
-      return `<div class="mf-def-row">
-        <span class="mf-def-label" title="${esc(def.namespace)}.${esc(def.key)}">${esc(def.name)}</span>
-        <input class="mf-val-inp" placeholder="—"
-          data-vid="${esc(v.id)}" data-ns="${esc(def.namespace)}" data-key="${esc(def.key)}" data-type="${esc(def.type||'single_line_text_field')}"
-          data-mf="smart" value="${esc(val)}">
-      </div>`;
-    }).join('');
-    return rows || `<span class="mf-empty">No definitions</span>`;
+    const productDefs  = S.mfDefs.filter(d=>d.ownerType==='PRODUCT');
+    const variantDefs  = S.mfDefs.filter(d=>d.ownerType==='PRODUCTVARIANT');
+    const html =
+      productDefs.map(def  => defRow(def, p.id, p.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key)?.value??'')).join('') +
+      variantDefs.map(def  => defRow(def, v.id, v.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key)?.value??'')).join('');
+    return html || `<span class="mf-empty">No definitions</span>`;
   }
-  // Fallback — show existing metafields raw + add button
+  // Fallback raw mode
   if(!v.metafields.nodes.length) return `<span class="mf-empty" style="font-size:11px;color:var(--t4)">—</span><button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
   return v.metafields.nodes.map((m,i)=>`<div class="mf-row">
-<input class="mf-inp" placeholder="ns" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="namespace" value="${esc(m.namespace||'custom')}">
-<input class="mf-inp" placeholder="key" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="key" value="${esc(m.key||'')}">
-<input class="mf-inp" placeholder="value" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="value" value="${esc(m.value||'')}">
+<input class="mf-inp" placeholder="ns"    data-vid="${esc(v.id)}" data-idx="${i}" data-mf="namespace" value="${esc(m.namespace||'custom')}">
+<input class="mf-inp" placeholder="key"   data-vid="${esc(v.id)}" data-idx="${i}" data-mf="key"       value="${esc(m.key||'')}">
+<input class="mf-inp" placeholder="value" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="value"     value="${esc(m.value||'')}">
 <button class="mf-del" data-vid="${esc(v.id)}" data-idx="${i}">×</button>
 </div>`).join('')+`<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
 }
@@ -295,17 +295,30 @@ function markVar(vid,field,value,el){
   updateSaveBtn();
 }
 function markMfSmart(el){
-  const{p,v}=getVar(el.dataset.vid); if(!p||!v)return;
+  const ownerId=el.dataset.ownerId, ownerType=el.dataset.ownerType;
   const ns=el.dataset.ns, key=el.dataset.key, type=el.dataset.type, val=el.value;
   pushH(`Edit metafield ${key}`);
-  const existing=v.metafields.nodes.find(m=>m.namespace===ns&&m.key===key);
+
+  let p, ownerNodes;
+  if(ownerType==='PRODUCT'){
+    p=getProd(ownerId); if(!p)return;
+    ownerNodes=p.metafields.nodes;
+  } else {
+    const r=getVar(ownerId); p=r.p; if(!p||!r.v)return;
+    ownerNodes=r.v.metafields.nodes;
+  }
+
+  const existing=ownerNodes.find(m=>m.namespace===ns&&m.key===key);
   if(existing) existing.value=val;
-  else v.metafields.nodes.push({namespace:ns,key,type,value:val});
+  else ownerNodes.push({namespace:ns,key,type,value:val});
+
   const c=ensureC(p.id);
-  c.metafields=c.metafields.filter(m=>!(m.ownerId===el.dataset.vid&&m.namespace===ns&&m.key===key));
-  if(val!=='') c.metafields.push({ownerId:el.dataset.vid,namespace:ns,key,type,value:val});
-  if(el)el.classList.add('dirty');
-  updateSaveBtn();
+  c.metafields=c.metafields.filter(m=>!(m.ownerId===ownerId&&m.namespace===ns&&m.key===key));
+  if(val!=='') c.metafields.push({ownerId,namespace:ns,key,type,value:val});
+  if(el) el.classList.add('dirty');
+  // Re-render se product-level: lo stesso metafield appare su ogni riga variante
+  if(ownerType==='PRODUCT') renderTable();
+  else updateSaveBtn();
 }
 function markMfRaw(el){
   const{p,v}=getVar(el.dataset.vid); if(!p||!v)return;
@@ -357,17 +370,17 @@ function rerenderTags(pid,tags){
   cell.innerHTML=tags.map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(pid)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(pid)}">+</span>`;
 }
 function addMfRaw(vid){
-  const{v}=getVar(vid); if(!v)return;
+  const{p,v}=getVar(vid); if(!p||!v)return;
   pushH('Add metafield');
   v.metafields.nodes.push({namespace:'custom',key:'',type:'single_line_text_field',value:''});
-  const cell=$(`mf-${vid}`); if(cell)cell.innerHTML=buildMfHTML(v);
+  const cell=$(`mf-${vid}`); if(cell)cell.innerHTML=buildMfHTML(p,v);
 }
 function removeMfRaw(vid,idx){
   const{p,v}=getVar(vid); if(!p||!v)return;
   pushH('Remove metafield');
   v.metafields.nodes.splice(idx,1);
   const c=ensureC(p.id); c.metafields=c.metafields.filter(x=>!(x.ownerId===vid&&x._idx===idx));
-  const cell=$(`mf-${vid}`); if(cell)cell.innerHTML=buildMfHTML(v);
+  const cell=$(`mf-${vid}`); if(cell)cell.innerHTML=buildMfHTML(p,v);
   updateSaveBtn();
 }
 
