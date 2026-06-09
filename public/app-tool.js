@@ -1545,8 +1545,6 @@ function boot(){
   $('btn-demo-exit').addEventListener('click', disconnect);
 
   // Topbar
-  $('btn-undo').addEventListener('click', undo);
-  $('btn-redo').addEventListener('click', redo);
   $('btn-disconnect').addEventListener('click', disconnect);
   $('btn-save').addEventListener('click', openSaveModal);
   $('btn-refresh').addEventListener('click', ()=>{ if(!S.demo) Promise.all([loadMfDefs(), loadProducts(S.searchQ)]); });
@@ -1589,10 +1587,6 @@ function boot(){
 
   // Select all
   $('chk-all').addEventListener('change',e=>toggleAll(e.target.checked));
-
-  // Undo hint
-  $('undo-hint-undo').addEventListener('click', undo);
-  $('undo-hint-redo').addEventListener('click', redo);
 
   // Bulk
   $('bulk-status-btn').addEventListener('click', ()=>openBulkModal('status'));
