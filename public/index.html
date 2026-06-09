@@ -244,6 +244,26 @@
     .btn-cta-white:hover{opacity:.9;transform:translateY(-2px)}
     .cta-note{font-size:11px;color:rgba(255,255,255,.22);margin-top:16px;font-family:var(--mono);position:relative;letter-spacing:.04em}
 
+    /* PRICING */
+    .pricing-section{background:var(--bg);border-top:1px solid var(--border);padding:100px 48px}
+    .pricing-inner{max-width:980px;margin:0 auto}
+    .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-top:52px}
+    .pricing-card{background:var(--white);padding:32px 28px;display:flex;flex-direction:column;gap:0;position:relative}
+    .pricing-card.featured{background:#f4faf6}
+    .pricing-card-tag{font-size:9px;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:600;margin-bottom:10px}
+    .pricing-card-name{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--ink);margin-bottom:6px}
+    .pricing-card-price{font-size:36px;font-weight:800;color:var(--ink);font-family:var(--serif);letter-spacing:-.5px;margin-bottom:4px}
+    .pricing-card-price span{font-size:16px;font-weight:500;color:var(--ink3);letter-spacing:0}
+    .pricing-card-sub{font-size:12px;color:var(--ink3);margin-bottom:24px;font-family:var(--mono)}
+    .pricing-divider{height:1px;background:var(--border);margin:20px 0}
+    .pricing-features{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:9px;flex:1}
+    .pricing-features li{font-size:13px;color:var(--ink2);display:flex;align-items:baseline;gap:9px;line-height:1.4}
+    .pricing-features li::before{content:'✓';font-size:11px;color:var(--green);font-weight:700;flex-shrink:0}
+    .pricing-features li.off{color:var(--ink4)}
+    .pricing-features li.off::before{content:'—';color:var(--ink4);font-weight:400}
+    .pricing-beta-note{font-size:10px;font-family:var(--mono);color:var(--ink4);margin-top:20px;line-height:1.5}
+    @media(max-width:768px){.pricing-grid{grid-template-columns:1fr}.pricing-section{padding:72px 20px}}
+
     /* FOOTER */
     footer{padding:28px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg)}
     footer .logo{color:var(--ink)}
@@ -710,11 +730,77 @@
   </div>
 </section>
 
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="pricing-inner">
+    <span class="section-tag reveal">Pricing</span>
+    <h2 class="section-title reveal">Simple, transparent pricing.</h2>
+    <p class="section-sub reveal">Free to start. Upgrade when you need scheduling.</p>
+    <div class="pricing-grid reveal reveal-d1">
+
+      <!-- FREE -->
+      <div class="pricing-card">
+        <div class="pricing-card-tag">Free</div>
+        <div class="pricing-card-name">Free</div>
+        <div class="pricing-card-price">€0<span>/mo</span></div>
+        <div class="pricing-card-sub">No credit card required</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Inline bulk editing</li>
+          <li>Edit prices, tags, status, SEO, metafields</li>
+          <li>Bulk actions on selection</li>
+          <li>Collections management</li>
+          <li>Unlimited pushes to Shopify</li>
+          <li>CSV Export</li>
+          <li class="off">CSV Import</li>
+          <li class="off">Scheduling</li>
+          <li class="off">Auto-revert</li>
+          <li class="off">Email notifications</li>
+        </ul>
+      </div>
+
+      <!-- STARTER -->
+      <div class="pricing-card featured">
+        <div class="pricing-card-tag">Most popular</div>
+        <div class="pricing-card-name">Starter</div>
+        <div class="pricing-card-price">€9<span>.99/mo</span></div>
+        <div class="pricing-card-sub">For growing stores</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Everything in Free</li>
+          <li>CSV Import</li>
+          <li>5 schedules / month</li>
+          <li>Auto-revert after sale</li>
+          <li>Email notifications</li>
+          <li class="off">Unlimited schedules</li>
+        </ul>
+        <p class="pricing-beta-note">Free during beta — your feedback is worth more than the fee.</p>
+      </div>
+
+      <!-- PRO -->
+      <div class="pricing-card">
+        <div class="pricing-card-tag">Pro</div>
+        <div class="pricing-card-name">Pro</div>
+        <div class="pricing-card-price">€19<span>.99/mo</span></div>
+        <div class="pricing-card-sub">For high-volume stores</div>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Everything in Starter</li>
+          <li>Unlimited schedules</li>
+          <li>Priority support</li>
+        </ul>
+        <p class="pricing-beta-note">Free during beta — your feedback is worth more than the fee.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- BOTTOM CTA -->
 <section class="cta-section">
   <h2 class="reveal">Schedule your next sale.<br><em>Then forget about it.</em></h2>
   <p class="cta-sub reveal">Works with any Shopify store. No setup, no account.</p>
-  <p class="cta-beta-note reveal">Free during beta · Limited early access</p>
+  <p class="cta-beta-note reveal">Free plan available · No credit card required</p>
   <a href="/app" class="btn-cta-white reveal">Try now →</a>
   <p class="cta-note reveal">OAuth login · No data stored · Disconnect anytime</p>
 </section>

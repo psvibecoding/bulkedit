@@ -42,6 +42,32 @@ if (process.env.DATABASE_URL) {
     data JSONB NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
   )`).catch(e => console.error('[db] init error:', e.message));
+  dbPool.query(`CREATE TABLE IF NOT EXISTS store_plans (
+    shop TEXT PRIMARY KEY,
+    plan TEXT NOT NULL DEFAULT 'free',
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  )`).catch(e => console.error('[db] store_plans init error:', e.message));
+}
+
+// ── PLAN LIMITS ──────────────────────────────────────────────
+const PLAN_SCHED_LIMIT = { free: 5, starter: 5, pro: Infinity };
+
+async function getStorePlan(shop) {
+  if (!dbPool) return 'free';
+  try {
+    const r = await dbPool.query('SELECT plan FROM store_plans WHERE shop=$1', [shop]);
+    return r.rows[0]?.plan || 'free';
+  } catch { return 'free'; }
+}
+
+async function countSchedsThisMonth(shop) {
+  const schedules = await readSchedules();
+  const now = new Date();
+  return schedules.filter(s =>
+    s.shop === shop &&
+    new Date(s.createdAt).getUTCFullYear() === now.getUTCFullYear() &&
+    new Date(s.createdAt).getUTCMonth() === now.getUTCMonth()
+  ).length;
 }
 
 // In-memory OAuth state (stateless — no DB)
@@ -1193,6 +1219,12 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
   try {
     if (!SCHED_SECRET) throw new Error('Scheduling not enabled. Set SCHED_SECRET in environment variables.');
     const { shop, token } = getSession(req);
+    const plan = await getStorePlan(shop);
+    const limit = PLAN_SCHED_LIMIT[plan] ?? 5;
+    if (isFinite(limit)) {
+      const used = await countSchedsThisMonth(shop);
+      if (used >= limit) throw Object.assign(new Error(`You've used all ${limit} schedules for this month. Upgrade to Pro for unlimited scheduling.`), { code: 'PLAN_LIMIT' });
+    }
     const { scheduledFor, label, changes, linkedTo, notifyEmail: providedEmail, timezone: clientTz } = req.body || {};
     if (!scheduledFor) throw new Error('Missing scheduledFor');
     const dt = new Date(scheduledFor);
@@ -1246,7 +1278,10 @@ app.post('/api/schedule/list', apiLimiter, async (req, res) => {
       .map(({ encToken: _, ...rest }) => rest)
       .sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor));
     const persistWarning = !process.env.DATABASE_URL && !process.env.SCHED_FILE;
-    res.json({ ok: true, schedules: mine, persistWarning });
+    const plan = await getStorePlan(shop);
+    const schedLimit = PLAN_SCHED_LIMIT[plan] ?? 5;
+    const schedUsed = await countSchedsThisMonth(shop);
+    res.json({ ok: true, schedules: mine, persistWarning, plan, schedLimit: isFinite(schedLimit) ? schedLimit : null, schedUsed });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 

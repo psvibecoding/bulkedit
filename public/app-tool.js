@@ -25,6 +25,7 @@ let S = {
   selectedVids: new Set(),
   bulkType: null,
   schedules:[],
+  plan:'free', schedLimit:5, schedUsed:0,
   pageInfo:{ hasNextPage:false, endCursor:null },
   exportFields:['handle','title','status','vendor','tags','variant','sku','price','compareAtPrice'],
 };
@@ -1190,7 +1191,22 @@ function manualRecap(){ dlText(buildRecap(Object.values(S.changes)),`lederly-rec
 function updateSchedBadge(){
   const n=(S.schedules||[]).filter(s=>s.status==='pending').length;
   const btn=$('btn-schedule'); if(!btn)return;
-  btn.textContent=n?`Scheduled (${n})`:'Schedule edit';
+  btn.textContent=n?`✦ Scheduled (${n})`:'✦ Schedule';
+}
+
+function updatePlanBadge(){
+  const el=$('plan-badge'); if(!el)return;
+  const limit=S.schedLimit;
+  const used=S.schedUsed;
+  const plan=S.plan||'free';
+  const planLabel=plan==='pro'?'Pro':plan==='starter'?'Starter':'Free';
+  if(limit===null){
+    el.textContent=`${planLabel} · schedules unlimited`;
+  } else {
+    el.textContent=`${planLabel} · ${used}/${limit} schedules this month`;
+  }
+  el.dataset.plan=plan;
+  el.dataset.atLimit=used>=limit?'1':'0';
 }
 
 async function loadSchedules(){
@@ -1199,8 +1215,12 @@ async function loadSchedules(){
     const r=await api('/api/schedule/list',{});
     S.schedules=r.schedules||[];
     S.schedPersistWarning=!!r.persistWarning;
+    S.plan=r.plan||'free';
+    S.schedLimit=r.schedLimit??5;
+    S.schedUsed=r.schedUsed??0;
   }catch{ S.schedules=[]; }
   updateSchedBadge();
+  updatePlanBadge();
   renderTable();
 }
 
@@ -1696,7 +1716,10 @@ function boot(){
   });
 
   // CSV Import
-  $('btn-import-csv').addEventListener('click', ()=> $('csv-file-input').click());
+  $('btn-import-csv').addEventListener('click', ()=>{
+    if(S.plan==='free'&&!S.demo){ toast('CSV Import is available from Starter plan. Upgrade at lederly.com'); return; }
+    $('csv-file-input').click();
+  });
   $('btn-csv-template').addEventListener('click', downloadCSVTemplate);
   $('csv-file-input').addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) openImportModal(f); e.target.value=''; });
   $('m-import-apply').addEventListener('click', applyImport);
