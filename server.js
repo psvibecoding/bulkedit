@@ -452,7 +452,7 @@ function fmtStatus(v) {
 function fmtPrice(v) {
   if (v === null || v === undefined || v === '') return '—';
   const n = parseFloat(v);
-  return isNaN(n) ? String(v) : `$${n.toFixed(2)}`;
+  return isNaN(n) ? String(v) : n.toFixed(2);
 }
 function fmtTags(v) {
   if (!v) return '—';
