@@ -377,12 +377,12 @@ function rowHTML(p,v){
   const shopUrl=shopifyAdminUrl(p.id);
   const mainScheds=schedList.filter(b=>!b.isRevert);
   const revertScheds=schedList.filter(b=>b.isRevert);
-  const revertBadge=revertScheds.length>0?`<div class="sched-val-badge-amber">↩ auto-revert · ${esc(new Date(revertScheds[0].scheduledFor).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}))}</div>`:'';
-  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">new price ${Number(b.vf.price).toFixed(2)} scheduled</div>`).join('')+revertBadge;
-  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge">compare at ${esc(val)} scheduled</div>`;}).join('');
-  const statusBadge=mainScheds.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">${esc(b.pf.status)} scheduled</div>`).join('');
-  const vendorBadge=mainScheds.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('');
-  const tagsBadge=schedList.filter(b=>b.pf.tags!==undefined).map(b=>{
+  const rb=revertScheds.length>0?`<div class="sched-val-badge-amber">↩ auto-revert · ${esc(new Date(revertScheds[0].scheduledFor).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}))}</div>`:'';
+  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">new price ${Number(b.vf.price).toFixed(2)} scheduled</div>`).join('')+(revertScheds.some(b=>b.vf.price!==undefined)?rb:'');
+  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge">compare at ${esc(val)} scheduled</div>`;}).join('')+(revertScheds.some(b=>b.vf.compareAtPrice!==undefined)?rb:'');
+  const statusBadge=mainScheds.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">${esc(b.pf.status)} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.status)?rb:'');
+  const vendorBadge=mainScheds.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.vendor!==undefined)?rb:'');
+  const tagsBadge=mainScheds.filter(b=>b.pf.tags!==undefined).map(b=>{
     const cur=p.tags||[];
     const nxt=Array.isArray(b.pf.tags)?b.pf.tags:String(b.pf.tags).split(',').map(t=>t.trim()).filter(Boolean);
     const added=nxt.filter(t=>!cur.includes(t));
@@ -391,18 +391,16 @@ function rowHTML(p,v){
     if(added.length) parts.push(`<div class="sched-val-badge">+ ${esc(added.join(', '))} scheduled</div>`);
     if(removed.length) parts.push(`<div class="sched-val-badge-red">- ${esc(removed.join(', '))} scheduled</div>`);
     return parts.join('');
-  }).join('');
+  }).join('')+(revertScheds.some(b=>b.pf.tags!==undefined)?rb:'');
   const seoTitle=esc(p.seo?.title||''); const seoDesc=esc(p.seo?.description||'');
   const seoMissing=!p.seo?.title&&!p.seo?.description;
   const seoIndicator=seoMissing?`<span class="seo-missing" title="No SEO title/description set">SEO</span>`:'';
   const bodyStripped=(p.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-  const seoTitlePH=esc(p.title||'SEO title…');
-  const seoDescPH=esc(bodyStripped?bodyStripped.slice(0,80)+(bodyStripped.length>80?'…':''):'SEO description…');
   const descRow=bodyStripped?`<div class="desc-row">${esc(bodyStripped.slice(0,120)+(bodyStripped.length>120?'…':''))}</div>`:'';
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
-<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div><div class="seo-row"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-title" placeholder="${seoTitlePH}" value="${seoTitle}"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-desc" placeholder="${seoDescPH}" value="${seoDesc}"></div>${descRow}<span class="mod-chip">modified</span></div></td>
+<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div>${descRow}<div class="seo-row"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-title" placeholder="SEO title…" value="${seoTitle}"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-desc" placeholder="SEO description…" value="${seoDesc}"></div><span class="mod-chip">modified</span></div></td>
 <td><div><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span>${statusBadge}</div></td>
 <td><div><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></div>${vendorBadge}</td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div>${tagsBadge}</td>
@@ -768,11 +766,12 @@ function openBulkModal(type){
     }
   }
   if(type==='description'){
+    const htmlToText=h=>(h||'').replace(/<br\s*\/?>/gi,'\n').replace(/<\/p>\s*<p[^>]*>/gi,'\n\n').replace(/<[^>]+>/g,'').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').trim();
     const selPids=getSelPids();
-    const firstDesc=selPids.length>0?(getProd(selPids[0])?.bodyHtml||''):'';
-    const allSame=selPids.length>1&&selPids.every(pid=>getProd(pid)?.bodyHtml===firstDesc);
-    const hint=selPids.length>1&&!allSame?`<p style="font-size:11px;color:var(--t3);margin:4px 0 0;font-family:var(--mono)">Showing first product's description · ${selPids.length} products selected have different descriptions</p>`:'';
-    body.innerHTML=`<div class="bulk-field"><label>Description <span style="color:var(--t4);font-weight:400">(HTML allowed · replaces current)</span></label><textarea id="bv-desc" rows="6" placeholder="Product description…" style="resize:vertical;min-height:120px;font-family:var(--mono);font-size:12px" autofocus></textarea>${hint}</div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="bv-desc-clear" style="accent-color:var(--red)"> Clear description (set empty)</label></div>`;
+    const firstDesc=htmlToText(selPids.length>0?(getProd(selPids[0])?.bodyHtml||''):'');
+    const allSame=selPids.length>1&&selPids.every(pid=>htmlToText(getProd(pid)?.bodyHtml||'')===firstDesc);
+    const hint=selPids.length>1&&!allSame?`<p style="font-size:11px;color:var(--t3);margin:4px 0 0;font-family:var(--mono)">Showing first product's description · ${selPids.length} products have different descriptions</p>`:'';
+    body.innerHTML=`<div class="bulk-field"><label>Description <span style="color:var(--t4);font-weight:400">(plain text · replaces current)</span></label><textarea id="bv-desc" rows="6" placeholder="Product description…" style="resize:vertical;min-height:120px;font-size:13px;line-height:1.6" autofocus></textarea>${hint}</div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="bv-desc-clear" style="accent-color:var(--red)"> Clear description (set empty)</label></div>`;
     $('bv-desc').value=firstDesc;
     $('bv-desc-clear')?.addEventListener('change',e=>{ const ta=$('bv-desc'); if(ta){ta.disabled=e.target.checked;ta.style.opacity=e.target.checked?'.35':'1';} });
   }
@@ -912,8 +911,10 @@ function applyBulkModal(){
   }
   if(type==='description'){
     const clear=$('bv-desc-clear')?.checked;
-    const val=clear?'':($('bv-desc')?.value||'');
-    if(!clear&&!val.trim())return toast('Enter a description or check "Clear".');
+    const rawVal=clear?'':($('bv-desc')?.value||'');
+    if(!clear&&!rawVal.trim())return toast('Enter a description or check "Clear".');
+    const textToHtml=t=>{if(!t.trim())return'';const s=t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');return'<p>'+s.replace(/\n\n+/g,'</p><p>').replace(/\n/g,'<br>')+'</p>';};
+    const val=clear?'':textToHtml(rawVal);
     const pids=getSelPids(); if(!pids.length)return toast('Select products first.');
     pushH('Bulk description update');
     pids.forEach(pid=>{const p=getProd(pid);if(!p)return;p.bodyHtml=val;ensureC(pid).product.bodyHtml=val;});

@@ -1304,10 +1304,28 @@ app.get('/api/schedule/recap/:id', (req, res) => {
   const tz = sched.timezone || NOTIFY_TZ;
   const dt = new Date(sched.executedAt || sched.scheduledFor)
     .toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone: tz });
+  const FL2 = { status:'Status', vendor:'Vendor', title:'Title', tags:'Tags', productType:'Type', bodyHtml:'Description' };
   const rows = changes.map(c => {
     const title = c.productTitle || c.productId.split('/').pop();
-    const img = c.productImage ? `<img src="${c.productImage.replace(/"/g,'&quot;')}" width="36" height="36" style="border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:10px;border:1px solid #f0f0ec">` : '';
-    return `<tr><td style="padding:10px 0;border-bottom:1px solid #f3f3f1;font-size:13px;color:#0e0e0c;vertical-align:middle">${img}${title}</td></tr>`;
+    const img = c.productImage ? `<img src="${c.productImage.replace(/"/g,'&quot;')}" width="36" height="36" style="border-radius:6px;object-fit:cover;vertical-align:top;margin-right:10px;border:1px solid #f0f0ec;flex-shrink:0">` : '';
+    const details = [];
+    Object.entries(c.product || {}).forEach(([f, nv]) => {
+      if (f === 'seo') return;
+      const label = FL2[f] || f;
+      const before = fmtField(f, c.before?.[f]);
+      const after = fmtField(f, nv);
+      details.push(`<span style="color:#9ca3af">${label}:</span> <span style="text-decoration:line-through;color:#9ca3af">${before}</span> → <strong style="color:#1a5c38">${after}</strong>`);
+    });
+    Object.entries(c.variants || {}).forEach(([vid, v]) => {
+      const vb = c.variantsBefore?.[vid];
+      const sfx = vb?.title && vb.title !== 'Default Title' ? ` (${vb.title})` : '';
+      if (v.price !== undefined) details.push(`<span style="color:#9ca3af">Price${sfx}:</span> <span style="text-decoration:line-through;color:#9ca3af">${fmtPrice(vb?.price)}</span> → <strong style="color:#1a5c38">${fmtPrice(v.price)}</strong>`);
+      if (v.compareAtPrice !== undefined) details.push(`<span style="color:#9ca3af">Compare at${sfx}:</span> <span style="text-decoration:line-through;color:#9ca3af">${fmtPrice(vb?.compareAtPrice)}</span> → <strong style="color:#1a5c38">${fmtPrice(v.compareAtPrice)}</strong>`);
+    });
+    const mfc = (c.metafields||[]).length;
+    if (mfc) details.push(`<span style="color:#9ca3af">Metafields:</span> ${mfc} field${mfc!==1?'s':''} updated`);
+    const detailHtml = details.length ? `<div style="font-size:11px;line-height:2;margin-top:4px;color:#374151">${details.join(' &nbsp;·&nbsp; ')}</div>` : '';
+    return `<tr><td style="padding:12px 0;border-bottom:1px solid #f3f3f1;vertical-align:top"><div style="display:flex;align-items:flex-start">${img}<div><div style="font-size:13px;font-weight:600;color:#0e0e0c">${title}</div>${detailHtml}</div></div></td></tr>`;
   }).join('');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>All changes · ${sched.label}</title><style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#eeecea;margin:0;padding:40px 20px 60px;-webkit-font-smoothing:antialiased}.card{background:#fff;border-radius:20px;max-width:580px;margin:0 auto;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.05)}.bar{background:#1a5c38;height:5px}.head{padding:28px 36px 20px;border-bottom:1px solid #f3f3f1}.logo{display:flex;align-items:center;gap:8px;margin-bottom:18px;text-decoration:none}.logo-m{background:#1a5c38;border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;letter-spacing:.04em}.logo-n{font-size:11px;font-weight:600;color:#4b5563;letter-spacing:.12em;text-transform:uppercase}h1{margin:0 0 6px;font-size:18px;font-weight:700;color:#0e0e0c;letter-spacing:-.02em}p.sub{margin:0;font-size:13px;color:#9ca3af}.body{padding:8px 36px 16px}table{width:100%;border-collapse:collapse}.dl{display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;text-decoration:none;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;margin:16px 0 8px}.foot{padding:16px 36px;border-top:1px solid #f3f3f1;font-size:12px;color:#9ca3af}</style></head><body><div class="card"><div class="bar"></div><div class="head"><a href="${APP_URL}" class="logo"><div class="logo-m">L</div><span class="logo-n">Lederly</span></a><h1>${sched.label}</h1><p class="sub">${dt} &nbsp;·&nbsp; ${sched.shop} &nbsp;·&nbsp; ${changes.length} product${changes.length!==1?'s':''} updated</p></div><div class="body"><a href="/api/schedule/recap/${id}/csv?token=${token}" class="dl">↓ Download CSV</a><table>${rows}</table></div><div class="foot">Sent by <a href="${APP_URL}" style="color:#1a5c38;text-decoration:none;font-weight:500">Lederly</a> — bulk product editing for Shopify</div></div></body></html>`);
