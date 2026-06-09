@@ -6,8 +6,7 @@
   <title>Lederly — App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/styles.css?v=23"/>
-  <script>if(sessionStorage.getItem('be_shop')&&sessionStorage.getItem('be_token'))document.documentElement.setAttribute('data-restoring','1');</script>
+  <link rel="stylesheet" href="/styles.css?v=24"/>
 </head>
 <body>
 <div id="app">
@@ -63,7 +62,7 @@
         <button class="btn-ghost sm" id="btn-feedback" title="Send feedback">Feedback</button>
         <button class="btn-ghost sm btn-sched" id="btn-schedule">Schedule <span class="pro-badge">PRO</span></button>
         <button class="btn-save" id="btn-save" disabled>
-          Save changes <span id="save-count" class="save-badge">0</span>
+          ↑ Push to Shopify <span id="save-count" class="save-badge">0</span>
         </button>
       </div>
     </header>
@@ -161,7 +160,7 @@
 
     <footer class="statusbar">
       <span id="status-msg" class="status-txt">Ready</span>
-      <span class="status-hint">Changes are staged — click "Save changes" to send to Shopify</span>
+      <span class="status-hint">Changes are staged locally — "Push to Shopify" sends them live to your store</span>
     </footer>
   </div>
 
@@ -186,7 +185,7 @@
 <div id="m-save" class="overlay hidden">
   <div class="modal modal-wide">
     <div class="modal-head">
-      <div><h2>Save changes</h2><p id="m-save-sub" class="modal-sub"></p></div>
+      <div><h2>Push to Shopify</h2><p id="m-save-sub" class="modal-sub"></p></div>
       <button class="close-btn" data-close="m-save">✕</button>
     </div>
     <div id="m-save-prog" style="display:none;padding:14px 24px 4px">
@@ -336,6 +335,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=40"></script>
+<script src="/app-tool.js?v=42"></script>
 </body>
 </html>

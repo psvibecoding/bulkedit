@@ -84,7 +84,7 @@
     .am-tr{display:flex;align-items:center;gap:4px;flex-shrink:0}
     .am-btn{padding:3px 7px;border-radius:4px;font-size:9px;font-weight:500;background:var(--white);border:1px solid var(--border);color:var(--ink2);cursor:default;font-family:var(--sans);white-space:nowrap}
     .am-btn-sched{padding:3px 7px;border-radius:4px;font-size:9px;font-weight:600;background:var(--dark);color:#fff;border:none;cursor:default;font-family:var(--sans)}
-    .am-btn-save{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:9px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:default;font-family:var(--sans)}
+    .am-btn-save{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:4px;font-size:8.5px;font-weight:600;background:var(--green);color:#fff;border:none;cursor:default;font-family:var(--sans);white-space:nowrap}
     .am-save-badge{background:rgba(255,255,255,.25);border-radius:20px;padding:0 4px;font-size:8px}
     .am-tabs{display:flex;background:var(--bg);border-bottom:1px solid var(--border);padding:0 12px}
     .am-tab{padding:6px 10px;font-size:10px;font-weight:500;font-family:var(--sans);color:var(--ink3);background:none;border:none;border-bottom:2px solid transparent;cursor:default;margin-bottom:-1px}
@@ -260,6 +260,9 @@
     .btn-primary{background:var(--green);color:#fff;border:none;border-radius:9px;padding:13px 26px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none;transition:background .15s,transform .1s;display:inline-flex;align-items:center;gap:7px}
     .btn-primary:hover{background:var(--green-lt);transform:translateY(-1px)}
 
+    .feedback-link{flex-shrink:0;background:#fff;color:var(--green);border-radius:10px;padding:13px 26px;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;transition:opacity .15s}
+    .feedback-link:hover{opacity:.9}
+
     /* RESPONSIVE */
     @media(max-width:1040px){
       .hero-inner{grid-template-columns:1fr;gap:48px;padding:80px 24px 64px}
@@ -310,10 +313,10 @@
         <span class="badge-dot"></span>
         Beta · Free to try
       </div>
-      <h1>Your Shopify sale<br>launches at midnight.<br><em>You're asleep.</em></h1>
+      <h1>Bulk edit, schedule,<br>and push to Shopify.<br><em>In minutes.</em></h1>
       <p class="hero-sub">
-        Schedule product launches, price changes and catalog updates to go live automatically.
-        <strong>No spreadsheets. No midnight alarms. No manual work.</strong>
+        Edit prices, tags, metafields and descriptions across your entire catalog. Schedule changes to go live automatically — with auto-revert when the sale ends.
+        <strong>No CSV exports. No midnight alarms. No manual work.</strong>
       </p>
       <div class="hero-cta-wrap">
         <a href="/app" class="btn-hero">
@@ -336,7 +339,7 @@
           <button class="am-btn">↩</button>
           <button class="am-btn">↪</button>
           <button class="am-btn-sched">Schedule ✦</button>
-          <button class="am-btn-save">Save <span class="am-save-badge">5</span></button>
+          <button class="am-btn-save">↑ Push to Shopify <span class="am-save-badge">5</span></button>
         </div>
       </div>
       <div class="am-tabs">
@@ -404,8 +407,8 @@
         </tbody>
       </table>
       <div class="am-statusbar">
-        <span class="am-status-l">5 changes staged · ready to schedule</span>
-        <span class="am-status-r">→ Schedule for Black Friday</span>
+        <span class="am-status-l">5 changes staged · push live or schedule</span>
+        <span class="am-status-r">↑ Push to Shopify or schedule →</span>
       </div>
     </div>
   </div>
@@ -724,7 +727,7 @@
       <h3 style="font-family:var(--serif);font-size:26px;color:#fff;margin-bottom:6px;line-height:1.2">Help shape Lederly</h3>
       <p style="font-size:14px;color:rgba(255,255,255,.7);line-height:1.6">2 minutes. Tell us what you'd love to see, what's broken, and what you'd pay for.</p>
     </div>
-    <a href="https://tally.so/r/D4abPX" target="_blank" rel="noopener" style="flex-shrink:0;background:#fff;color:var(--green);border-radius:10px;padding:13px 26px;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;transition:opacity .15s" onmouseover="this.style.opacity='.9'" onmouseout="this.style.opacity='1'">Share feedback →</a>
+    <a href="https://tally.so/r/D4abPX" target="_blank" rel="noopener" class="feedback-link">Share feedback →</a>
   </div>
 </section>
 
@@ -755,36 +758,6 @@
   <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a> · <a href="/terms" style="color:var(--ink3);text-decoration:none">Terms</a></p>
 </footer>
 
-<script>
-(function(){
-  const io=new IntersectionObserver(function(entries){
-    entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target);}});
-  },{threshold:.12,rootMargin:'0px 0px -40px 0px'});
-  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
-
-  const form=document.getElementById('contact-form');
-  if(!form)return;
-  form.addEventListener('submit',async function(e){
-    e.preventDefault();
-    const btn=document.getElementById('cf-btn');
-    const status=document.getElementById('cf-status');
-    const name=document.getElementById('cf-name').value.trim();
-    const email=document.getElementById('cf-email').value.trim();
-    const message=document.getElementById('cf-msg').value.trim();
-    btn.disabled=true;btn.textContent='Sending…';status.textContent='';status.style.color='';
-    try{
-      const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,message})});
-      const j=await r.json();
-      if(!j.ok)throw new Error(j.error||'Error sending message.');
-      status.textContent='Message sent. We\'ll get back to you soon.';status.style.color='var(--green)';
-      form.reset();
-    }catch(err){
-      status.textContent=err.message;status.style.color='#c0392b';
-    }finally{
-      btn.disabled=false;btn.textContent='Send message →';
-    }
-  });
-})();
-</script>
+<script src="/index.js"></script>
 </body>
 </html>

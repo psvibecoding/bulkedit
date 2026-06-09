@@ -4,6 +4,10 @@
    OAuth only · Metafield definitions · Collections
 ═══════════════════════════════════════════ */
 
+// Runs synchronously before DOMContentLoaded — mirrors the removed inline <head> script
+if (sessionStorage.getItem('be_shop') && sessionStorage.getItem('be_token'))
+  document.documentElement.setAttribute('data-restoring', '1');
+
 const $ = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -88,8 +92,10 @@ function closeModal(id){ const el=$(id); if(!el)return; el.classList.remove('ope
 
 /* ── API ── */
 function apiH(){ return {'Content-Type':'application/json','X-Shopify-Shop':S.shop,'X-Shopify-Token':S.token}; }
-async function api(path,body={}){
-  const r=await fetch(path,{method:'POST',headers:apiH(),body:JSON.stringify(body)});
+async function api(path,body={},signal=null){
+  const opts={method:'POST',headers:apiH(),body:JSON.stringify(body)};
+  if(signal) opts.signal=signal;
+  const r=await fetch(path,opts);
   const j=await r.json(); if(!j.ok)throw new Error(j.error||'Request failed'); return j;
 }
 
@@ -147,11 +153,16 @@ async function afterOAuth(shop, token, silent=false){
   }
 }
 
+let _loadAbort = null;
 async function loadProducts(q='', append=false){
-  if(!append) S.pageInfo={hasNextPage:false,endCursor:null};
+  if(!append){
+    if(_loadAbort){ _loadAbort.abort(); }
+    _loadAbort = new AbortController();
+    S.pageInfo={hasNextPage:false,endCursor:null};
+  }
   setStatus(append?'Loading more…':'Loading…');
   try{
-    const r=await api('/api/products',{query:q,first:50,after:append?S.pageInfo.endCursor:null});
+    const r=await api('/api/products',{query:q,first:50,after:append?S.pageInfo.endCursor:null}, append?null:_loadAbort?.signal);
     const newProds=r.products.map(normProd);
     if(append){
       S.products=[...S.products,...newProds];
@@ -164,7 +175,10 @@ async function loadProducts(q='', append=false){
     if(!append){ initExportFields(); buildTagFilter(); }
     setStatus(`${S.products.length} product${S.products.length!==1?'s':''} loaded${S.pageInfo.hasNextPage?' · more available':''}`);;
     renderLoadMore();
-  }catch(e){ toast(e.message); setStatus('Load failed','dirty'); }
+  }catch(e){
+    if(e.name==='AbortError') return;
+    toast(e.message); setStatus('Load failed','dirty');
+  }
 }
 
 async function loadAllProducts(q=''){
@@ -402,7 +416,7 @@ function rowHTML(p,v){
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
-<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div>${descRow}<div class="seo-row"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-title" placeholder="${seoTitlePH}" value="${seoTitle}"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-desc" placeholder="${seoDescPH}" value="${seoDesc}"></div><span class="mod-chip">modified</span></div></td>
+<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div>${descRow}<div class="seo-row"><span class="seo-row-lbl">SEO metadata</span><div class="seo-field-row"><span class="seo-inp-lbl">Title</span><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-title" placeholder="${seoTitlePH}" value="${seoTitle}"></div><div class="seo-field-row"><span class="seo-inp-lbl">Desc</span><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-desc" placeholder="${seoDescPH}" value="${seoDesc}"></div></div><span class="mod-chip">modified</span></div></td>
 <td><div><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span>${statusBadge}</div></td>
 <td><div><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></div>${vendorBadge}</td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div>${tagsBadge}</td>
@@ -1887,7 +1901,7 @@ function computeImportMatches() {
       prod = S.products.find(p => p.handle?.toLowerCase() === matchVal);
     } else if (matchKey === 'sku') {
       // find product that has a variant with this SKU
-      prod = S.products.find(p => (p.variants||[]).some(v => v.sku?.toLowerCase() === matchVal));
+      prod = S.products.find(p => (p.variants?.nodes||[]).some(v => v.sku?.toLowerCase() === matchVal));
     } else {
       prod = S.products.find(p => p.title?.toLowerCase() === matchVal);
     }
@@ -1939,9 +1953,9 @@ function computeImportMatches() {
       const rowSku = mapping.sku !== undefined ? (row[mapping.sku]||'').trim() : null;
       let variant = null;
       if (rowSku) {
-        variant = (prod.variants||[]).find(v => v.sku === rowSku);
+        variant = (prod.variants?.nodes||[]).find(v => v.sku === rowSku);
       } else {
-        variant = prod.variants?.[0];
+        variant = prod.variants?.nodes?.[0];
       }
       if (!variant) continue;
       const vc = variantChanges[variant.id] || {};
@@ -1983,7 +1997,7 @@ function applyImport() {
       if (pf.seoDesc  !== undefined) { prod.seo.description = pf.seoDesc;  c.product.seo.description = pf.seoDesc;  }
     }
     for (const [vid, vc] of Object.entries(vf || {})) {
-      const variant = (prod.variants||[]).find(v => v.id === vid);
+      const variant = (prod.variants?.nodes||[]).find(v => v.id === vid);
       if (!variant) continue;
       const c = ensureC(prod.id);
       if (!c.variants) c.variants = {};

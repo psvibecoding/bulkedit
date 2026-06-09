@@ -71,7 +71,19 @@ app.use((req, res, next) => {
 });
 
 app.use(helmet({
-  contentSecurityPolicy: false,   // handled via meta tag in HTML for flexibility
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'"],
+      styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc:    ["'self'", "https://fonts.gstatic.com"],
+      imgSrc:     ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      objectSrc:  ["'none'"],
+      baseUri:    ["'self'"],
+      formAction: ["'self'"],
+    }
+  },
   crossOriginEmbedderPolicy: false,
   referrerPolicy: { policy: 'no-referrer' },
   hsts: IS_PROD ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false
@@ -712,18 +724,22 @@ async function executeSchedule(sched, schedules) {
   await writeSchedules(schedules);
 }
 
-let _schedRunning = false;
+const _schedLocks = new Set(); // tracks schedule IDs currently executing
 async function runDueSchedules() {
-  if (!SCHED_SECRET || _schedRunning) return;
-  _schedRunning = true;
-  try {
-    const schedules = await readSchedules();
-    const due = schedules.filter(s => s.status === 'pending' && new Date(s.scheduledFor) <= new Date());
-    if (due.length) {
-      console.log(`[scheduler] ${due.length} due schedule(s)`);
-      await Promise.all(due.map(s => executeSchedule(s, schedules)));
-    }
-  } finally { _schedRunning = false; }
+  if (!SCHED_SECRET) return;
+  const schedules = await readSchedules();
+  const due = schedules.filter(s =>
+    s.status === 'pending' &&
+    new Date(s.scheduledFor) <= new Date() &&
+    !_schedLocks.has(s.id)
+  );
+  if (!due.length) return;
+  console.log(`[scheduler] ${due.length} due schedule(s)`);
+  due.forEach(s => _schedLocks.add(s.id));
+  await Promise.all(due.map(async s => {
+    try { await executeSchedule(s, schedules); }
+    finally { _schedLocks.delete(s.id); }
+  }));
 }
 
 // Recover + prune run async at startup (inside app.listen callback) and daily
@@ -879,7 +895,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
         products(first:$first, query:$query, after:$after, sortKey:UPDATED_AT, reverse:true) {
           pageInfo { hasNextPage endCursor }
           nodes {
-            id title status vendor tags descriptionHtml
+            id handle title status vendor tags descriptionHtml
             seo { title description }
             featuredImage { id url altText }
             metafields(first:50) { nodes { id namespace key type value } }
