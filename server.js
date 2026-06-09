@@ -1226,6 +1226,7 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
       if (used >= limit) throw Object.assign(new Error(`You've used all ${limit} schedules for this month. Upgrade to Pro for unlimited scheduling.`), { code: 'PLAN_LIMIT' });
     }
     const { scheduledFor, label, changes, linkedTo, notifyEmail: providedEmail, timezone: clientTz } = req.body || {};
+    if (linkedTo && plan !== 'pro') throw Object.assign(new Error('Auto-revert is a Pro feature. Upgrade to use it.'), { code: 'PLAN_LIMIT' });
     if (!scheduledFor) throw new Error('Missing scheduledFor');
     const dt = new Date(scheduledFor);
     if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');

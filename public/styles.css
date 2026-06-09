@@ -321,6 +321,10 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .btn-sched:disabled{opacity:.25;cursor:not-allowed;transform:none;box-shadow:none}
 .btn-sched-confirm-action{background:var(--amber)!important;border-color:var(--amber)!important;color:#fff!important}
 .btn-sched-confirm-action:hover{opacity:.88}
+.revert-pro-badge{display:inline-flex;align-items:center;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:3px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;margin-left:6px;vertical-align:middle}
+.revert-pro-hint{display:block;font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:6px;padding:8px 10px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.15);border-radius:6px}
+.revert-pro-hint strong{color:#7c3aed}
+#sched-revert-field input[type=checkbox]:disabled{opacity:.4;cursor:not-allowed}
 .sched-input{background:var(--bg);border:1px solid var(--b2);border-radius:var(--r6);padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--tx);outline:none;width:100%;transition:all .15s}
 .sched-input:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-bg)}
 .sched-revert-lbl{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t2);cursor:pointer;user-select:none}

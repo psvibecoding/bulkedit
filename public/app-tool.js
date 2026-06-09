@@ -1242,6 +1242,10 @@ function openScheduleModal(){
     $('m-sched-revert-toggle').checked=false;
     $('m-sched-revert-dt').style.display='none';
     $('m-sched-revert-hint').style.display='none';
+    const isPro=S.plan==='pro';
+    $('m-sched-revert-toggle').disabled=!isPro;
+    $('revert-pro-badge').classList.toggle('hidden',isPro);
+    $('revert-pro-hint').classList.toggle('hidden',isPro);
     const d=new Date(); d.setHours(d.getHours()+1,0,0,0);
     $('m-sched-dt').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('m-sched-preview').innerHTML=Object.values(S.changes).map(c=>{
