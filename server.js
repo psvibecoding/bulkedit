@@ -1106,7 +1106,7 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
     const schedules = readSchedules();
     schedules.push(sched);
     if (!writeSchedules(schedules)) throw new Error('Could not save schedule. On Railway, mount a Volume and set SCHED_FILE=/data/schedules.json');
-    track('schedule_create', s.shop, { products: (changes||[]).length });
+    track('schedule_create', shop, { products: (changes||[]).length });
     const { encToken: _, ...safe } = sched;
     res.json({ ok: true, schedule: safe });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
