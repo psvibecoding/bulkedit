@@ -298,6 +298,7 @@ input[type="checkbox"]{width:13px;height:13px;accent-color:var(--green);cursor:p
 .sched-btns{display:flex;gap:5px;flex-shrink:0}
 .sched-val-badge{display:inline-block;font-size:10px;font-family:var(--mono);color:var(--green);background:var(--green-bg);border:1px solid var(--green-brd);border-radius:4px;padding:1px 5px;margin-top:2px;word-break:break-word}
 .sched-val-badge-red{display:inline-block;font-size:10px;font-family:var(--mono);color:var(--red);background:var(--red-bg);border:1px solid var(--red-brd);border-radius:4px;padding:1px 5px;margin-top:2px;word-break:break-word}
+.sched-val-badge-amber{display:inline-block;font-size:10px;font-family:var(--mono);color:var(--amber);background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:4px;padding:1px 5px;margin-top:2px;word-break:break-word}
 
 /* Alt text + thumbnail wrap */
 .thumb-wrap{position:relative;display:inline-block}

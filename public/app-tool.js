@@ -375,10 +375,13 @@ function rowHTML(p,v){
   const tagsHTML=(p.tags||[]).map(t=>`<span class="tag">${esc(t)}<span class="tag-rm" data-pid="${esc(p.id)}" data-tag="${esc(t)}">×</span></span>`).join('')+`<span class="tag-add" data-pid="${esc(p.id)}">+</span>`;
   const mfHTML=buildMfHTML(p,v);
   const shopUrl=shopifyAdminUrl(p.id);
-  const priceBadge=schedList.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">new price $${Number(b.vf.price).toFixed(2)} scheduled</div>`).join('');
-  const catBadge=schedList.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?`$${Number(b.vf.compareAtPrice).toFixed(2)}`:'removed';return`<div class="sched-val-badge">compare at ${esc(val)} scheduled</div>`;}).join('');
-  const statusBadge=schedList.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">${esc(b.pf.status)} scheduled</div>`).join('');
-  const vendorBadge=schedList.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('');
+  const mainScheds=schedList.filter(b=>!b.isRevert);
+  const revertScheds=schedList.filter(b=>b.isRevert);
+  const revertBadge=revertScheds.length>0?`<div class="sched-val-badge-amber">↩ auto-revert · ${esc(new Date(revertScheds[0].scheduledFor).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}))}</div>`:'';
+  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">new price ${Number(b.vf.price).toFixed(2)} scheduled</div>`).join('')+revertBadge;
+  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge">compare at ${esc(val)} scheduled</div>`;}).join('');
+  const statusBadge=mainScheds.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">${esc(b.pf.status)} scheduled</div>`).join('');
+  const vendorBadge=mainScheds.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('');
   const tagsBadge=schedList.filter(b=>b.pf.tags!==undefined).map(b=>{
     const cur=p.tags||[];
     const nxt=Array.isArray(b.pf.tags)?b.pf.tags:String(b.pf.tags).split(',').map(t=>t.trim()).filter(Boolean);
@@ -717,22 +720,22 @@ function openBulkModal(type){
   if(type==='status'){
     body.innerHTML=`<div class="bulk-field"><label>New status</label><select id="bv-status"><option value="ACTIVE">● Active</option><option value="DRAFT">○ Draft</option><option value="ARCHIVED">⊘ Archived</option></select></div>`;
   }else if(type==='price'){
-    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-price-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount ($)</option><option value="amt-down">Decrease by amount ($)</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option></select></div><div class="bulk-field" id="bv-price-val-wrap"><label id="bv-price-val-lbl">New price ($)</label><input id="bv-price-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="checkbox" id="bv-also-compare"> Also apply to Compare at price</label></div>`;
+    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-price-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount</option><option value="amt-down">Decrease by amount</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option></select></div><div class="bulk-field" id="bv-price-val-wrap"><label id="bv-price-val-lbl">New price ($)</label><input id="bv-price-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="checkbox" id="bv-also-compare"> Also apply to Compare at price</label></div>`;
     body.querySelector('#bv-price-rule').addEventListener('change',e=>{
       const rule=e.target.value;
       const wrap=$('bv-price-val-wrap'),lbl=$('bv-price-val-lbl');
       const isRound=rule==='round99'||rule==='round00';
       if(wrap)wrap.style.display=isRound?'none':'';
-      if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount ($)';}
+      if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount';}
     });
   }else if(type==='compareAt'){
-    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-cat-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount ($)</option><option value="amt-down">Decrease by amount ($)</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option><option value="clear">Clear (remove strikethrough)</option></select></div><div class="bulk-field" id="bv-cat-val-wrap"><label id="bv-cat-val-lbl">New price ($)</label><input id="bv-cat-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><p style="font-size:11px;color:var(--t3);margin:0 0 4px;font-family:var(--mono)">Relative rules (%, amount, round) apply only to variants that already have a Compare at price.</p>`;
+    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-cat-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount</option><option value="amt-down">Decrease by amount</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option><option value="clear">Clear (remove strikethrough)</option></select></div><div class="bulk-field" id="bv-cat-val-wrap"><label id="bv-cat-val-lbl">New price ($)</label><input id="bv-cat-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><p style="font-size:11px;color:var(--t3);margin:0 0 4px;font-family:var(--mono)">Relative rules (%, amount, round) apply only to variants that already have a Compare at price.</p>`;
     body.querySelector('#bv-cat-rule').addEventListener('change',e=>{
       const rule=e.target.value;
       const wrap=$('bv-cat-val-wrap'),lbl=$('bv-cat-val-lbl');
       const hide=rule==='round99'||rule==='round00'||rule==='clear';
       if(wrap)wrap.style.display=hide?'none':'';
-      if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount ($)';}
+      if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount';}
     });
   }else if(type==='qty'){
     body.innerHTML=`<div class="bulk-field"><label>Action</label><select id="bv-qty-rule"><option value="set">Set exact quantity</option><option value="add">Increase by</option><option value="sub">Decrease by</option></select></div><div class="bulk-field"><label id="bv-qty-lbl">Quantity</label><input id="bv-qty-val" type="number" min="0" step="1" placeholder="0" autofocus></div>`;
@@ -1340,7 +1343,7 @@ function getSchedBadges(productId, variantId){
     .filter(s=>s.status==='pending'&&(s.changes||[]).some(c=>c.productId===productId))
     .map(sched=>{
       const chg=(sched.changes||[]).find(c=>c.productId===productId);
-      return{label:sched.label, pf:chg?.product||{}, vf:(variantId&&chg?.variants?.[variantId])||{}};
+      return{label:sched.label, scheduledFor:sched.scheduledFor, isRevert:!!sched.linkedTo, pf:chg?.product||{}, vf:(variantId&&chg?.variants?.[variantId])||{}};
     });
 }
 function schedRowHTML(s){
