@@ -1915,7 +1915,7 @@ function computeImportMatches() {
     }
     if (mapping.tags !== undefined) {
       const v = (firstRow[mapping.tags]||'').trim();
-      if (prod && v !== (prod.tags||[]).join(', ')) productChanges.tags = v.split(',').map(t=>t.trim()).filter(Boolean);
+      if (v && prod && v !== (prod.tags||[]).join(', ')) productChanges.tags = v.split(',').map(t=>t.trim()).filter(Boolean);
     }
     if (mapping.status !== undefined) {
       const raw = (firstRow[mapping.status]||'').trim().toUpperCase();
@@ -1929,8 +1929,8 @@ function computeImportMatches() {
     if (mapping.seoTitle !== undefined || mapping.seoDesc !== undefined) {
       const st = mapping.seoTitle !== undefined ? (firstRow[mapping.seoTitle]||'').trim() : null;
       const sd = mapping.seoDesc  !== undefined ? (firstRow[mapping.seoDesc ]||'').trim() : null;
-      if (st !== null && prod && st !== (prod.seo?.title||'')) productChanges.seoTitle = st;
-      if (sd !== null && prod && sd !== (prod.seo?.description||'')) productChanges.seoDesc = sd;
+      if (st && prod && st !== (prod.seo?.title||'')) productChanges.seoTitle = st;
+      if (sd && prod && sd !== (prod.seo?.description||'')) productChanges.seoDesc = sd;
     }
 
     // Per-row variant fields
@@ -1951,7 +1951,7 @@ function computeImportMatches() {
       }
       if (mapping.compareAtPrice !== undefined) {
         const v = (row[mapping.compareAtPrice]||'').trim().replace(/[^0-9.]/g,'');
-        if (v !== undefined && v !== String(variant.compareAtPrice||'')) vc.compareAtPrice = v || null;
+        if (v && v !== String(variant.compareAtPrice||'')) vc.compareAtPrice = v;
       }
       if (Object.keys(vc).length) variantChanges[variant.id] = vc;
     }
