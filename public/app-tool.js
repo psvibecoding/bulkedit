@@ -145,6 +145,7 @@ async function afterOAuth(shop, token, silent=false){
     showScreen('s-app');
     loadSchedules();
     if(!silent) toast('Connected — all info loaded. Session only, no data stored.');
+    maybeStartTour();
     const shouldOpenSchedules = new URLSearchParams(location.search).get('openSchedules')==='1' || sessionStorage.getItem('openSchedules')==='1';
     if(shouldOpenSchedules){
       history.replaceState(null,'',location.pathname);
@@ -253,6 +254,7 @@ function loadDemoMode(){
   renderTable(); initExportFields(); buildTagFilter(); buildCollFilter();
   showScreen('s-app');
   toast('Demo loaded — changes won\'t be saved.');
+  maybeStartTour();
 }
 
 function saveProductsCache(storeName){
@@ -2071,6 +2073,107 @@ function applyImport() {
   renderTable();
   updateSaveBtn();
   toast(`${count} product${count!==1?'s':''} updated from CSV. Review changes and save.`);
+}
+
+function startTour(){
+  const driverLib = window['driver.js'];
+  if(!driverLib || typeof driverLib.driver !== 'function') return;
+  const d = driverLib.driver({
+    showProgress: true,
+    progressText: '{{current}} of {{total}}',
+    nextBtnText: 'Next →',
+    prevBtnText: '← Back',
+    doneBtnText: 'Done',
+    popoverClass: 'lederly-tour',
+    onDestroyStarted: () => { localStorage.setItem('lederly_tour_v1','1'); d.destroy(); },
+    steps: [
+      {
+        popover: {
+          title: 'Welcome to Lederly',
+          description: 'Edit your entire Shopify catalog directly in the browser — no imports, no exports, no fuss. This tour takes about 60 seconds.',
+          align: 'center'
+        }
+      },
+      {
+        element: '#search',
+        popover: {
+          title: 'Search products',
+          description: 'Type to filter by title or handle. Use commas to search multiple terms at once — e.g. <code>shirt, jacket</code>.',
+          side: 'bottom', align: 'start'
+        }
+      },
+      {
+        element: '.filters',
+        popover: {
+          title: 'Filter by status, tag, or collection',
+          description: 'Show only Active, Draft, or Archived products. Filter by tag or collection to focus on a specific part of your catalog.',
+          side: 'bottom', align: 'start'
+        }
+      },
+      {
+        element: '.table-scroll',
+        popover: {
+          title: 'Click any cell to edit',
+          description: 'Click directly on a product title, price, status, tags, or description. Changes are staged locally — nothing is sent to Shopify until you push.',
+          side: 'top', align: 'center'
+        }
+      },
+      {
+        element: '#chk-all',
+        popover: {
+          title: 'Select products for bulk actions',
+          description: 'Check one or more rows to unlock the bulk toolbar: change prices, update status, edit tags, descriptions, SEO, metafields, and collections — all at once.',
+          side: 'right', align: 'start'
+        }
+      },
+      {
+        element: '#status-msg',
+        popover: {
+          title: 'Live change counter',
+          description: 'The status bar shows how many products have unsaved changes, and how many are selected. A <em>Discard</em> button appears whenever you have staged edits.',
+          side: 'top', align: 'start'
+        }
+      },
+      {
+        element: '#btn-schedule',
+        popover: {
+          title: 'Schedule changes',
+          description: 'Set changes to go live at a specific date and time. Ideal for flash sales or product launches. Pro plan includes auto-revert when the sale ends.',
+          side: 'bottom', align: 'end'
+        }
+      },
+      {
+        element: '#btn-save',
+        popover: {
+          title: 'Push to Shopify',
+          description: 'When you\'re happy with your edits, push them all to Shopify with one click. You\'ll see a full summary of every change before confirming.',
+          side: 'bottom', align: 'end'
+        }
+      },
+      {
+        element: '.tab[data-tab="export"]',
+        popover: {
+          title: 'Export & Import CSV',
+          description: 'Export your catalog, edit it in Excel or Sheets, then import it back to apply changes in bulk. The template includes all the columns you need.',
+          side: 'bottom', align: 'start'
+        }
+      },
+      {
+        element: '#btn-feedback',
+        popover: {
+          title: 'You\'re all set',
+          description: 'Found a bug, or have a feature request? Hit <strong>Feedback</strong> — we read every message and reply to all of them.',
+          side: 'bottom', align: 'end'
+        }
+      }
+    ]
+  });
+  setTimeout(() => d.drive(), 600);
+}
+
+function maybeStartTour(){
+  if(localStorage.getItem('lederly_tour_v1')) return;
+  startTour();
 }
 
 document.addEventListener('DOMContentLoaded', boot);
