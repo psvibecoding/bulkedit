@@ -6,7 +6,7 @@
   <title>Lederly — App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/styles.css?v=26"/>
+  <link rel="stylesheet" href="/styles.css?v=27"/>
 </head>
 <body>
 <div id="app">
@@ -58,6 +58,7 @@
       <div class="topbar-r">
         <button class="btn-ghost sm" id="btn-disconnect">Disconnect</button>
         <button class="btn-ghost sm" id="btn-feedback" title="Send feedback">Feedback</button>
+        <button class="btn-discard hidden" id="btn-discard">✕ Discard changes</button>
         <button class="btn-sched" id="btn-schedule">✦ Schedule</button>
         <button class="btn-save" id="btn-save" disabled>
           ↑ Push to Shopify <span id="save-count" class="save-badge">0</span>
@@ -330,6 +331,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=47"></script>
+<script src="/app-tool.js?v=48"></script>
 </body>
 </html>

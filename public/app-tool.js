@@ -724,21 +724,33 @@ function updateBulkBar(){
   const n=S.selectedVids.size;
   $('bulk-bar').classList.toggle('hidden',n===0);
   $('bulk-lbl').textContent=`${n} selected`;
+  updateSaveBtn();
 }
 function getSelPids(){ const ids=new Set(); S.selectedVids.forEach(vid=>{const{p}=getVar(vid);if(p)ids.add(p.id);}); return[...ids]; }
 
 /* ── SAVE BUTTON ── */
 function updateSaveBtn(){
   const n=Object.keys(S.changes).length;
+  const sel=S.selectedVids.size;
   $('btn-save').disabled=!n; $('save-count').textContent=n;
+  $('btn-discard').classList.toggle('hidden',!n);
   if(n){
-    setStatus(`${n} unsaved change${n!==1?'s':''}`, 'dirty');
+    const selPart=sel?` · ${sel} selected`:'';
+    setStatus(`${n} unsaved change${n!==1?'s':''}${selPart}`, 'dirty');
     Object.keys(S.changes).forEach(pid=>{
       document.querySelectorAll(`tr[data-pid="${pid}"]`).forEach(tr=>tr.classList.add('r-changed'));
     });
   }else{
-    setStatus('Ready','ready');
+    const selPart=sel?`${sel} selected`:'Ready';
+    setStatus(selPart, sel?'':'ready');
   }
+}
+
+function discardChanges(){
+  if(!Object.keys(S.changes).length) return;
+  S.changes={};
+  renderTable(); updateSaveBtn();
+  toast('Changes discarded.');
 }
 
 /* ── BULK MODAL ── */
@@ -1546,6 +1558,7 @@ function boot(){
 
   // Topbar
   $('btn-disconnect').addEventListener('click', disconnect);
+  $('btn-discard').addEventListener('click', discardChanges);
   $('btn-save').addEventListener('click', openSaveModal);
   $('btn-refresh').addEventListener('click', ()=>{ if(!S.demo) Promise.all([loadMfDefs(), loadProducts(S.searchQ)]); });
 

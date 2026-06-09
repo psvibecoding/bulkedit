@@ -310,6 +310,8 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 /* ═══════════ SCHEDULE ═══════════ */
 .sched-ico{position:relative;font-size:15px}
 .sched-badge{position:absolute;top:-3px;right:-5px;background:var(--amber);color:#fff;border-radius:8px;font-size:8px;font-family:var(--mono);padding:0 4px;line-height:14px;min-width:14px;text-align:center;pointer-events:none}
+.btn-discard{display:inline-flex;align-items:center;gap:5px;background:transparent;color:var(--t3);border:1px solid var(--b2);border-radius:var(--r6);padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:var(--font);letter-spacing:.02em;transition:all .15s}
+.btn-discard:hover{background:#fef2f2;border-color:#fca5a5;color:#dc2626}
 .btn-sched{display:inline-flex;align-items:center;gap:6px;background:rgba(134,239,172,.09);color:#9fedb8;border:1px solid rgba(134,239,172,.22);border-radius:var(--r6);padding:6px 13px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);letter-spacing:.03em;transition:all .18s;box-shadow:0 0 14px rgba(134,239,172,.06),inset 0 1px 0 rgba(134,239,172,.08)}
 .btn-sched:hover:not(:disabled){background:rgba(134,239,172,.15);border-color:rgba(134,239,172,.38);color:#86efac;box-shadow:0 0 20px rgba(134,239,172,.14),inset 0 1px 0 rgba(134,239,172,.12);transform:translateY(-1px)}
 .btn-sched:disabled{opacity:.25;cursor:not-allowed;transform:none;box-shadow:none}
