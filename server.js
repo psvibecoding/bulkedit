@@ -290,6 +290,33 @@ function afterColor(field, beforeVal, afterVal) {
   return empty ? '#dc2626' : '#1a5c38';
 }
 
+function schedRecapToken(id) {
+  if (!SCHED_SECRET) return null;
+  return crypto.createHmac('sha256', SCHED_SECRET).update(String(id)).digest('hex').slice(0, 32);
+}
+
+function buildChangesCSV(changes) {
+  const FL = { status:'Status',vendor:'Vendor',title:'Title',tags:'Tags',productType:'Type',price:'Price',compareAtPrice:'Compare at' };
+  const esc = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
+  const rows = [['Product','Field','Before','After'].map(esc).join(',')];
+  for (const c of (changes || [])) {
+    const name = c.productTitle || c.productId.split('/').pop();
+    Object.entries(c.product || {}).forEach(([f, nv]) => {
+      if (f === 'bodyHtml') return;
+      rows.push([name, FL[f]||f, fmtField(f,c.before?.[f]), fmtField(f,nv)].map(esc).join(','));
+    });
+    Object.entries(c.variants || {}).forEach(([vid, v]) => {
+      const vb = c.variantsBefore?.[vid];
+      const sfx = vb?.title && vb.title !== 'Default Title' ? ` · ${vb.title}` : '';
+      if (v.price !== undefined) rows.push([name,`Price${sfx}`,fmtPrice(vb?.price),fmtPrice(v.price)].map(esc).join(','));
+      if (v.compareAtPrice !== undefined) rows.push([name,`Compare at${sfx}`,fmtPrice(vb?.compareAtPrice),fmtPrice(v.compareAtPrice)].map(esc).join(','));
+    });
+    const mfc = (c.metafields||[]).length;
+    if (mfc) rows.push([name,'Metafields','',`${mfc} field${mfc!==1?'s':''} updated`].map(esc).join(','));
+  }
+  return rows.join('\n');
+}
+
 function buildEmailHtml(sched, success, linkedRevert = null) {
   const tz = sched.timezone || NOTIFY_TZ;
   const dt = new Date(sched.executedAt || sched.scheduledFor)
@@ -298,7 +325,11 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
   const FIELD_LABELS = { status: 'Status', vendor: 'Vendor', title: 'Title', tags: 'Tags', productType: 'Type', price: 'Price', compareAtPrice: 'Compare at' };
 
-  const productBlocks = (sched.changes || []).map(c => {
+  const recapToken = schedRecapToken(sched.id);
+  const visibleChanges = (sched.changes || []).slice(0, 10);
+  const hiddenCount = n - visibleChanges.length;
+
+  const productBlocks = visibleChanges.map(c => {
     const prodTitle = c.productTitle || c.productId.split('/').pop();
     const imgUrl    = c.productImage || '';
     const rows = [];
@@ -465,15 +496,24 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       <div style="font-size:13px;color:#b91c1c">${sched.error || 'Unknown error'}</div>
     </div>` : ''}
 
+    ${revertBanner}
+
     <!-- Products -->
     <div style="padding:4px 40px 8px">
       <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;padding:20px 0 4px">
         ${n} product${n !== 1 ? 's' : ''} updated
       </div>
       ${productBlocks || `<div style="padding:16px 0;font-size:13px;color:#9ca3af">No product details available.</div>`}
+      ${hiddenCount > 0 ? `
+      <div style="padding:14px 0 6px;border-top:1px solid #f0f0ec;text-align:center">
+        <span style="font-size:13px;color:#9ca3af">+${hiddenCount} more product${hiddenCount !== 1 ? 's' : ''} not shown in this email</span>
+        ${recapToken ? `&nbsp;&nbsp;<a href="${APP_URL}/api/schedule/recap/${sched.id}?token=${recapToken}" style="color:#1a5c38;font-size:13px;font-weight:600;text-decoration:none">View all →</a>` : ''}
+      </div>` : ''}
+      ${recapToken && n > 0 ? `
+      <div style="padding:8px 0 12px${hiddenCount === 0 ? ';margin-top:8px;border-top:1px solid #f0f0ec' : ''}">
+        <a href="${APP_URL}/api/schedule/recap/${sched.id}/csv?token=${recapToken}" style="display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;text-decoration:none;font-size:12px;font-weight:600;padding:7px 14px;border-radius:8px">↓ Download CSV</a>
+      </div>` : ''}
     </div>
-
-    ${revertBanner}
 
     <!-- Feedback nudge -->
     <div style="margin:8px 40px 0;background:#f9f9f7;border-radius:12px;padding:16px 20px;text-align:center">
@@ -506,12 +546,12 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 </body></html>`;
 }
 
-async function sendEmail({ to, subject, html }) {
+async function sendEmail({ to, subject, html, attachments = [] }) {
   if (!RESEND_API_KEY) { console.error('[notify] RESEND_API_KEY not set'); return { ok: false, error: 'RESEND_API_KEY not set' }; }
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
-    body: JSON.stringify({ from: `Lederly <${NOTIFY_FROM}>`, to: [to], subject, html }),
+    body: JSON.stringify({ from: `Lederly <${NOTIFY_FROM}>`, to: [to], subject, html, ...(attachments.length ? { attachments } : {}) }),
   });
   const body = await r.text();
   if (!r.ok) { console.error('[notify] resend error:', body); return { ok: false, error: `Resend error (${r.status}): ${body}` }; }
@@ -521,7 +561,13 @@ async function sendEmail({ to, subject, html }) {
 async function sendNotification(sched, success, linkedRevert = null) {
   if (!RESEND_API_KEY || !sched.notifyEmail) return;
   const subject = success ? `✅ Schedule executed: ${sched.label}` : `❌ Schedule failed: ${sched.label}`;
-  const result = await sendEmail({ to: sched.notifyEmail, subject, html: buildEmailHtml(sched, success, linkedRevert) });
+  const attachments = [];
+  if ((sched.changes || []).length > 0) {
+    const csv = buildChangesCSV(sched.changes);
+    const label = (sched.label || sched.id).slice(0, 40).replace(/[^a-z0-9]/gi, '-');
+    attachments.push({ filename: `lederly-${label}.csv`, content: Buffer.from(csv, 'utf-8').toString('base64') });
+  }
+  const result = await sendEmail({ to: sched.notifyEmail, subject, html: buildEmailHtml(sched, success, linkedRevert), attachments });
   if (!result.ok) console.error('[notify] failed to send:', result.error);
 }
 
@@ -1243,6 +1289,38 @@ app.get('/api/admin/stats', (req, res) => {
     events: analytics.counts,
     since: new Date(analytics.start).toISOString(),
   });
+});
+
+app.get('/api/schedule/recap/:id', (req, res) => {
+  const { id } = req.params;
+  const { token } = req.query;
+  if (!SCHED_SECRET || token !== schedRecapToken(id)) return res.status(403).send('Invalid or expired link.');
+  const sched = schedules.find(s => s.id === id);
+  if (!sched) return res.status(404).send('Schedule not found.');
+  const changes = sched.changes || [];
+  const tz = sched.timezone || NOTIFY_TZ;
+  const dt = new Date(sched.executedAt || sched.scheduledFor)
+    .toLocaleString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', timeZone: tz });
+  const rows = changes.map(c => {
+    const title = c.productTitle || c.productId.split('/').pop();
+    const img = c.productImage ? `<img src="${c.productImage.replace(/"/g,'&quot;')}" width="36" height="36" style="border-radius:6px;object-fit:cover;vertical-align:middle;margin-right:10px;border:1px solid #f0f0ec">` : '';
+    return `<tr><td style="padding:10px 0;border-bottom:1px solid #f3f3f1;font-size:13px;color:#0e0e0c;vertical-align:middle">${img}${title}</td></tr>`;
+  }).join('');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>All changes · ${sched.label}</title><style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#eeecea;margin:0;padding:40px 20px 60px;-webkit-font-smoothing:antialiased}.card{background:#fff;border-radius:20px;max-width:580px;margin:0 auto;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.05)}.bar{background:#1a5c38;height:5px}.head{padding:28px 36px 20px;border-bottom:1px solid #f3f3f1}.logo{display:flex;align-items:center;gap:8px;margin-bottom:18px;text-decoration:none}.logo-m{background:#1a5c38;border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;letter-spacing:.04em}.logo-n{font-size:11px;font-weight:600;color:#4b5563;letter-spacing:.12em;text-transform:uppercase}h1{margin:0 0 6px;font-size:18px;font-weight:700;color:#0e0e0c;letter-spacing:-.02em}p.sub{margin:0;font-size:13px;color:#9ca3af}.body{padding:8px 36px 16px}table{width:100%;border-collapse:collapse}.dl{display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;text-decoration:none;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;margin:16px 0 8px}.foot{padding:16px 36px;border-top:1px solid #f3f3f1;font-size:12px;color:#9ca3af}</style></head><body><div class="card"><div class="bar"></div><div class="head"><a href="${APP_URL}" class="logo"><div class="logo-m">L</div><span class="logo-n">Lederly</span></a><h1>${sched.label}</h1><p class="sub">${dt} &nbsp;·&nbsp; ${sched.shop} &nbsp;·&nbsp; ${changes.length} product${changes.length!==1?'s':''} updated</p></div><div class="body"><a href="/api/schedule/recap/${id}/csv?token=${token}" class="dl">↓ Download CSV</a><table>${rows}</table></div><div class="foot">Sent by <a href="${APP_URL}" style="color:#1a5c38;text-decoration:none;font-weight:500">Lederly</a> — bulk product editing for Shopify</div></div></body></html>`);
+});
+
+app.get('/api/schedule/recap/:id/csv', (req, res) => {
+  const { id } = req.params;
+  const { token } = req.query;
+  if (!SCHED_SECRET || token !== schedRecapToken(id)) return res.status(403).send('Invalid or expired link.');
+  const sched = schedules.find(s => s.id === id);
+  if (!sched) return res.status(404).send('Schedule not found.');
+  const csv = buildChangesCSV(sched.changes || []);
+  const label = (sched.label || id).slice(0, 40).replace(/[^a-z0-9]/gi, '-');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="lederly-${label}.csv"`);
+  res.send(csv);
 });
 
 app.use((req, res) => res.status(404).json({ ok: false, error: 'Not found' }));
