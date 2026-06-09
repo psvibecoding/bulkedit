@@ -690,13 +690,7 @@ function toggleRowSel(vid,checked){
   const row=document.querySelector(`tr[data-vid="${vid}"]`);
   if(row)row.classList.toggle('r-selected',checked);
 }
-async function toggleAll(checked){
-  if(checked && S.pageInfo.hasNextPage){
-    const chkAll=$('chk-all');
-    if(chkAll){chkAll.disabled=true;chkAll.indeterminate=true;}
-    await loadAllProducts(S.searchQ);
-    if(chkAll){chkAll.disabled=false;chkAll.indeterminate=false;chkAll.checked=true;}
-  }
+function toggleAll(checked){
   document.querySelectorAll('.row-chk').forEach(cb=>{cb.checked=checked;toggleRowSel(cb.dataset.vid,checked);});
 }
 function updateBulkBar(){
