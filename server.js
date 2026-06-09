@@ -168,7 +168,7 @@ function safeMetafields(mf = []) {
   });
 }
 
-async function gql({ shop, token }, query, variables = {}) {
+async function gql({ shop, token }, query, variables = {}, _retry = 0) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), SHOPIFY_TIMEOUT_MS);
   try {
@@ -177,8 +177,19 @@ async function gql({ shop, token }, query, variables = {}) {
       headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': token, 'User-Agent': 'Lederly/1.0' },
       body: JSON.stringify({ query, variables })
     });
+    // HTTP 429 — wait Retry-After then retry (max 4 attempts)
+    if (r.status === 429 && _retry < 4) {
+      const wait = parseFloat(r.headers.get('Retry-After') || '2') * 1000;
+      await new Promise(res => setTimeout(res, wait));
+      return gql({ shop, token }, query, variables, _retry + 1);
+    }
     const text = await r.text();
     let json; try { json = JSON.parse(text); } catch { json = { raw: text }; }
+    // GraphQL THROTTLED — backoff and retry
+    if (json.errors?.some(e => e.extensions?.code === 'THROTTLED') && _retry < 4) {
+      await new Promise(res => setTimeout(res, (1 + _retry) * 1000));
+      return gql({ shop, token }, query, variables, _retry + 1);
+    }
     if (!r.ok || json.errors) throw new Error((json.errors?.[0]?.message || json.raw || `API ${r.status}`).slice(0, 300));
     return json.data;
   } finally { clearTimeout(t); }
@@ -579,20 +590,34 @@ async function executeSchedule(sched, schedules) {
     const token = decryptToken(sched.encToken);
     if (!token) throw new Error('Could not decrypt token — was SCHED_SECRET changed?');
     const session = { shop: sched.shop, token };
-    for (const c of sched.changes) {
-      const mf = (c.metafields || []).map(({ _idx, ...rest }) => rest);
-      await execSaveProduct(session, {
-        productId: c.productId,
-        product:   c.product   || {},
-        variants:  Object.values(c.variants || {}),
-        metafields: mf,
-      });
+    const changes = sched.changes;
+    const prodErrors = [];
+
+    // Process in parallel batches of 5 — per-product error tracking
+    for (let i = 0; i < changes.length; i += 5) {
+      await Promise.all(changes.slice(i, i + 5).map(async c => {
+        try {
+          const mf = (c.metafields || []).map(({ _idx, ...rest }) => rest);
+          await execSaveProduct(session, {
+            productId:  c.productId,
+            product:    c.product   || {},
+            variants:   Object.values(c.variants || {}),
+            metafields: mf,
+          });
+        } catch (e) {
+          prodErrors.push(safeErr(e));
+        }
+      }));
     }
+
     sched.status     = 'executed';
     sched.executedAt = new Date().toISOString();
     sched.encToken   = null;
+    if (prodErrors.length) {
+      sched.error = `${prodErrors.length}/${changes.length} products failed: ${prodErrors.slice(0, 3).join('; ')}`;
+    }
     const linkedRevert = schedules.find(s => s.linkedTo === sched.id && s.status === 'pending') || null;
-    sendNotification(sched, true, linkedRevert).catch(() => {});
+    sendNotification(sched, prodErrors.length === 0, linkedRevert).catch(() => {});
   } catch (e) {
     sched.status = 'failed';
     sched.error  = safeErr(e);
