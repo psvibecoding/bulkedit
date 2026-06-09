@@ -815,7 +815,7 @@ function openBulkModal(type){
     $('bv-desc-clear')?.addEventListener('change',e=>{ const ta=$('bv-desc'); if(ta){ta.disabled=e.target.checked;ta.style.opacity=e.target.checked?'.35':'1';} });
   }
   if(type==='seo'){
-    body.innerHTML=`<div class="bulk-field"><label>SEO Title <span style="color:var(--t4);font-weight:400">(leave blank to keep current)</span></label><input id="bv-seo-title" type="text" maxlength="320" placeholder="e.g. Product Name | Store Name" autofocus></div><div class="bulk-field"><label>SEO Description</label><textarea id="bv-seo-desc" rows="3" maxlength="5000" placeholder="Brief description for search engines…" style="resize:vertical;min-height:72px"></textarea></div>`;
+    body.innerHTML=`<div class="bulk-field"><label>SEO Title <span style="color:var(--t4);font-weight:400">(leave blank to keep current)</span></label><input id="bv-seo-title" type="text" maxlength="320" placeholder="e.g. Product Name | Store Name" autofocus><label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:6px;font-weight:400"><input type="checkbox" id="bv-seo-title-clear" style="accent-color:var(--red)"> Clear SEO title</label></div><div class="bulk-field"><label>SEO Description</label><textarea id="bv-seo-desc" rows="3" maxlength="5000" placeholder="Brief description for search engines…" style="resize:vertical;min-height:72px"></textarea><label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:6px;font-weight:400"><input type="checkbox" id="bv-seo-desc-clear" style="accent-color:var(--red)"> Clear SEO description</label></div>`;
   }
   openModal('m-bulk');
   setTimeout(()=>body.querySelector('input,select,textarea')?.focus(),60);
@@ -960,17 +960,19 @@ function applyBulkModal(){
     renderTable(); updateSaveBtn(); toast(`Description updated on ${pids.length} product${pids.length!==1?'s':''}.`);
   }
   if(type==='seo'){
-    const title=($('bv-seo-title')?.value||'').trim();
-    const desc=($('bv-seo-desc')?.value||'').trim();
-    if(!title&&!desc)return toast('Enter at least a SEO title or description.');
+    const clearTitle=$('bv-seo-title-clear')?.checked;
+    const clearDesc=$('bv-seo-desc-clear')?.checked;
+    const title=clearTitle?'':($('bv-seo-title')?.value||'').trim();
+    const desc=clearDesc?'':($('bv-seo-desc')?.value||'').trim();
+    if(!clearTitle&&!clearDesc&&!title&&!desc)return toast('Enter a value or check Clear for at least one field.');
     const pids=getSelPids(); if(!pids.length)return toast('Select products first.');
     pushH('Bulk SEO update');
     pids.forEach(pid=>{
       const p=getProd(pid); if(!p)return;
       if(!p.seo)p.seo={title:'',description:''};
       const c=ensureC(pid); if(!c.product.seo)c.product.seo={};
-      if(title){p.seo.title=title;c.product.seo.title=title;}
-      if(desc){p.seo.description=desc;c.product.seo.description=desc;}
+      if(clearTitle||title){p.seo.title=title;c.product.seo.title=title;}
+      if(clearDesc||desc){p.seo.description=desc;c.product.seo.description=desc;}
     });
     renderTable(); updateSaveBtn(); toast(`SEO updated on ${pids.length} products.`);
   }
