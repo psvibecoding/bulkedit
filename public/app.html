@@ -94,6 +94,7 @@
           <select id="tag-filter" class="tag-sel"><option value="">All</option></select>
           <button class="btn-refresh" id="btn-refresh">↺ Refresh</button>
           <button class="btn-refresh" id="btn-import-csv" style="border-color:var(--green);color:var(--green)">↑ Import CSV</button>
+          <button class="btn-refresh" id="btn-csv-template" title="Download a ready-to-fill CSV template">↓ Template</button>
           <input type="file" id="csv-file-input" accept=".csv,.tsv,text/csv" style="display:none">
         </div>
         <div id="bulk-bar" class="bulk-bar hidden">
@@ -322,6 +323,7 @@
     <div class="modal-foot" style="justify-content:space-between">
       <span id="m-import-info" style="font-size:11px;color:var(--t3);font-family:var(--mono)"></span>
       <div class="btn-row">
+        <button class="btn-ghost sm" id="m-import-tpl">↓ Template</button>
         <button class="btn-ghost sm" data-close="m-import">Cancel</button>
         <button class="btn-cta sm" id="m-import-apply" disabled>Apply changes →</button>
       </div>
@@ -330,6 +332,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=37"></script>
+<script src="/app-tool.js?v=38"></script>
 </body>
 </html>

@@ -1651,8 +1651,10 @@ function boot(){
 
   // CSV Import
   $('btn-import-csv').addEventListener('click', ()=> $('csv-file-input').click());
+  $('btn-csv-template').addEventListener('click', downloadCSVTemplate);
   $('csv-file-input').addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) openImportModal(f); e.target.value=''; });
   $('m-import-apply').addEventListener('click', applyImport);
+  $('m-import-tpl').addEventListener('click', downloadCSVTemplate);
 
   // Generic close buttons
   document.addEventListener('click',e=>{
@@ -1688,7 +1690,15 @@ function boot(){
 }
 
 // ═══════════ CSV IMPORT ═══════════
-let _importData = null; // { rows, mapping, matched }
+let _importData = null;
+
+function downloadCSVTemplate() {
+  const headers = ['Handle','Title','Body (HTML)','Vendor','Tags','Status','Product Type','Variant SKU','Variant Price','Variant Compare At Price','SEO Title','SEO Description'];
+  const example = ['my-product-handle','My Product Title','<p>Product description here.</p>','My Brand','tag1, tag2, tag3','Active','T-Shirts','SKU-001','29.99','49.99','My Product | Store Name','Short description for search engines (max 160 chars)'];
+  const csv = [headers, example].map(r => r.map(v => `"${v.replace(/"/g,'""')}"`).join(',')).join('\n');
+  dlText(csv, 'lederly-import-template.csv');
+  toast('Template downloaded — fill it in and import it back.');
+}
 
 function parseCSV(text) {
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
