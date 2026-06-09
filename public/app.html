@@ -6,7 +6,7 @@
   <title>Lederly — App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="/styles.css?v=24"/>
+  <link rel="stylesheet" href="/styles.css?v=25"/>
 </head>
 <body>
 <div id="app">
@@ -90,7 +90,8 @@
           <button class="filter" data-f="changed">Modified</button>
           <span class="filter-div"></span>
           <span class="filter-lbl">Tag</span>
-          <select id="tag-filter" class="tag-sel"><option value="">All</option></select>
+          <select id="tag-filter" class="tag-sel"><option value="">All tags</option></select>
+          <select id="coll-filter" class="tag-sel"><option value="">All collections</option></select>
           <button class="btn-refresh" id="btn-refresh">↺ Refresh</button>
           <button class="btn-refresh" id="btn-import-csv" style="border-color:var(--green);color:var(--green)">↑ Import CSV</button>
           <button class="btn-refresh" id="btn-csv-template" title="Download a ready-to-fill CSV template">↓ Template</button>
@@ -126,6 +127,7 @@
               <th>Status</th>
               <th>Vendor</th>
               <th>Tags</th>
+              <th>Collections</th>
               <th>Variant</th>
               <th>SKU</th>
               <th>Price</th>
@@ -335,6 +337,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=44"></script>
+<script src="/app-tool.js?v=45"></script>
 </body>
 </html>

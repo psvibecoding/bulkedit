@@ -21,7 +21,7 @@ let S = {
   collsCache:null,
   locations:null,
   past:[], future:[],
-  filter:'all', searchQ:'', tagFilter:'',
+  filter:'all', searchQ:'', tagFilter:'', collFilter:'',
   selectedVids: new Set(),
   bulkType: null,
   schedules:[],
@@ -40,6 +40,7 @@ const DEMO_MF_DEFS = [
 const DEMO_PRODUCTS = [
   { id:'gid://shopify/Product/1', title:'Merino Wool Crew Neck Sweater', status:'ACTIVE', vendor:'NordWear', tags:['knitwear','winter','new-arrivals'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=80&q=70' },
+    collections:{ nodes:[{id:'gid://shopify/Collection/1',title:'Winter Sale'},{id:'gid://shopify/Collection/2',title:'Clothing'}] },
     variants:{ nodes:[
       { id:'gid://shopify/ProductVariant/11', title:'S', sku:'NW-MERINO-S', price:'89.00', compareAtPrice:'', inventoryQuantity:45, inventoryItem:{id:'gid://shopify/InventoryItem/11'}, metafields:{ nodes:[{ namespace:'custom', key:'material', type:'single_line_text_field', value:'100% Merino Wool' }] } },
       { id:'gid://shopify/ProductVariant/12', title:'M', sku:'NW-MERINO-M', price:'89.00', compareAtPrice:'', inventoryQuantity:62, inventoryItem:{id:'gid://shopify/InventoryItem/12'}, metafields:{ nodes:[] } },
@@ -47,11 +48,13 @@ const DEMO_PRODUCTS = [
     ]}},
   { id:'gid://shopify/Product/2', title:'Leather Crossbody Bag — Tan', status:'ACTIVE', vendor:'StudioLeather', tags:['bags','accessories','sale'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=80&q=70' },
+    collections:{ nodes:[{id:'gid://shopify/Collection/3',title:'Accessories'},{id:'gid://shopify/Collection/1',title:'Winter Sale'}] },
     variants:{ nodes:[
       { id:'gid://shopify/ProductVariant/21', title:'Default', sku:'SL-CROSS-TAN', price:'149.00', compareAtPrice:'189.00', inventoryQuantity:18, inventoryItem:{id:'gid://shopify/InventoryItem/21'}, metafields:{ nodes:[{ namespace:'custom', key:'campaign_label', type:'single_line_text_field', value:'Summer Sale' }] } },
     ]}},
   { id:'gid://shopify/Product/3', title:'Organic Cotton Oversized Tee', status:'ACTIVE', vendor:'EarthBasics', tags:['apparel','sustainable','basics'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&q=70' },
+    collections:{ nodes:[{id:'gid://shopify/Collection/2',title:'Clothing'}] },
     variants:{ nodes:[
       { id:'gid://shopify/ProductVariant/31', title:'XS / White', sku:'EB-TEE-XS-WHT', price:'34.00', compareAtPrice:'', inventoryQuantity:0,  inventoryItem:{id:'gid://shopify/InventoryItem/31'}, metafields:{ nodes:[] } },
       { id:'gid://shopify/ProductVariant/32', title:'S / White',  sku:'EB-TEE-S-WHT',  price:'34.00', compareAtPrice:'', inventoryQuantity:55, inventoryItem:{id:'gid://shopify/InventoryItem/32'}, metafields:{ nodes:[] } },
@@ -59,17 +62,20 @@ const DEMO_PRODUCTS = [
     ]}},
   { id:'gid://shopify/Product/4', title:'Ceramic Pour-Over Coffee Set', status:'DRAFT', vendor:'KitchenStudio', tags:['kitchen','coffee','gifts'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=80&q=70' },
+    collections:{ nodes:[{id:'gid://shopify/Collection/4',title:'Gifts & Home'}] },
     variants:{ nodes:[
       { id:'gid://shopify/ProductVariant/41', title:'White',       sku:'KS-POUROVER-WHT', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:22, inventoryItem:{id:'gid://shopify/InventoryItem/41'}, metafields:{ nodes:[{ namespace:'seo', key:'custom_title', type:'single_line_text_field', value:'' }] } },
       { id:'gid://shopify/ProductVariant/42', title:'Matte Black', sku:'KS-POUROVER-BLK', price:'64.00', compareAtPrice:'79.00', inventoryQuantity:14, inventoryItem:{id:'gid://shopify/InventoryItem/42'}, metafields:{ nodes:[] } },
     ]}},
   { id:'gid://shopify/Product/5', title:'Natural Rubber Yoga Mat 6mm', status:'ACTIVE', vendor:'MoveWell', tags:['fitness','yoga','eco'],
     featuredImage:{ url:'https://images.unsplash.com/photo-1588286840104-8957b019727f?w=80&q=70' },
+    collections:{ nodes:[{id:'gid://shopify/Collection/5',title:'Sports & Fitness'}] },
     variants:{ nodes:[
       { id:'gid://shopify/ProductVariant/51', title:'Default', sku:'MW-YOGAMAT-6MM', price:'78.00', compareAtPrice:'', inventoryQuantity:33, inventoryItem:{id:'gid://shopify/InventoryItem/51'}, metafields:{ nodes:[{ namespace:'custom', key:'thickness_mm', type:'number_integer', value:'6' }] } },
     ]}},
   { id:'gid://shopify/Product/6', title:'Linen Duvet Cover Set — King', status:'ARCHIVED', vendor:'HomeTextile', tags:['bedding','linen','home'],
     featuredImage:null,
+    collections:{ nodes:[{id:'gid://shopify/Collection/4',title:'Gifts & Home'}] },
     variants:{ nodes:[
       { id:'gid://shopify/ProductVariant/61', title:'Sand', sku:'HT-DUVET-K-SND', price:'189.00', compareAtPrice:'229.00', inventoryQuantity:7, inventoryItem:{id:'gid://shopify/InventoryItem/61'}, metafields:{ nodes:[] } },
     ]}},
@@ -133,7 +139,7 @@ async function afterOAuth(shop, token, silent=false){
     sessionStorage.setItem('be_token', token);
     $('store-name').textContent = t.shop.name;
     $('loading-msg').textContent='Loading products…';
-    await Promise.all([ loadProducts(), loadMfDefs() ]);
+    await Promise.all([ loadProducts(), loadMfDefs(), loadColls() ]);
     saveProductsCache(t.shop.name);
     showScreen('s-app');
     loadSchedules();
@@ -172,7 +178,7 @@ async function loadProducts(q='', append=false){
     }
     S.pageInfo=r.pageInfo||{hasNextPage:false,endCursor:null};
     renderTable();
-    if(!append){ initExportFields(); buildTagFilter(); }
+    if(!append){ initExportFields(); buildTagFilter(); buildCollFilter(); }
     setStatus(`${S.products.length} product${S.products.length!==1?'s':''} loaded${S.pageInfo.hasNextPage?' · more available':''}`);;
     renderLoadMore();
   }catch(e){
@@ -225,6 +231,7 @@ function normProd(p){
     bodyHtml: p.bodyHtml ?? p.descriptionHtml ?? '',
     featuredImage: p.featuredImage||null,
     seo: p.seo||{title:'',description:''},
+    collections: (p.collections?.nodes||[]).map(c=>({id:c.id,title:c.title})),
     metafields: { nodes: p.metafields?.nodes||[] },
     variants:{ nodes:(p.variants?.nodes||[]).map(v=>({
       ...v,
@@ -242,7 +249,7 @@ function loadDemoMode(){
   S.mfDefs=DEMO_MF_DEFS;
   $('store-name').textContent='Demo Store';
   $('demo-banner').classList.remove('hidden');
-  renderTable(); initExportFields(); buildTagFilter();
+  renderTable(); initExportFields(); buildTagFilter(); buildCollFilter();
   showScreen('s-app');
   toast('Demo loaded — changes won\'t be saved.');
 }
@@ -264,7 +271,7 @@ async function refreshInBackground(){
     $('store-name').textContent=t.shop.name;
     // Only refresh if no unsaved changes (avoid overwriting user's work)
     if(Object.keys(S.changes).length===0){
-      await Promise.all([loadProducts(),loadMfDefs()]);
+      await Promise.all([loadProducts(),loadMfDefs(),loadColls()]);
       saveProductsCache(t.shop.name);
     }
   }catch{
@@ -277,7 +284,7 @@ function disconnect(){
   sessionStorage.removeItem('be_shop');
   sessionStorage.removeItem('be_token');
   sessionStorage.removeItem('be_cache');
-  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
+  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',collFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
   const lm=document.getElementById('load-more-wrap'); if(lm)lm.style.display='none';
   S.selectedVids=new Set();
   $('f-shop').value='';
@@ -341,7 +348,8 @@ function getFiltered(){
     const ms=!terms.length||terms.some(t=>hay.includes(t));
     const mf=S.filter==='all'?true:S.filter==='changed'?!!S.changes[p.id]:p.status===S.filter;
     const mt=!S.tagFilter||(p.tags||[]).includes(S.tagFilter);
-    return ms&&mf&&mt;
+    const mc=!S.collFilter||(p.collections||[]).some(c=>c.id===S.collFilter);
+    return ms&&mf&&mt&&mc;
   });
 }
 
@@ -354,9 +362,31 @@ function buildTagFilter(){
 }
 
 /* ── RENDER ── */
+function buildCollFilter(){
+  const sel=$('coll-filter'); if(!sel) return;
+  const prev=S.collFilter;
+  const colls=S.collsCache?.length
+    ?[...S.collsCache]
+    :[...new Map(S.products.flatMap(p=>p.collections||[]).map(c=>[c.id,c])).values()].sort((a,b)=>a.title.localeCompare(b.title));
+  sel.innerHTML='<option value="">All collections</option>'+colls.map(c=>`<option value="${esc(c.id)}"${c.id===prev?' selected':''}>${esc(c.title)}</option>`).join('');
+  if(prev && !colls.find(c=>c.id===prev)) S.collFilter='';
+}
+
+async function loadColls(){
+  if(S.demo){
+    S.collsCache=null; // demo uses inline collections from products
+    buildCollFilter(); return;
+  }
+  try{
+    const r=await api('/api/collections',{first:100});
+    S.collsCache=r.collections||[];
+    buildCollFilter();
+  }catch(e){ S.collsCache=[]; }
+}
+
 function renderTable(){
   const rows=getFiltered(); const tbody=$('tbody');
-  if(!rows.length){ tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; return; }
+  if(!rows.length){ tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:48px;color:var(--t3)">No products match.</td></tr>'; return; }
   tbody.innerHTML=rows.map(({p,v})=>rowHTML(p,v)).join('');
   updateSaveBtn(); buildSuggestions(); updateBulkBar(); updateExportPreview(); renderPaginationWarning();
 }
@@ -405,6 +435,7 @@ function rowHTML(p,v){
   const descRow=bodyStripped?`<div class="desc-row">${esc(bodyStripped.slice(0,120)+(bodyStripped.length>120?'…':''))}</div>`:'';
   const seoTitlePH=esc(p.title);
   const seoDescPH=esc(bodyStripped.slice(0,160)+(bodyStripped.length>160?'…':''))||'Meta description…';
+  const collsHTML=(p.collections||[]).map(c=>`<span class="coll-tag" data-coll-id="${esc(c.id)}" title="Filter by ${esc(c.title)}">${esc(c.title)}</span>`).join('')||`<span class="mf-empty">—</span>`;
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
@@ -412,6 +443,7 @@ function rowHTML(p,v){
 <td><div><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span>${statusBadge}</div></td>
 <td><div><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></div>${vendorBadge}</td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div>${tagsBadge}</td>
+<td><div class="colls-wrap">${collsHTML}</div></td>
 <td class="v-title">${esc(v.title||'Default')}</td>
 <td><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"></td>
 <td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}">${priceBadge}</td>
@@ -489,7 +521,7 @@ function initColResize(){
   const table=document.querySelector('table'); if(!table)return;
   table.style.tableLayout='fixed';
   const ths=[...document.querySelectorAll('thead th')];
-  const widths=[34,44,240,90,110,160,110,100,82,90,72,220];
+  const widths=[34,44,240,90,110,160,130,110,100,82,90,72,220];
   ths.forEach((th,i)=>{
     th.style.width=(widths[i]||100)+'px';
     if(i<2)return;
@@ -536,6 +568,12 @@ function bindTable(){
     if(el.classList.contains('tag-add')){ addTagPrompt(el.dataset.pid); return; }
     if(el.classList.contains('mf-add')){ addMfRaw(el.dataset.vid); return; }
     if(el.classList.contains('mf-del')){ removeMfRaw(el.dataset.vid,+el.dataset.idx); return; }
+    if(el.classList.contains('coll-tag')){
+      const cid=el.dataset.collId; if(!cid) return;
+      S.collFilter=S.collFilter===cid?'':cid;
+      const sel=$('coll-filter'); if(sel){ sel.value=S.collFilter; sel.classList.toggle('active',!!S.collFilter); }
+      renderTable(); return;
+    }
   });
 }
 
@@ -1548,6 +1586,12 @@ function boot(){
     S.tagFilter=e.target.value;
     $('tag-filter').classList.toggle('active', !!S.tagFilter);
     if(S.tagFilter && S.pageInfo.hasNextPage && !S.demo) await loadAllProducts(S.searchQ);
+    renderTable();
+  });
+  $('coll-filter').addEventListener('change', async e=>{
+    S.collFilter=e.target.value;
+    $('coll-filter').classList.toggle('active', !!S.collFilter);
+    if(S.collFilter && S.pageInfo.hasNextPage && !S.demo) await loadAllProducts(S.searchQ);
     renderTable();
   });
 

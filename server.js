@@ -898,6 +898,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
             id handle title status vendor tags descriptionHtml
             seo { title description }
             featuredImage { id url altText }
+            collections(first:15) { nodes { id title } }
             metafields(first:50) { nodes { id namespace key type value } }
             variants(first:100) {
               nodes {
