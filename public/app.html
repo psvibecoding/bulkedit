@@ -319,6 +319,10 @@
       <div><h2>Import CSV</h2><p id="m-import-sub" class="modal-sub">Map columns to product fields</p></div>
       <button class="close-btn" data-close="m-import">✕</button>
     </div>
+    <div style="padding:10px 20px 0;font-size:11px;color:var(--t3);line-height:1.6;background:var(--s1);border-bottom:1px solid var(--b1)">
+      <strong style="color:var(--t2)">How to match:</strong> products are identified by the <code style="font-family:var(--mono);background:var(--s3);padding:1px 4px;border-radius:3px">Handle</code> column (unique URL slug). No Handle? Use <code style="font-family:var(--mono);background:var(--s3);padding:1px 4px;border-radius:3px">SKU</code> or <code style="font-family:var(--mono);background:var(--s3);padding:1px 4px;border-radius:3px">Title</code>.<br>
+      <strong style="color:var(--t2)">Best workflow:</strong> <em>Export CSV from the Export tab</em> (includes Handle) → edit in Excel → import back here.
+    </div>
     <div id="m-import-body" class="modal-body"></div>
     <div class="modal-foot" style="justify-content:space-between">
       <span id="m-import-info" style="font-size:11px;color:var(--t3);font-family:var(--mono)"></span>
@@ -332,6 +336,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-<script src="/app-tool.js?v=39"></script>
+<script src="/app-tool.js?v=40"></script>
 </body>
 </html>

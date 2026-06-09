@@ -22,7 +22,7 @@ let S = {
   bulkType: null,
   schedules:[],
   pageInfo:{ hasNextPage:false, endCursor:null },
-  exportFields:['title','status','vendor','tags','variant','sku','price','compareAtPrice'],
+  exportFields:['handle','title','status','vendor','tags','variant','sku','price','compareAtPrice'],
 };
 const MAX_H = 80;
 
@@ -1440,8 +1440,8 @@ function switchTab(name){
 }
 
 /* ── EXPORT ── */
-const EX_ALL=['id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
-const EX_LBL={id:'ID',title:'Title',status:'Status',vendor:'Vendor',tags:'Tags',variant:'Variant',sku:'SKU',price:'Price',compareAtPrice:'Compare at',inventoryQuantity:'Inventory'};
+const EX_ALL=['handle','id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
+const EX_LBL={handle:'Handle',id:'ID',title:'Title',status:'Status',vendor:'Vendor',tags:'Tags',variant:'Variant',sku:'SKU',price:'Price',compareAtPrice:'Compare at',inventoryQuantity:'Inventory'};
 
 function allMfFields(){
   const seen=new Set(), fields=[];
@@ -1693,8 +1693,8 @@ function boot(){
 let _importData = null;
 
 function downloadCSVTemplate() {
-  const headers = ['Handle','Title','Body (HTML)','Vendor','Tags','Status','Product Type','Variant SKU','Variant Price','Variant Compare At Price','SEO Title','SEO Description'];
-  const example = ['my-product-handle','My Product Title','<p>Product description here.</p>','My Brand','tag1, tag2, tag3','Active','T-Shirts','SKU-001','29.99','49.99','My Product | Store Name','Short description for search engines (max 160 chars)'];
+  const headers = ['handle','title','vendor','tags','status','sku','price','compareAtPrice','Body (HTML)','SEO Title','SEO Description'];
+  const example = ['my-summer-tee','Summer Classic Tee','My Brand','sale, summer','Active','SKU-001','29.99','49.99','<p>Lightweight cotton tee perfect for summer.</p>','Summer Classic Tee | My Brand','Lightweight cotton tee, perfect for warm days.'];
   const csv = [headers, example].map(r => r.map(v => `"${v.replace(/"/g,'""')}"`).join(',')).join('\n');
   dlText(csv, 'lederly-import-template.csv');
   toast('Template downloaded — fill it in and import it back.');
