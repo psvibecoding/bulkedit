@@ -25,7 +25,7 @@ let S = {
   selectedVids: new Set(),
   bulkType: null,
   schedules:[],
-  plan:'free', schedLimit:5, schedUsed:0,
+  plan:'free', schedLimit:5, schedUsed:0, pushesUsed:0,
   pageInfo:{ hasNextPage:false, endCursor:null },
   exportFields:['handle','title','status','vendor','tags','variant','sku','price','compareAtPrice'],
 };
@@ -1196,17 +1196,16 @@ function updateSchedBadge(){
 
 function updatePlanBadge(){
   const el=$('plan-badge'); if(!el)return;
-  const limit=S.schedLimit;
-  const used=S.schedUsed;
   const plan=S.plan||'free';
   const planLabel=plan==='pro'?'Pro':plan==='starter'?'Starter':'Free';
-  if(limit===null){
-    el.textContent=`${planLabel} · schedules unlimited`;
-  } else {
-    el.textContent=`${planLabel} · ${used}/${limit} schedules this month`;
-  }
+  const parts=[];
+  if(plan==='free') parts.push(`${S.pushesUsed}/100 products this month`);
+  if(S.schedLimit!==null) parts.push(`${S.schedUsed}/${S.schedLimit} schedules`);
+  else parts.push('schedules unlimited');
+  el.textContent=`${planLabel} · ${parts.join(' · ')}`;
   el.dataset.plan=plan;
-  el.dataset.atLimit=used>=limit?'1':'0';
+  const atLimit=(plan==='free'&&S.pushesUsed>=100)||(S.schedLimit!==null&&S.schedUsed>=S.schedLimit);
+  el.dataset.atLimit=atLimit?'1':'0';
 }
 
 async function loadSchedules(){
@@ -1218,6 +1217,7 @@ async function loadSchedules(){
     S.plan=r.plan||'free';
     S.schedLimit=r.schedLimit??5;
     S.schedUsed=r.schedUsed??0;
+    S.pushesUsed=r.pushesUsed??0;
   }catch{ S.schedules=[]; }
   updateSchedBadge();
   updatePlanBadge();

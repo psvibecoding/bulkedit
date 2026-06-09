@@ -47,6 +47,12 @@ if (process.env.DATABASE_URL) {
     plan TEXT NOT NULL DEFAULT 'free',
     updated_at TIMESTAMPTZ DEFAULT NOW()
   )`).catch(e => console.error('[db] store_plans init error:', e.message));
+  dbPool.query(`CREATE TABLE IF NOT EXISTS store_usage (
+    shop TEXT NOT NULL,
+    month TEXT NOT NULL,
+    pushes INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (shop, month)
+  )`).catch(e => console.error('[db] store_usage init error:', e.message));
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
@@ -58,6 +64,30 @@ async function getStorePlan(shop) {
     const r = await dbPool.query('SELECT plan FROM store_plans WHERE shop=$1', [shop]);
     return r.rows[0]?.plan || 'free';
   } catch { return 'free'; }
+}
+
+function currentMonth() {
+  const n = new Date();
+  return `${n.getUTCFullYear()}-${String(n.getUTCMonth()+1).padStart(2,'0')}`;
+}
+
+async function getPushesThisMonth(shop) {
+  if (!dbPool) return 0;
+  try {
+    const r = await dbPool.query('SELECT pushes FROM store_usage WHERE shop=$1 AND month=$2', [shop, currentMonth()]);
+    return r.rows[0]?.pushes || 0;
+  } catch { return 0; }
+}
+
+async function incrementPushes(shop) {
+  if (!dbPool) return;
+  try {
+    await dbPool.query(
+      `INSERT INTO store_usage (shop, month, pushes) VALUES ($1, $2, 1)
+       ON CONFLICT (shop, month) DO UPDATE SET pushes = store_usage.pushes + 1`,
+      [shop, currentMonth()]
+    );
+  } catch {}
 }
 
 async function countSchedsThisMonth(shop) {
@@ -1015,6 +1045,11 @@ app.post('/api/inventory-set', apiLimiter, writeLimiter, async (req, res) => {
 app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
   try {
     const s = getSession(req);
+    const plan = await getStorePlan(s.shop);
+    if (plan === 'free') {
+      const used = await getPushesThisMonth(s.shop);
+      if (used >= 100) throw Object.assign(new Error(`Free plan limit reached: 100 products pushed this month. Upgrade to Starter for unlimited pushes.`), { code: 'PLAN_LIMIT' });
+    }
     const { productId, product, variants = [], metafields = [] } = req.body || {};
     const results = [];
 
@@ -1087,6 +1122,7 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
     }
 
     track('save', s.shop, { v: variants.length, mf: metafields.length });
+    if (plan === 'free') await incrementPushes(s.shop);
     res.json({ ok: true, results });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -1282,7 +1318,8 @@ app.post('/api/schedule/list', apiLimiter, async (req, res) => {
     const plan = await getStorePlan(shop);
     const schedLimit = PLAN_SCHED_LIMIT[plan] ?? 5;
     const schedUsed = await countSchedsThisMonth(shop);
-    res.json({ ok: true, schedules: mine, persistWarning, plan, schedLimit: isFinite(schedLimit) ? schedLimit : null, schedUsed });
+    const pushesUsed = plan === 'free' ? await getPushesThisMonth(shop) : null;
+    res.json({ ok: true, schedules: mine, persistWarning, plan, schedLimit: isFinite(schedLimit) ? schedLimit : null, schedUsed, pushesUsed });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
