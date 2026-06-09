@@ -275,6 +275,11 @@ function fmtField(field, v) {
   if (field === 'status') return fmtStatus(v);
   if (field === 'price' || field === 'compareAtPrice') return fmtPrice(v);
   if (field === 'tags') return fmtTags(v);
+  if (field === 'bodyHtml') {
+    if (!v) return '—';
+    const stripped = String(v).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return stripped.length > 120 ? stripped.slice(0, 120) + '…' : (stripped || '—');
+  }
   if (v === null || v === undefined || v === '') return '—';
   return String(v);
 }
@@ -296,13 +301,12 @@ function schedRecapToken(id) {
 }
 
 function buildChangesCSV(changes) {
-  const FL = { status:'Status',vendor:'Vendor',title:'Title',tags:'Tags',productType:'Type',price:'Price',compareAtPrice:'Compare at' };
+  const FL = { status:'Status',vendor:'Vendor',title:'Title',tags:'Tags',productType:'Type',price:'Price',compareAtPrice:'Compare at',bodyHtml:'Description' };
   const esc = v => '"' + String(v ?? '').replace(/"/g,'""') + '"';
   const rows = [['Product','Field','Before','After'].map(esc).join(',')];
   for (const c of (changes || [])) {
     const name = c.productTitle || c.productId.split('/').pop();
     Object.entries(c.product || {}).forEach(([f, nv]) => {
-      if (f === 'bodyHtml') return;
       rows.push([name, FL[f]||f, fmtField(f,c.before?.[f]), fmtField(f,nv)].map(esc).join(','));
     });
     Object.entries(c.variants || {}).forEach(([vid, v]) => {
@@ -323,7 +327,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
     .toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: tz });
   const n = (sched.changes || []).length;
 
-  const FIELD_LABELS = { status: 'Status', vendor: 'Vendor', title: 'Title', tags: 'Tags', productType: 'Type', price: 'Price', compareAtPrice: 'Compare at' };
+  const FIELD_LABELS = { status: 'Status', vendor: 'Vendor', title: 'Title', tags: 'Tags', productType: 'Type', price: 'Price', compareAtPrice: 'Compare at', bodyHtml: 'Description' };
 
   const recapToken = schedRecapToken(sched.id);
   const visibleChanges = (sched.changes || []).slice(0, 10);
@@ -336,7 +340,6 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
     // Product-level field changes with before/after
     Object.entries(c.product || {}).forEach(([field, newVal]) => {
-      if (field === 'bodyHtml') return; // skip description, too long
       const label  = FIELD_LABELS[field] || field;
       const before = fmtField(field, c.before?.[field]);
 
@@ -1295,7 +1298,7 @@ app.get('/api/schedule/recap/:id', (req, res) => {
   const { id } = req.params;
   const { token } = req.query;
   if (!SCHED_SECRET || token !== schedRecapToken(id)) return res.status(403).send('Invalid or expired link.');
-  const sched = schedules.find(s => s.id === id);
+  const sched = readSchedules().find(s => s.id === id);
   if (!sched) return res.status(404).send('Schedule not found.');
   const changes = sched.changes || [];
   const tz = sched.timezone || NOTIFY_TZ;
@@ -1314,7 +1317,7 @@ app.get('/api/schedule/recap/:id/csv', (req, res) => {
   const { id } = req.params;
   const { token } = req.query;
   if (!SCHED_SECRET || token !== schedRecapToken(id)) return res.status(403).send('Invalid or expired link.');
-  const sched = schedules.find(s => s.id === id);
+  const sched = readSchedules().find(s => s.id === id);
   if (!sched) return res.status(404).send('Schedule not found.');
   const csv = buildChangesCSV(sched.changes || []);
   const label = (sched.label || id).slice(0, 40).replace(/[^a-z0-9]/gi, '-');

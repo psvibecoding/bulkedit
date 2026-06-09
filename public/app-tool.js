@@ -761,7 +761,12 @@ function openBulkModal(type){
     }
   }
   if(type==='description'){
-    body.innerHTML=`<div class="bulk-field"><label>Description <span style="color:var(--t4);font-weight:400">(HTML allowed · replaces current)</span></label><textarea id="bv-desc" rows="6" placeholder="Product description…" style="resize:vertical;min-height:120px;font-family:var(--mono);font-size:12px" autofocus></textarea></div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="bv-desc-clear" style="accent-color:var(--red)"> Clear description (set empty)</label></div>`;
+    const selPids=getSelPids();
+    const firstDesc=selPids.length>0?(getProd(selPids[0])?.bodyHtml||''):'';
+    const allSame=selPids.length>1&&selPids.every(pid=>getProd(pid)?.bodyHtml===firstDesc);
+    const hint=selPids.length>1&&!allSame?`<p style="font-size:11px;color:var(--t3);margin:4px 0 0;font-family:var(--mono)">Showing first product's description · ${selPids.length} products selected have different descriptions</p>`:'';
+    body.innerHTML=`<div class="bulk-field"><label>Description <span style="color:var(--t4);font-weight:400">(HTML allowed · replaces current)</span></label><textarea id="bv-desc" rows="6" placeholder="Product description…" style="resize:vertical;min-height:120px;font-family:var(--mono);font-size:12px" autofocus></textarea>${hint}</div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="bv-desc-clear" style="accent-color:var(--red)"> Clear description (set empty)</label></div>`;
+    $('bv-desc').value=firstDesc;
     $('bv-desc-clear')?.addEventListener('change',e=>{ const ta=$('bv-desc'); if(ta){ta.disabled=e.target.checked;ta.style.opacity=e.target.checked?'.35':'1';} });
   }
   if(type==='seo'){
@@ -1177,8 +1182,17 @@ function openScheduleModal(){
       const parts=[];
       const fields=Object.keys(c.product||{});
       if(fields.length)parts.push(fields.join(', '));
-      const varCount=Object.keys(c.variants||{}).length;
-      if(varCount)parts.push(`${varCount} variant${varCount!==1?'s':''}`);
+      const varEntries=Object.entries(c.variants||{});
+      if(varEntries.length){
+        const priceOnly=varEntries.every(([,v])=>Object.keys(v).filter(k=>k!=='id').every(k=>k==='price'||k==='compareAtPrice'));
+        if(priceOnly){
+          const hasP=varEntries.some(([,v])=>v.price!==undefined);
+          const hasC=varEntries.some(([,v])=>v.compareAtPrice!==undefined);
+          parts.push(hasP&&hasC?'Price · Compare at':hasP?'Price':'Compare at');
+        } else {
+          parts.push(`${varEntries.length} variant${varEntries.length!==1?'s':''}`);
+        }
+      }
       const mfCount=(c.metafields||[]).length;
       if(mfCount)parts.push(`${mfCount} metafield${mfCount!==1?'s':''}`);
       const imgEl=img
