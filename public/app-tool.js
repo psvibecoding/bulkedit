@@ -748,6 +748,7 @@ function updateSaveBtn(){
 
 function discardChanges(){
   if(!Object.keys(S.changes).length) return;
+  S.products=clone(S.originals);
   S.changes={};
   renderTable(); updateSaveBtn();
   toast('Changes discarded.');
