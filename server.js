@@ -56,14 +56,15 @@ if (process.env.DATABASE_URL) {
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
-const PLAN_SCHED_LIMIT = { free: 5, starter: 5, pro: Infinity };
+const PLAN_SCHED_LIMIT = { beta: 10, free: 5, starter: 5, pro: Infinity };
+const PLAN_PRO_FEATURES = new Set(['beta', 'pro']); // plans with full pro features
 
 async function getStorePlan(shop) {
-  if (!dbPool) return 'free';
+  if (!dbPool) return 'beta';
   try {
     const r = await dbPool.query('SELECT plan FROM store_plans WHERE shop=$1', [shop]);
-    return r.rows[0]?.plan || 'free';
-  } catch { return 'free'; }
+    return r.rows[0]?.plan || 'beta';
+  } catch { return 'beta'; }
 }
 
 function currentMonth() {
@@ -95,6 +96,7 @@ async function countSchedsThisMonth(shop) {
   const now = new Date();
   return schedules.filter(s =>
     s.shop === shop &&
+    !s.linkedTo && // revert schedules don't count — they're part of the same action
     new Date(s.createdAt).getUTCFullYear() === now.getUTCFullYear() &&
     new Date(s.createdAt).getUTCMonth() === now.getUTCMonth()
   ).length;
@@ -178,8 +180,9 @@ const byIpShop     = req => `${req.ip}:${req.headers['x-shopify-shop']||'?'}`;
 const apiLimiter     = rateLimit({ windowMs: 60000,  max: 600, keyFn: byIpShop });
 const writeLimiter   = rateLimit({ windowMs: 60000,  max: 600, keyFn: req => byIpShop(req)+':w' });
 const authLimiter    = rateLimit({ windowMs: 60000,  max: 20,  keyFn: req => req.ip });
-const contactLimiter  = rateLimit({ windowMs: 900000, max: 5,   keyFn: req => req.ip });
+const contactLimiter  = rateLimit({ windowMs: 900000,  max: 5,  keyFn: req => req.ip });
 const feedbackLimiter = rateLimit({ windowMs: 3600000, max: 10, keyFn: req => req.ip });
+const waitlistLimiter = rateLimit({ windowMs: 3600000, max: 3,  keyFn: req => req.ip });
 
 // ── HELPERS ───────────────────────────────────────────────
 function safeErr(err) {
@@ -855,6 +858,26 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e) }); }
 });
 
+app.post('/api/waitlist', waitlistLimiter, async (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim().slice(0, 200);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Valid email is required.');
+    track('waitlist_signup', null, { email: email.replace(/(.{2}).*(@.*)/, '$1***$2') });
+    if (RESEND_API_KEY && CONTACT_TO) {
+      await sendEmail({ to: CONTACT_TO, subject: 'Lederly waitlist signup', html: `<p>New waitlist signup: <strong>${email}</strong></p>` });
+    }
+    if (dbPool) {
+      await dbPool.query(
+        `CREATE TABLE IF NOT EXISTS waitlist (email TEXT PRIMARY KEY, created_at TIMESTAMPTZ DEFAULT NOW())`
+      ).catch(() => {});
+      await dbPool.query(
+        `INSERT INTO waitlist (email) VALUES ($1) ON CONFLICT DO NOTHING`, [email]
+      ).catch(() => {});
+    }
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e) }); }
+});
+
 // Shopify admin opens apps inside an iframe — break out immediately to standalone
 app.get('/shopify-open', (req, res) => {
   const shop = req.query.shop ? `?shop=${encodeURIComponent(String(req.query.shop))}` : '';
@@ -1048,7 +1071,7 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
     const plan = await getStorePlan(s.shop);
     if (plan === 'free') {
       const used = await getPushesThisMonth(s.shop);
-      if (used >= 100) throw Object.assign(new Error(`Free plan limit reached: 100 products pushed this month. Upgrade to Starter for unlimited pushes.`), { code: 'PLAN_LIMIT' });
+      if (used >= 100) throw Object.assign(new Error('Free plan limit reached: 100 products pushed this month. Upgrade to Starter for unlimited pushes.'), { code: 'PLAN_LIMIT' });
     }
     const { productId, product, variants = [], metafields = [] } = req.body || {};
     const results = [];
@@ -1122,7 +1145,7 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
     }
 
     track('save', s.shop, { v: variants.length, mf: metafields.length });
-    if (plan === 'free') await incrementPushes(s.shop);
+    if (plan === 'free') await incrementPushes(s.shop); // beta + paid plans have unlimited pushes
     res.json({ ok: true, results });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -1259,10 +1282,13 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
     const limit = PLAN_SCHED_LIMIT[plan] ?? 5;
     if (isFinite(limit)) {
       const used = await countSchedsThisMonth(shop);
-      if (used >= limit) throw Object.assign(new Error(`You've used all ${limit} schedules for this month. Upgrade to Pro for unlimited scheduling.`), { code: 'PLAN_LIMIT' });
+      const msg = plan === 'beta'
+        ? `You've used all ${limit} beta schedules this month. Join the waitlist at lederly.com for early access to paid plans.`
+        : `You've used all ${limit} schedules for this month. Upgrade to Pro for unlimited scheduling.`;
+      if (used >= limit) throw Object.assign(new Error(msg), { code: 'PLAN_LIMIT' });
     }
     const { scheduledFor, label, changes, linkedTo, notifyEmail: providedEmail, timezone: clientTz } = req.body || {};
-    if (linkedTo && plan !== 'pro') throw Object.assign(new Error('Auto-revert is a Pro feature. Upgrade to use it.'), { code: 'PLAN_LIMIT' });
+    if (linkedTo && !PLAN_PRO_FEATURES.has(plan)) throw Object.assign(new Error('Auto-revert is a Pro feature. Upgrade to use it.'), { code: 'PLAN_LIMIT' });
     if (!scheduledFor) throw new Error('Missing scheduledFor');
     const dt = new Date(scheduledFor);
     if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
@@ -1318,7 +1344,7 @@ app.post('/api/schedule/list', apiLimiter, async (req, res) => {
     const plan = await getStorePlan(shop);
     const schedLimit = PLAN_SCHED_LIMIT[plan] ?? 5;
     const schedUsed = await countSchedsThisMonth(shop);
-    const pushesUsed = plan === 'free' ? await getPushesThisMonth(shop) : null;
+    const pushesUsed = (plan === 'free') ? await getPushesThisMonth(shop) : null;
     res.json({ ok: true, schedules: mine, persistWarning, plan, schedLimit: isFinite(schedLimit) ? schedLimit : null, schedUsed, pushesUsed });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });

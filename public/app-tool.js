@@ -1197,7 +1197,7 @@ function updateSchedBadge(){
 function updatePlanBadge(){
   const el=$('plan-badge'); if(!el)return;
   const plan=S.plan||'free';
-  const planLabel=plan==='pro'?'Pro':plan==='starter'?'Starter':'Free';
+  const planLabel=plan==='pro'?'Pro':plan==='starter'?'Starter':plan==='beta'?'Beta':'Free';
   const parts=[];
   if(plan==='free') parts.push(`${S.pushesUsed}/100 products this month`);
   if(S.schedLimit!==null) parts.push(`${S.schedUsed}/${S.schedLimit} schedules`);
@@ -1242,10 +1242,10 @@ function openScheduleModal(){
     $('m-sched-revert-toggle').checked=false;
     $('m-sched-revert-dt').style.display='none';
     $('m-sched-revert-hint').style.display='none';
-    const isPro=S.plan==='pro';
-    $('m-sched-revert-toggle').disabled=!isPro;
-    $('revert-pro-badge').classList.toggle('hidden',isPro);
-    $('revert-pro-hint').classList.toggle('hidden',isPro);
+    const hasRevert=S.plan==='pro'||S.plan==='beta';
+    $('m-sched-revert-toggle').disabled=!hasRevert;
+    $('revert-pro-badge').classList.toggle('hidden',hasRevert);
+    $('revert-pro-hint').classList.toggle('hidden',hasRevert);
     const d=new Date(); d.setHours(d.getHours()+1,0,0,0);
     $('m-sched-dt').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('m-sched-preview').innerHTML=Object.values(S.changes).map(c=>{
@@ -1721,7 +1721,7 @@ function boot(){
 
   // CSV Import
   $('btn-import-csv').addEventListener('click', ()=>{
-    if(S.plan==='free'&&!S.demo){ toast('CSV Import is available from Starter plan. Upgrade at lederly.com'); return; }
+    if((S.plan==='free')&&!S.demo){ toast('CSV Import is available from Starter plan. Upgrade at lederly.com'); return; }
     $('csv-file-input').click();
   });
   $('btn-csv-template').addEventListener('click', downloadCSVTemplate);

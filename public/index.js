@@ -5,6 +5,27 @@
   }, { threshold: .12, rootMargin: '0px 0px -40px 0px' });
   document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
 
+  const waitlistForm = document.getElementById('waitlist-form');
+  if(waitlistForm){
+    waitlistForm.addEventListener('submit', async function(e){
+      e.preventDefault();
+      const btn = waitlistForm.querySelector('button');
+      const msg = document.getElementById('waitlist-msg');
+      const email = document.getElementById('waitlist-email').value.trim();
+      btn.disabled = true; btn.textContent = 'Joining…';
+      try {
+        const r = await fetch('/api/waitlist', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+        const j = await r.json();
+        if(!j.ok) throw new Error(j.error || 'Something went wrong.');
+        msg.textContent = "You're on the list. We'll be in touch."; msg.style.color = 'var(--green)';
+        waitlistForm.style.display = 'none';
+      } catch(err) {
+        msg.textContent = err.message; msg.style.color = '#c0392b';
+        btn.disabled = false; btn.textContent = 'Join waitlist →';
+      }
+    });
+  }
+
   const form = document.getElementById('contact-form');
   if(!form) return;
   form.addEventListener('submit', async function(e){
