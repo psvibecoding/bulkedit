@@ -145,7 +145,7 @@ html[data-restoring] #s-loading{display:flex!important}
 .link-btn:hover{opacity:1}
 
 /* ═══════════ TABLE ═══════════ */
-.table-scroll{overflow:auto;max-height:calc(100vh - 156px);background:var(--bg)}
+.table-scroll{overflow:auto;max-height:calc(100vh - 220px);background:var(--bg)}
 table{width:100%;border-collapse:collapse;min-width:1100px;table-layout:fixed}
 
 /* Fixed column widths */
