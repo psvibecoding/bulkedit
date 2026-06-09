@@ -245,6 +245,10 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .code-preview{white-space:pre-wrap;background:var(--bg);border:1px solid var(--b1);border-radius:var(--r8);padding:12px;color:var(--t2);font-family:var(--mono);font-size:11px;line-height:1.7;max-height:280px;overflow:auto;margin-top:10px}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap}
 
+/* ═══════════ LOAD MORE ═══════════ */
+#load-more-wrap{background:var(--white);border-top:1px solid var(--b1);box-shadow:0 -2px 8px rgba(0,0,0,.04)}
+#load-more-wrap span{color:var(--t3)!important;font-size:12px!important}
+
 /* ═══════════ STATUSBAR ═══════════ */
 .statusbar{display:flex;align-items:center;justify-content:space-between;padding:7px 20px;background:var(--white);border-top:1px solid var(--b1);font-size:11px;flex-wrap:wrap;gap:8px;transition:background .3s,border-top-color .3s}
 .statusbar[data-status="dirty"]{background:#fffbeb;border-top-color:#fcd34d}
