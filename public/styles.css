@@ -124,8 +124,8 @@ html[data-restoring] #s-loading{display:flex!important}
 #tab-export.active{display:block;overflow-y:auto}
 
 /* ═══════════ TOOLBAR ═══════════ */
-.toolbar{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--b1);background:var(--white);flex-wrap:wrap;min-height:44px;flex-shrink:0}
-.filters{display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1}
+.toolbar{display:flex;flex-direction:column;border-bottom:1px solid var(--b1);background:var(--white);flex-shrink:0}
+.filters{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:8px 16px;min-height:44px}
 .filter-lbl{font-size:9px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--t4);margin-right:3px}
 .filter{padding:4px 11px;border-radius:20px;border:1px solid var(--b1);background:transparent;font-size:11px;cursor:pointer;color:var(--t3);font-family:var(--font);transition:all .15s;letter-spacing:.01em}
 .filter:hover{border-color:var(--b3);color:var(--t2)}
@@ -136,7 +136,7 @@ html[data-restoring] #s-loading{display:flex!important}
 .tag-sel.active{border-color:var(--green);color:var(--green);background:var(--green-bg)}
 .btn-refresh{background:var(--white);border:1px solid var(--b1);border-radius:20px;padding:4px 11px;font-size:11px;font-weight:500;color:var(--t2);cursor:pointer;font-family:var(--font);transition:all .15s}
 .btn-refresh:hover{border-color:var(--b3);color:var(--tx)}
-.bulk-bar{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.bulk-bar{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:7px 16px;border-top:1px solid var(--b1);background:var(--bg)}
 .bulk-lbl{font-size:12px;color:var(--green);font-weight:600;white-space:nowrap;margin-right:4px;font-family:var(--mono);font-size:11px}
 .chip{padding:4px 11px;border-radius:20px;border:1px solid var(--b2);background:var(--white);font-size:11px;cursor:pointer;color:var(--t2);font-family:var(--font);transition:all .15s;box-shadow:var(--sh-xs);letter-spacing:.01em}
 .chip:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
