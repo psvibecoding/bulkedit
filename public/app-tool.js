@@ -2088,6 +2088,13 @@ function startTour(){
     doneBtnText: 'Done',
     popoverClass: 'lederly-tour',
     onDestroyStarted: () => { localStorage.setItem('lederly_tour_v1','1'); d.destroy(); },
+    onPopoverRender: (popover) => {
+      const skip = document.createElement('button');
+      skip.textContent = 'Skip tour';
+      skip.className = 'driver-skip-btn';
+      skip.addEventListener('click', () => d.destroy());
+      popover.footer.insertBefore(skip, popover.footerButtons);
+    },
     steps: [
       {
         popover: {

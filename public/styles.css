@@ -390,6 +390,8 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .driver-popover.lederly-tour button.driver-popover-next-btn:hover{background:#145030}
 .driver-popover.lederly-tour .driver-popover-close-btn{color:var(--t4);font-size:16px;top:12px;right:14px}
 .driver-popover.lederly-tour .driver-popover-close-btn:hover{color:var(--tx)}
+.driver-skip-btn{background:none;border:none;padding:0;font-size:11px;color:var(--t4);cursor:pointer;font-family:var(--sans);text-decoration:underline;margin-right:auto}
+.driver-skip-btn:hover{color:var(--t2)}
 
 .hidden{display:none!important}
 @media(max-width:700px){.topbar{height:auto;padding:10px 16px;flex-wrap:wrap}.topbar-l,.topbar-r{width:100%}.search-box{max-width:100%}}
