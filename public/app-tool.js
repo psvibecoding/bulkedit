@@ -397,10 +397,12 @@ function rowHTML(p,v){
   const seoIndicator=seoMissing?`<span class="seo-missing" title="No SEO title/description set">SEO</span>`:'';
   const bodyStripped=(p.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
   const descRow=bodyStripped?`<div class="desc-row">${esc(bodyStripped.slice(0,120)+(bodyStripped.length>120?'…':''))}</div>`:'';
+  const seoTitlePH=esc(p.title);
+  const seoDescPH=esc(bodyStripped.slice(0,160)+(bodyStripped.length>160?'…':''))||'Meta description…';
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
-<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div>${descRow}<div class="seo-row"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-title" placeholder="SEO title…" value="${seoTitle}"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-desc" placeholder="SEO description…" value="${seoDesc}"></div><span class="mod-chip">modified</span></div></td>
+<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div>${descRow}<div class="seo-row"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-title" placeholder="${seoTitlePH}" value="${seoTitle}"><input class="ce seo-inp" data-pid="${esc(p.id)}" data-field="seo-desc" placeholder="${seoDescPH}" value="${seoDesc}"></div><span class="mod-chip">modified</span></div></td>
 <td><div><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span>${statusBadge}</div></td>
 <td><div><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></div>${vendorBadge}</td>
 <td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div>${tagsBadge}</td>
