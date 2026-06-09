@@ -377,6 +377,21 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .mf-bool-lbl{font-size:11px;font-family:var(--mono);color:var(--t2)}
 .mf-json{min-height:48px;resize:vertical;font-size:11px!important}
 
+/* Upgrade modal */
+.upgrade-plan{padding:18px 16px;display:flex;flex-direction:column;gap:4px;position:relative}
+.upgrade-plan-mid{background:var(--s1)}
+.upgrade-plan-pro{background:rgba(124,58,237,.04)}
+.upgrade-plan-name{font-size:13px;font-weight:700;color:var(--tx);margin-top:4px}
+.upgrade-plan-price{font-size:20px;font-weight:700;color:var(--tx);margin:4px 0 10px;line-height:1}
+.upgrade-plan-price span{font-size:11px;font-weight:400;color:var(--t3)}
+.upgrade-plan-badge{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:var(--green-bg);color:var(--green-dark,#1a5c38);border:1px solid rgba(22,101,58,.2);margin-bottom:4px;width:fit-content}
+.upgrade-plan-badge-pro{background:rgba(124,58,237,.1);color:#7c3aed;border-color:rgba(124,58,237,.25)}
+.upgrade-feat-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:5px}
+.upgrade-feat-list li{font-size:11px;color:var(--t2);padding-left:14px;position:relative;line-height:1.4}
+.upgrade-feat-list li::before{content:'✓';position:absolute;left:0;color:var(--green-dark,#1a5c38);font-size:10px;font-weight:700}
+.upgrade-feat-list li.upgrade-no{color:var(--t4)}
+.upgrade-feat-list li.upgrade-no::before{content:'—';color:var(--t4)}
+
 /* Driver.js tour overrides */
 .driver-popover.lederly-tour{background:var(--white);border:1px solid var(--b2);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.12);padding:20px 22px;max-width:320px;font-family:var(--sans)}
 .driver-popover.lederly-tour .driver-popover-title{font-size:15px;font-weight:600;color:var(--tx);margin-bottom:6px;line-height:1.3}

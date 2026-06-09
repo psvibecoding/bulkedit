@@ -56,7 +56,7 @@ if (process.env.DATABASE_URL) {
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
-const PLAN_SCHED_LIMIT = { beta: 10, free: 5, starter: 5, pro: Infinity };
+const PLAN_SCHED_LIMIT = { beta: 10, free: 0, starter: 5, pro: Infinity }; // free = no scheduling
 const PLAN_PRO_FEATURES = new Set(['beta', 'pro']); // plans with full pro features
 
 async function getStorePlan(shop) {
@@ -92,19 +92,98 @@ async function incrementPushes(shop) {
 }
 
 async function countSchedsThisMonth(shop) {
+  if (dbPool) {
+    try {
+      const monthStart = new Date(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1).toISOString();
+      const r = await dbPool.query(
+        `SELECT COUNT(*) FROM schedules WHERE data->>'shop'=$1 AND data->>'linkedTo' IS NULL AND data->>'createdAt'>=$2`,
+        [shop, monthStart]
+      );
+      return parseInt(r.rows[0].count, 10);
+    } catch { /* fall through to file */ }
+  }
   const schedules = await readSchedules();
   const now = new Date();
   return schedules.filter(s =>
     s.shop === shop &&
-    !s.linkedTo && // revert schedules don't count — they're part of the same action
+    !s.linkedTo &&
     new Date(s.createdAt).getUTCFullYear() === now.getUTCFullYear() &&
     new Date(s.createdAt).getUTCMonth() === now.getUTCMonth()
   ).length;
 }
 
+async function updateScheduleById(sched) {
+  if (dbPool) {
+    try {
+      await dbPool.query('UPDATE schedules SET data=$1 WHERE id=$2', [sched, sched.id]);
+      return;
+    } catch (e) { console.error('[db] updateScheduleById:', e.message); }
+  }
+  const schedules = await readSchedules();
+  const idx = schedules.findIndex(x => x.id === sched.id);
+  if (idx >= 0) { schedules[idx] = sched; await writeSchedules(schedules); }
+}
+
+async function isFirstConnect(shop) {
+  if (!dbPool) return false;
+  try {
+    const r = await dbPool.query(
+      `INSERT INTO store_plans (shop, plan, updated_at) VALUES ($1, 'beta', NOW())
+       ON CONFLICT (shop) DO NOTHING`,
+      [shop]
+    );
+    return r.rowCount > 0;
+  } catch { return false; }
+}
+
+async function sendWelcomeEmail(shop, storeName, storeEmail) {
+  if (!RESEND_API_KEY || !storeEmail) return;
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Welcome to Lederly</title></head>
+<body style="margin:0;padding:0;background:#eeecea;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+<div style="max-width:560px;margin:0 auto;padding:48px 20px 64px">
+  <div style="text-align:center;margin-bottom:28px">
+    <table style="margin:0 auto;border-collapse:collapse"><tr>
+      <td style="padding-right:8px;vertical-align:middle"><div style="background:#1a5c38;border-radius:7px;width:28px;height:28px;text-align:center;line-height:28px"><span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em">L</span></div></td>
+      <td style="vertical-align:middle"><span style="font-size:12px;font-weight:600;color:#4b5563;letter-spacing:.12em;text-transform:uppercase">Lederly</span></td>
+    </tr></table>
+  </div>
+  <div style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.05)">
+    <div style="background:#1a5c38;height:5px"></div>
+    <div style="padding:36px 40px 32px;text-align:center;border-bottom:1px solid #f3f3f1">
+      <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#0e0e0c;letter-spacing:-.02em">Welcome to Lederly</h1>
+      <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6">${storeName} is connected. You're on the <strong style="color:#1a5c38">Beta plan</strong> — full access, no credit card required.</p>
+    </div>
+    <div style="padding:28px 40px">
+      <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.7">Here's what you can do right now:</p>
+      <table style="width:100%;border-collapse:collapse">
+        <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top;width:28px">✏️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Inline editing</strong> — click any product cell to edit title, price, tags, or description directly</td></tr>
+        <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">⚡</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Bulk actions</strong> — select multiple products and change prices, status, or tags at once</td></tr>
+        <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">⏱️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Scheduling</strong> — stage changes now, push them live at the perfect moment (up to 10/month on Beta)</td></tr>
+        <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">↩️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Auto-revert</strong> — set changes to revert automatically when a sale ends</td></tr>
+      </table>
+      <div style="margin-top:28px;text-align:center">
+        <a href="${APP_URL}/app" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:10px;letter-spacing:.01em">Open Lederly →</a>
+      </div>
+    </div>
+    <div style="margin:0 40px;padding:20px 0;border-top:1px solid #f3f3f1">
+      <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.7">Have a question or found a bug? Reply to this email — we read every message.<br>
+      Sent by <a href="https://lederly.com" style="color:#1a5c38;text-decoration:none;font-weight:500">Lederly</a> · <a href="https://lederly.com/privacy" style="color:#9ca3af;text-decoration:none">Privacy</a></p>
+    </div>
+  </div>
+</div>
+</body></html>`;
+  await sendEmail({ to: storeEmail, subject: `Welcome to Lederly — ${storeName} is connected`, html }).catch(() => {});
+}
+
 // In-memory OAuth state (stateless — no DB)
 const oauthStates = new Map();
 setInterval(() => { const n = Date.now(); for (const [k,v] of oauthStates) if (n > v.exp) oauthStates.delete(k); }, 60000).unref();
+
+// One-time token store — token never travels in URL, only a short-lived opaque code does
+const tokenStore = new Map();
+setInterval(() => { const n = Date.now(); for (const [k,v] of tokenStore) if (n > v.exp) tokenStore.delete(k); }, 30000).unref();
 
 // ── ANALYTICS (in-memory + structured logs) ───────────────
 const analytics = { stores: new Set(), counts: {}, start: Date.now() };
@@ -628,8 +707,8 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
     <!-- Feedback nudge -->
     <div style="margin:8px 40px 0;background:#f9f9f7;border-radius:12px;padding:16px 20px;text-align:center">
-      <p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.5">Enjoying Lederly? We're in early access and your opinion shapes what we build next.</p>
-      <a href="https://tally.so/r/D4abPX" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px">Share feedback — 1 question →</a>
+      <p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.5">Questions or feedback? Reply to this email — we read and respond to everything.</p>
+      <a href="${APP_URL}/app" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px">Open Lederly →</a>
     </div>
 
     <!-- Footer -->
@@ -742,7 +821,7 @@ async function execSaveProduct(session, { productId, product = {}, variants = []
 
 async function executeSchedule(sched, schedules) {
   sched.status = 'running';
-  await writeSchedules(schedules);
+  await updateScheduleById(sched);
   try {
     const token = decryptToken(sched.encToken);
     if (!token) throw new Error('Could not decrypt token — was SCHED_SECRET changed?');
@@ -780,7 +859,7 @@ async function executeSchedule(sched, schedules) {
     sched.error  = safeErr(e);
     sendNotification(sched, false, null).catch(() => {});
   }
-  await writeSchedules(schedules);
+  await updateScheduleById(sched);
 }
 
 const _schedLocks = new Set(); // tracks schedule IDs currently executing
@@ -800,6 +879,8 @@ async function runDueSchedules() {
     finally { _schedLocks.delete(s.id); }
   }));
 }
+
+if (!SCHED_SECRET) console.warn('[scheduler] WARNING: SCHED_SECRET not set — scheduling is disabled. Add it to your environment variables.');
 
 // Recover + prune run async at startup (inside app.listen callback) and daily
 setInterval(() => pruneSchedules().catch(e => console.error('[scheduler] prune:', e.message)), 24 * 60 * 60 * 1000).unref();
@@ -940,11 +1021,23 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
     const td = await tr.json();
     if (!td.access_token) throw new Error('No token');
     track('connect', shop);
-    // Pass token to frontend via URL — never stored server-side
-    res.redirect(`/app?shop=${encodeURIComponent(shop)}&token=${encodeURIComponent(td.access_token)}`);
+    // Issue a short-lived one-time code — actual token never appears in URL or logs
+    const onetimeCode = crypto.randomBytes(16).toString('hex');
+    tokenStore.set(onetimeCode, { token: td.access_token, shop, exp: Date.now() + 30000 });
+    res.redirect(`/app?shop=${encodeURIComponent(shop)}&code=${encodeURIComponent(onetimeCode)}`);
   } catch (e) {
     res.status(500).send(IS_PROD ? 'Authentication error.' : e.message);
   }
+});
+
+// Exchange one-time code for actual token — consumed immediately, expires in 30s
+app.get('/auth/token', authLimiter, (req, res) => {
+  const code = String(req.query.code || '').trim();
+  if (!code || code.length > 64) return res.status(400).json({ ok: false, error: 'Invalid code.' });
+  const entry = tokenStore.get(code);
+  if (!entry || Date.now() > entry.exp) return res.status(410).json({ ok: false, error: 'Code expired. Please reconnect.' });
+  tokenStore.delete(code);
+  res.json({ ok: true, token: entry.token, shop: entry.shop });
 });
 
 // ── API ───────────────────────────────────────────────────
@@ -954,8 +1047,12 @@ app.use('/api/', (req, res, next) => { maybeRunSchedules(); next(); });
 app.post('/api/test', apiLimiter, async (req, res) => {
   try {
     const s = getSession(req);
-    const d = await gql(s, `query { shop { name myshopifyDomain } }`);
+    const d = await gql(s, `query { shop { name myshopifyDomain email } }`);
     res.json({ ok: true, shop: d.shop });
+    // Welcome email — fire-and-forget, only on first connect per shop
+    isFirstConnect(s.shop).then(isNew => {
+      if (isNew) sendWelcomeEmail(s.shop, d.shop.name, d.shop.email).catch(() => {});
+    }).catch(() => {});
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
@@ -1500,7 +1597,10 @@ app.get('/api/schedule/recap/:id/csv', async (req, res) => {
   res.send(csv);
 });
 
-app.use((req, res) => res.status(404).json({ ok: false, error: 'Not found' }));
+app.use((req, res) => {
+  if (req.accepts('html')) return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+  res.status(404).json({ ok: false, error: 'Not found' });
+});
 app.use((err, req, res, _n) => res.status(err.status || 500).json({ ok: false, error: safeErr(err), requestId: req.requestId }));
 
 app.listen(PORT, async () => {

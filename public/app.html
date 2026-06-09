@@ -286,6 +286,59 @@
   </div>
 </div>
 
+<!-- UPGRADE MODAL -->
+<div id="m-upgrade" class="overlay hidden">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <div><h2 id="m-upgrade-title">Plan limit reached</h2><p id="m-upgrade-sub" class="modal-sub"></p></div>
+      <button class="close-btn" data-close="m-upgrade">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-bottom:1px solid var(--b1)">
+        <div class="upgrade-plan" style="border-right:1px solid var(--b1)">
+          <div class="upgrade-plan-name">Free</div>
+          <div class="upgrade-plan-price">€0</div>
+          <ul class="upgrade-feat-list">
+            <li>Inline editing</li>
+            <li>Bulk actions</li>
+            <li>CSV export</li>
+            <li>100 pushes/mo</li>
+            <li class="upgrade-no">No scheduling</li>
+            <li class="upgrade-no">No CSV import</li>
+          </ul>
+        </div>
+        <div class="upgrade-plan upgrade-plan-mid" style="border-right:1px solid var(--b1)">
+          <div class="upgrade-plan-badge">Starter</div>
+          <div class="upgrade-plan-name">Starter</div>
+          <div class="upgrade-plan-price">€9.99<span>/mo</span></div>
+          <ul class="upgrade-feat-list">
+            <li>Everything in Free</li>
+            <li>Unlimited pushes</li>
+            <li>CSV import</li>
+            <li>5 schedules/mo</li>
+            <li class="upgrade-no">No auto-revert</li>
+          </ul>
+        </div>
+        <div class="upgrade-plan upgrade-plan-pro">
+          <div class="upgrade-plan-badge upgrade-plan-badge-pro">Pro</div>
+          <div class="upgrade-plan-name">Pro</div>
+          <div class="upgrade-plan-price">€19.99<span>/mo</span></div>
+          <ul class="upgrade-feat-list">
+            <li>Everything in Starter</li>
+            <li>Unlimited schedules</li>
+            <li><strong>Auto-revert</strong></li>
+            <li>Priority support</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot" style="flex-direction:column;align-items:stretch;gap:10px">
+      <a href="/#pricing" target="_blank" class="btn-cta sm" style="text-align:center;text-decoration:none">View plans &amp; pricing →</a>
+      <p style="margin:0;font-size:11px;color:var(--t4);text-align:center">Currently in beta — reply to any email or use Feedback to request an upgrade.</p>
+    </div>
+  </div>
+</div>
+
 <!-- FEEDBACK MODAL -->
 <div id="m-feedback" class="overlay hidden">
   <div class="modal" style="max-width:420px">

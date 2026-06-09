@@ -1137,7 +1137,11 @@ async function confirmSave(){
       setStatus('All changes saved','saved');
       setTimeout(()=>setStatus('Ready','ready'),3000);
     }
-  }catch(e){ toast(e.message); setStatus('Save failed','dirty'); }
+  }catch(e){
+    if(/limit|upgrade|plan|100 products/i.test(e.message)) showUpgradeModal(e.message);
+    else toast(e.message);
+    setStatus('Save failed','dirty');
+  }
   finally{ btn.disabled=false; btn.textContent='Save to Shopify →'; }
 }
 
@@ -1404,7 +1408,10 @@ async function confirmSchedule(){
     document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
     const msg=revertAt?`Scheduled for ${scheduledFor.toLocaleString()} · reverts at ${revertAt.toLocaleString()}.`:`Scheduled for ${scheduledFor.toLocaleString()}.`;
     toast(msg);
-  }catch(e){ toast(e.message); }
+  }catch(e){
+    if(/limit|upgrade|plan|schedules/i.test(e.message)) showUpgradeModal(e.message);
+    else toast(e.message);
+  }
   finally{ btn.disabled=false; btn.textContent='Schedule →'; }
 }
 
@@ -1724,7 +1731,7 @@ function boot(){
 
   // CSV Import
   $('btn-import-csv').addEventListener('click', ()=>{
-    if((S.plan==='free')&&!S.demo){ toast('CSV Import is available from Starter plan. Upgrade at lederly.com'); return; }
+    if((S.plan==='free')&&!S.demo){ showUpgradeModal('CSV Import is available from the Starter plan (€9.99/mo).'); return; }
     $('csv-file-input').click();
   });
   $('btn-csv-template').addEventListener('click', downloadCSVTemplate);
@@ -1749,11 +1756,16 @@ function boot(){
   // OAuth callback / session restore / demo URL
   (function(){
     const p=new URLSearchParams(window.location.search);
-    const shop=p.get('shop'), token=p.get('token'), demo=p.get('demo');
+    const shop=p.get('shop'), code=p.get('code'), demo=p.get('demo');
     if(demo==='1'){ window.history.replaceState({},'','/app'); loadDemoMode(); return; }
-    if(shop&&token){
+    // New: one-time code flow — token never in URL
+    if(shop && code){
       window.history.replaceState({},'','/app');
-      afterOAuth(decodeURIComponent(shop), decodeURIComponent(token));
+      showScreen('s-loading'); $('loading-msg').textContent='Authenticating…';
+      fetch(`/auth/token?code=${encodeURIComponent(code)}`)
+        .then(r=>r.json())
+        .then(j=>{ if(!j.ok) throw new Error(j.error||'Authentication failed.'); return afterOAuth(j.shop, j.token); })
+        .catch(e=>{ showScreen('s-connect'); toast(e.message); });
       return;
     }
     // Restore session from sessionStorage (survives reload, clears on tab close)
@@ -2177,12 +2189,24 @@ function startTour(){
       }
     ]
   });
-  setTimeout(() => d.drive(), 600);
+  d.drive();
 }
 
 function maybeStartTour(){
   if(localStorage.getItem('lederly_tour_v1')) return;
-  startTour();
+  // Wait until table has rendered at least one row (or 6s max) before starting tour
+  let attempts = 0;
+  const check = () => {
+    if(document.querySelector('#tbody tr') || attempts++ > 20){ startTour(); return; }
+    setTimeout(check, 300);
+  };
+  setTimeout(check, 800);
+}
+
+function showUpgradeModal(reason){
+  $('m-upgrade-title').textContent = 'Plan limit reached';
+  $('m-upgrade-sub').textContent = reason || 'Upgrade your plan to unlock this feature.';
+  openModal('m-upgrade');
 }
 
 document.addEventListener('DOMContentLoaded', boot);

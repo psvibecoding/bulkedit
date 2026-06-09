@@ -8,74 +8,71 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    :root{--bg:#f9f9f7;--white:#fff;--ink:#0e0e0c;--ink2:#3c3c38;--ink3:#7c7c74;--border:#e4e4de;--green:#1a5c38;--sans:'DM Sans',system-ui,sans-serif}
-    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.7}
-    nav{position:sticky;top:0;z-index:50;background:rgba(249,249,247,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 48px}
-    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
-    .logo-mark{width:26px;height:26px;background:var(--green);color:#fff;font-size:9px;font-weight:600;border-radius:6px;display:flex;align-items:center;justify-content:center;letter-spacing:.05em}
-    .logo-name{font-size:12px;font-weight:500;color:var(--ink3);letter-spacing:.12em;text-transform:uppercase}
-    .back{font-size:13px;color:var(--ink3);text-decoration:none}
-    .back:hover{color:var(--ink)}
-    main{max-width:680px;margin:0 auto;padding:64px 24px 96px}
-    h1{font-size:32px;font-weight:600;margin-bottom:8px}
-    .meta{font-size:13px;color:var(--ink3);margin-bottom:48px}
-    h2{font-size:17px;font-weight:600;margin:36px 0 10px}
-    p{font-size:15px;color:var(--ink2);margin-bottom:12px}
+    body{font-family:'DM Sans',sans-serif;background:#f2f0ec;color:#0e0e0c}
+    .topbar{background:#fff;border-bottom:1px solid #e4e4de;padding:14px 24px;display:flex;align-items:center}
+    .logo{display:flex;align-items:center;gap:8px;text-decoration:none}
+    .logo-mark{width:28px;height:28px;background:#1a5c38;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700}
+    .logo-name{font-size:13px;font-weight:600;color:#374151;letter-spacing:.08em;text-transform:uppercase}
+    .wrap{max-width:680px;margin:0 auto;padding:48px 24px 80px}
+    h1{font-size:28px;font-weight:700;margin-bottom:8px}
+    .meta{font-size:13px;color:#9ca3af;margin-bottom:40px}
+    h2{font-size:17px;font-weight:600;margin:32px 0 10px}
+    p,li{font-size:15px;color:#374151;line-height:1.7;margin-bottom:12px}
     ul{padding-left:20px;margin-bottom:12px}
-    li{font-size:15px;color:var(--ink2);margin-bottom:6px}
-    a{color:var(--green)}
-    footer{text-align:center;padding:32px;font-size:12px;color:var(--ink3);border-top:1px solid var(--border)}
+    a{color:#1a5c38}
+    .contact-box{background:#fff;border:1px solid #e4e4de;border-radius:12px;padding:20px 24px;margin-top:40px}
+    .contact-box p{margin:0}
   </style>
 </head>
 <body>
-<nav>
-  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
-  <a href="/" class="back">← Back to home</a>
-</nav>
-<main>
-  <h1>Terms of Service</h1>
-  <p class="meta">Last updated: June 2026</p>
+  <div class="topbar">
+    <a href="/" class="logo">
+      <div class="logo-mark">L</div>
+      <span class="logo-name">Lederly</span>
+    </a>
+  </div>
+  <div class="wrap">
+    <h1>Terms of Service</h1>
+    <p class="meta">Last updated: June 2026</p>
 
-  <p>By using Lederly ("the service"), you agree to these terms. If you do not agree, do not use the service.</p>
+    <h2>1. Acceptance</h2>
+    <p>By connecting your Shopify store to Lederly, you agree to these Terms. If you do not agree, do not use the service.</p>
 
-  <h2>What the service does</h2>
-  <p>Lederly is a web tool that connects to your Shopify store via OAuth and allows you to edit products, variants, metafields, and other data in bulk. Changes are applied directly to your Shopify store using the Shopify Admin API.</p>
+    <h2>2. What Lederly does</h2>
+    <p>Lederly is a tool that connects to your Shopify store via OAuth and allows you to bulk-edit products, schedule price changes, and manage your catalog more efficiently. All edits are made through the official Shopify Admin API.</p>
 
-  <h2>Your responsibility</h2>
-  <p>You are solely responsible for any changes made to your Shopify store through Lederly. This includes:</p>
-  <ul>
-    <li>Reviewing changes in the diff view before confirming</li>
-    <li>Verifying that scheduled changes are correct before activating them</li>
-    <li>Maintaining a backup or export of your product data if needed</li>
-    <li>Ensuring you have the right to modify the store you connect</li>
-  </ul>
+    <h2>3. Your responsibilities</h2>
+    <ul>
+      <li>You are responsible for all changes made to your Shopify store through Lederly.</li>
+      <li>You must have the authority to grant Lederly access to your Shopify store.</li>
+      <li>You must not use Lederly to violate Shopify's terms of service.</li>
+      <li>You must not attempt to reverse-engineer, scrape, or abuse the service.</li>
+    </ul>
 
-  <h2>No warranty</h2>
-  <p>The service is provided "as is" without warranty of any kind, express or implied. We do not guarantee that the service will be uninterrupted, error-free, or that scheduled changes will execute at the exact time specified.</p>
+    <h2>4. Beta access</h2>
+    <p>Lederly is currently in beta. Features, plan limits, and pricing may change. We will notify connected stores by email before making significant changes that affect paid functionality.</p>
 
-  <h2>Limitation of liability</h2>
-  <p>To the maximum extent permitted by applicable law, Lederly and its operators shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service, including but not limited to loss of revenue, data, or business resulting from product changes applied through the service.</p>
+    <h2>5. Plan limits</h2>
+    <p>Free plan users are limited to 100 product pushes per month and have no access to scheduling. Beta plan users have access to all features with a limit of 10 scheduled actions per month. Limits reset on the 1st of each calendar month (UTC).</p>
 
-  <h2>Scheduled changes</h2>
-  <p>The scheduling feature relies on our server being operational at the time of execution. While we take reasonable measures to ensure reliability, we do not guarantee that scheduled changes will execute at the exact scheduled time. You should verify that changes have been applied after the scheduled time.</p>
+    <h2>6. Scheduled changes</h2>
+    <p>Lederly will attempt to execute scheduled changes at the specified time. We do not guarantee execution within any specific time window. If a scheduled change fails, you will be notified by email. Lederly is not liable for any losses resulting from failed or delayed scheduled changes.</p>
 
-  <h2>Acceptable use</h2>
-  <p>You agree not to use the service to:</p>
-  <ul>
-    <li>Access Shopify stores you do not own or are not authorised to manage</li>
-    <li>Attempt to bypass rate limits or security measures</li>
-    <li>Use the service for any unlawful purpose</li>
-  </ul>
+    <h2>7. No warranty</h2>
+    <p>Lederly is provided "as is" without warranty of any kind. We make no guarantees about uptime, accuracy, or fitness for any particular purpose. Use at your own risk.</p>
 
-  <h2>Shopify</h2>
-  <p>Lederly is an independent tool and is not affiliated with, endorsed by, or officially connected to Shopify Inc. "Shopify" is a registered trademark of Shopify Inc.</p>
+    <h2>8. Limitation of liability</h2>
+    <p>Lederly is not liable for any direct, indirect, incidental, or consequential damages arising from your use of the service, including but not limited to incorrect product updates, missed scheduled changes, or loss of revenue.</p>
 
-  <h2>Modifications</h2>
-  <p>We may update these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms. The date at the top of this page reflects the most recent revision.</p>
+    <h2>9. Termination</h2>
+    <p>You can disconnect your store at any time from within the app. We reserve the right to suspend accounts that abuse the service or violate these terms.</p>
 
-  <h2>Contact</h2>
-  <p>Questions about these terms? <a href="/#contact">Contact us</a>.</p>
-</main>
-<footer>© 2026 Lederly · <a href="/privacy">Privacy Policy</a> · <a href="/#contact">Contact</a></footer>
+    <h2>10. Changes to these terms</h2>
+    <p>We may update these terms from time to time. Continued use of Lederly after changes constitutes acceptance of the new terms.</p>
+
+    <div class="contact-box">
+      <p><strong>Questions?</strong> Email <a href="mailto:hello@lederly.com">hello@lederly.com</a></p>
+    </div>
+  </div>
 </body>
 </html>
