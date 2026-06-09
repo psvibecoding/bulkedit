@@ -310,10 +310,9 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 /* ═══════════ SCHEDULE ═══════════ */
 .sched-ico{position:relative;font-size:15px}
 .sched-badge{position:absolute;top:-3px;right:-5px;background:var(--amber);color:#fff;border-radius:8px;font-size:8px;font-family:var(--mono);padding:0 4px;line-height:14px;min-width:14px;text-align:center;pointer-events:none}
-.btn-sched{background:linear-gradient(135deg,#e8960a,#c47b08)!important;color:#fff!important;border:none!important;box-shadow:0 2px 8px rgba(196,123,8,.3),inset 0 1px 0 rgba(255,255,255,.14)!important;font-weight:600!important;letter-spacing:.01em;font-size:11px!important;padding:5px 11px!important;border-radius:var(--r6)!important}
-.btn-sched:hover:not(:disabled){background:linear-gradient(135deg,#d6890a,#b36e07)!important;box-shadow:0 4px 12px rgba(196,123,8,.4)!important;transform:translateY(-1px)}
-.btn-sched:disabled{opacity:.35;box-shadow:none!important;transform:none}
-.pro-badge{display:inline-block;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.22);color:rgba(255,255,255,.92);font-family:var(--mono);vertical-align:middle;margin-left:3px;line-height:1.7}
+.btn-sched{display:inline-flex;align-items:center;gap:6px;background:rgba(134,239,172,.09);color:#9fedb8;border:1px solid rgba(134,239,172,.22);border-radius:var(--r6);padding:6px 13px;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);letter-spacing:.03em;transition:all .18s;box-shadow:0 0 14px rgba(134,239,172,.06),inset 0 1px 0 rgba(134,239,172,.08)}
+.btn-sched:hover:not(:disabled){background:rgba(134,239,172,.15);border-color:rgba(134,239,172,.38);color:#86efac;box-shadow:0 0 20px rgba(134,239,172,.14),inset 0 1px 0 rgba(134,239,172,.12);transform:translateY(-1px)}
+.btn-sched:disabled{opacity:.25;cursor:not-allowed;transform:none;box-shadow:none}
 .btn-sched-confirm-action{background:var(--amber)!important;border-color:var(--amber)!important;color:#fff!important}
 .btn-sched-confirm-action:hover{opacity:.88}
 .sched-input{background:var(--bg);border:1px solid var(--b2);border-radius:var(--r6);padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--tx);outline:none;width:100%;transition:all .15s}

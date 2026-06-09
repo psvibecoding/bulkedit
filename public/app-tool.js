@@ -295,21 +295,10 @@ function disconnect(){
 }
 
 /* ── UNDO/REDO ── */
-function snap(){ return clone({products:S.products,changes:S.changes}); }
-function pushH(label){ S.past.push({label,s:snap()}); if(S.past.length>MAX_H)S.past.shift(); S.future=[]; updateUndoUI(); }
-function applySnap(s){ S.products=clone(s.products); S.changes=clone(s.changes); }
-function undo(){ if(!S.past.length)return; S.future.push({label:'redo',s:snap()}); const h=S.past.pop(); applySnap(h.s); renderTable(); updateUndoUI(); updateSaveBtn(); toast('Undone: '+h.label); }
-function redo(){ if(!S.future.length)return; S.past.push({label:'undo',s:snap()}); const f=S.future.pop(); applySnap(f.s); renderTable(); updateUndoUI(); updateSaveBtn(); toast('Redone'); }
-function updateUndoUI(){
-  $('btn-undo').disabled=!S.past.length; $('btn-redo').disabled=!S.future.length;
-  const h=$('undo-hint');
-  if(S.past.length||S.future.length){ h.classList.remove('hidden'); $('undo-hint-msg').textContent=`${S.past.length} action${S.past.length!==1?'s':''} in history`; }
-  else h.classList.add('hidden');
-}
+function pushH(label){}
+function updateUndoUI(){}
 document.addEventListener('keydown',e=>{
   const m=e.ctrlKey||e.metaKey;
-  if(m&&!e.shiftKey&&e.key==='z'){e.preventDefault();undo();}
-  if(m&&(e.key==='y'||(e.shiftKey&&e.key==='Z'))){e.preventDefault();redo();}
   if(m&&e.key==='s'){e.preventDefault();const btn=$('btn-save');if(btn&&!btn.disabled)btn.click();}
 });
 
