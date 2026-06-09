@@ -2077,10 +2077,9 @@ function applyImport() {
 }
 
 function startTour(){
-  // Driver.js v1 UMD may expose under different globals depending on bundler
-  const driverLib = window['driver.js'] || window.driver;
-  const driverFn = driverLib && (typeof driverLib.driver === 'function' ? driverLib.driver : (typeof driverLib === 'function' ? driverLib : null));
-  if(typeof driverFn !== 'function'){ console.warn('[tour] driver.js not ready, globals:', Object.keys(window).filter(k=>k.includes('driver'))); return; }
+  // IIFE bundle exposes: window.driver.js.driver
+  const driverFn = window.driver && window.driver.js && window.driver.js.driver;
+  if(typeof driverFn !== 'function'){ console.warn('[tour] driver.js not found on window.driver.js.driver'); return; }
   const d = driverFn({
     showProgress: true,
     progressText: '{{current}} of {{total}}',
