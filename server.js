@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import pg from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -26,6 +27,22 @@ const NOTIFY_FROM         = process.env.NOTIFY_FROM || 'noreply@lederly.com';
 const NOTIFY_TZ           = process.env.NOTIFY_TZ   || 'UTC';
 const CONTACT_TO          = process.env.CONTACT_TO  || '';
 const PING_SECRET         = process.env.PING_SECRET || '';
+
+// PostgreSQL pool (optional — falls back to file if DATABASE_URL not set)
+const { Pool } = pg;
+let dbPool = null;
+if (process.env.DATABASE_URL) {
+  dbPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
+    max: 5,
+  });
+  dbPool.query(`CREATE TABLE IF NOT EXISTS schedules (
+    id TEXT PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+  )`).catch(e => console.error('[db] init error:', e.message));
+}
 
 // In-memory OAuth state (stateless — no DB)
 const oauthStates = new Map();
@@ -213,40 +230,60 @@ function decryptToken(enc) {
     return Buffer.concat([d.update(Buffer.from(encHex, 'hex')), d.final()]).toString('utf8');
   } catch { return null; }
 }
-function readSchedules() {
+async function readSchedules() {
+  if (dbPool) {
+    try {
+      const r = await dbPool.query('SELECT data FROM schedules ORDER BY created_at ASC');
+      return r.rows.map(row => row.data);
+    } catch (e) { console.error('[db] readSchedules:', e.message); return []; }
+  }
   try { return JSON.parse(fs.readFileSync(SCHED_FILE, 'utf8')); } catch { return []; }
 }
-function writeSchedules(arr) {
+async function writeSchedules(arr) {
+  if (dbPool) {
+    const client = await dbPool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM schedules');
+      for (const s of arr) {
+        await client.query('INSERT INTO schedules (id, data) VALUES ($1, $2)', [s.id, s]);
+      }
+      await client.query('COMMIT');
+      return true;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      console.error('[db] writeSchedules:', e.message);
+      return false;
+    } finally { client.release(); }
+  }
   try {
     const dir = path.dirname(SCHED_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(SCHED_FILE, JSON.stringify(arr));
     return true;
-  } catch (e) {
-    console.error('[scheduler] write error:', e.message);
-    return false;
-  }
+  } catch (e) { console.error('[scheduler] write error:', e.message); return false; }
 }
 function schedFileStatus() {
+  if (dbPool) return 'postgres';
   try { fs.accessSync(path.dirname(SCHED_FILE), fs.constants.W_OK); return 'writable'; } catch { return 'NOT writable'; }
 }
 
-function pruneSchedules() {
+async function pruneSchedules() {
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const schedules = readSchedules();
+  const schedules = await readSchedules();
   const before = schedules.length;
   const keep = schedules.filter(s =>
     s.status === 'pending' ||
     (s.executedAt || s.scheduledFor) > cutoff
   );
   if (keep.length < before) {
-    writeSchedules(keep);
+    await writeSchedules(keep);
     console.log(`[scheduler] pruned ${before - keep.length} old schedule(s)`);
   }
 }
 
-function recoverStuckSchedules() {
-  const schedules = readSchedules();
+async function recoverStuckSchedules() {
+  const schedules = await readSchedules();
   let changed = false;
   for (const s of schedules) {
     if (s.status === 'running') {
@@ -256,7 +293,7 @@ function recoverStuckSchedules() {
       console.log(`[scheduler] recovered stuck schedule: ${s.id}`);
     }
   }
-  if (changed) writeSchedules(schedules);
+  if (changed) await writeSchedules(schedules);
 }
 
 function fmtStatus(v) {
@@ -634,7 +671,7 @@ async function execSaveProduct(session, { productId, product = {}, variants = []
 
 async function executeSchedule(sched, schedules) {
   sched.status = 'running';
-  writeSchedules(schedules);
+  await writeSchedules(schedules);
   try {
     const token = decryptToken(sched.encToken);
     if (!token) throw new Error('Could not decrypt token — was SCHED_SECRET changed?');
@@ -672,7 +709,7 @@ async function executeSchedule(sched, schedules) {
     sched.error  = safeErr(e);
     sendNotification(sched, false, null).catch(() => {});
   }
-  writeSchedules(schedules);
+  await writeSchedules(schedules);
 }
 
 let _schedRunning = false;
@@ -680,7 +717,7 @@ async function runDueSchedules() {
   if (!SCHED_SECRET || _schedRunning) return;
   _schedRunning = true;
   try {
-    const schedules = readSchedules();
+    const schedules = await readSchedules();
     const due = schedules.filter(s => s.status === 'pending' && new Date(s.scheduledFor) <= new Date());
     if (due.length) {
       console.log(`[scheduler] ${due.length} due schedule(s)`);
@@ -689,11 +726,8 @@ async function runDueSchedules() {
   } finally { _schedRunning = false; }
 }
 
-// Recover schedules stuck in 'running' from a previous crash/restart
-try { recoverStuckSchedules(); } catch (e) { console.error('[scheduler] recovery error:', e.message); }
-// Prune schedules older than 30 days on startup, then daily
-try { pruneSchedules(); } catch (e) { console.error('[scheduler] prune error:', e.message); }
-setInterval(() => { try { pruneSchedules(); } catch {} }, 24 * 60 * 60 * 1000).unref();
+// Recover + prune run async at startup (inside app.listen callback) and daily
+setInterval(() => pruneSchedules().catch(e => console.error('[scheduler] prune:', e.message)), 24 * 60 * 60 * 1000).unref();
 
 // Primary: check every 30s — no .unref() so it always fires
 setInterval(() => runDueSchedules().catch(e => console.error('[scheduler]', e.message)), 30_000);
@@ -1086,10 +1120,10 @@ app.get('/api/schedule/ping', async (req, res) => {
   if (PING_SECRET && req.query.secret !== PING_SECRET) {
     return res.status(401).json({ ok: false, error: 'Unauthorized. Provide ?secret=PING_SECRET' });
   }
-  const before = readSchedules();
+  const before = await readSchedules();
   const pendingBefore = before.filter(s => s.status === 'pending').length;
   await runDueSchedules().catch(e => console.error('[ping]', e.message));
-  const after = readSchedules();
+  const after = await readSchedules();
   const fileExists   = (() => { try { return fs.existsSync(SCHED_FILE); } catch { return false; } })();
   const dirWritable  = schedFileStatus() === 'writable';
   const now = new Date();
@@ -1177,34 +1211,34 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
       executedAt: null,
       error: null,
     };
-    const schedules = readSchedules();
+    const schedules = await readSchedules();
     schedules.push(sched);
-    if (!writeSchedules(schedules)) throw new Error('Could not save schedule. On Railway, mount a Volume and set SCHED_FILE=/data/schedules.json');
+    if (!await writeSchedules(schedules)) throw new Error('Could not save schedule. Check DATABASE_URL or mount a Volume and set SCHED_FILE=/data/schedules.json');
     track('schedule_create', shop, { products: (changes||[]).length });
     const { encToken: _, ...safe } = sched;
     res.json({ ok: true, schedule: safe });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
-app.post('/api/schedule/list', apiLimiter, (req, res) => {
+app.post('/api/schedule/list', apiLimiter, async (req, res) => {
   try {
     const { shop } = getSession(req);
-    const schedules = readSchedules();
+    const schedules = await readSchedules();
     const mine = schedules
       .filter(s => s.shop === shop)
       .map(({ encToken: _, ...rest }) => rest)
       .sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor));
-    const persistWarning = !process.env.SCHED_FILE; // warn if using default (non-persistent) path
+    const persistWarning = !process.env.DATABASE_URL && !process.env.SCHED_FILE;
     res.json({ ok: true, schedules: mine, persistWarning });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
-app.post('/api/schedule/update', apiLimiter, (req, res) => {
+app.post('/api/schedule/update', apiLimiter, async (req, res) => {
   try {
     const { shop } = getSession(req);
     const { id, label, scheduledFor, notifyEmail: providedEmail, timezone: clientTz } = req.body || {};
     if (!id) throw new Error('Missing id');
-    const schedules = readSchedules();
+    const schedules = await readSchedules();
     const sched = schedules.find(s => s.id === id && s.shop === shop);
     if (!sched) throw new Error('Schedule not found');
     if (sched.status !== 'pending') throw new Error('Only pending schedules can be edited');
@@ -1225,39 +1259,39 @@ app.post('/api/schedule/update', apiLimiter, (req, res) => {
     if (clientTz && typeof clientTz === 'string') {
       try { Intl.DateTimeFormat(undefined, { timeZone: clientTz }); sched.timezone = clientTz; } catch {}
     }
-    writeSchedules(schedules);
+    await writeSchedules(schedules);
     const { encToken: _, ...safe } = sched;
     res.json({ ok: true, schedule: safe });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
-app.post('/api/schedule/delete', apiLimiter, (req, res) => {
+app.post('/api/schedule/delete', apiLimiter, async (req, res) => {
   try {
     const { shop } = getSession(req);
     const { id } = req.body || {};
     if (!id) throw new Error('Missing id');
-    const schedules = readSchedules();
+    const schedules = await readSchedules();
     const idx = schedules.findIndex(s => s.id === id && s.shop === shop);
     if (idx === -1) throw new Error('Schedule not found');
     if (!['failed', 'cancelled'].includes(schedules[idx].status)) throw new Error('Only failed or cancelled schedules can be deleted');
     schedules.splice(idx, 1);
-    writeSchedules(schedules);
+    await writeSchedules(schedules);
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
-app.post('/api/schedule/cancel', apiLimiter, (req, res) => {
+app.post('/api/schedule/cancel', apiLimiter, async (req, res) => {
   try {
     const { shop } = getSession(req);
     const { id } = req.body || {};
     if (!id) throw new Error('Missing id');
-    const schedules = readSchedules();
+    const schedules = await readSchedules();
     const sched = schedules.find(s => s.id === id && s.shop === shop);
     if (!sched) throw new Error('Schedule not found');
     if (!['pending', 'failed'].includes(sched.status)) throw new Error('Cannot cancel this schedule');
     sched.status = 'cancelled';
     sched.encToken = null;
-    writeSchedules(schedules);
+    await writeSchedules(schedules);
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -1268,7 +1302,7 @@ app.post('/api/schedule/run', apiLimiter, writeLimiter, async (req, res) => {
     const { shop } = getSession(req);
     const { id } = req.body || {};
     if (!id) throw new Error('Missing id');
-    const schedules = readSchedules();
+    const schedules = await readSchedules();
     const sched = schedules.find(s => s.id === id && s.shop === shop);
     if (!sched) throw new Error('Schedule not found');
     if (!['pending', 'failed'].includes(sched.status)) throw new Error('Schedule cannot be run');
@@ -1294,11 +1328,11 @@ app.get('/api/admin/stats', (req, res) => {
   });
 });
 
-app.get('/api/schedule/recap/:id', (req, res) => {
+app.get('/api/schedule/recap/:id', async (req, res) => {
   const { id } = req.params;
   const { token } = req.query;
   if (!SCHED_SECRET || token !== schedRecapToken(id)) return res.status(403).send('Invalid or expired link.');
-  const sched = readSchedules().find(s => s.id === id);
+  const sched = (await readSchedules()).find(s => s.id === id);
   if (!sched) return res.status(404).send('Schedule not found.');
   const changes = sched.changes || [];
   const tz = sched.timezone || NOTIFY_TZ;
@@ -1331,11 +1365,11 @@ app.get('/api/schedule/recap/:id', (req, res) => {
   res.send(`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>All changes · ${sched.label}</title><style>*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:#eeecea;margin:0;padding:40px 20px 60px;-webkit-font-smoothing:antialiased}.card{background:#fff;border-radius:20px;max-width:580px;margin:0 auto;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.07),0 0 0 1px rgba(0,0,0,.05)}.bar{background:#1a5c38;height:5px}.head{padding:28px 36px 20px;border-bottom:1px solid #f3f3f1}.logo{display:flex;align-items:center;gap:8px;margin-bottom:18px;text-decoration:none}.logo-m{background:#1a5c38;border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;letter-spacing:.04em}.logo-n{font-size:11px;font-weight:600;color:#4b5563;letter-spacing:.12em;text-transform:uppercase}h1{margin:0 0 6px;font-size:18px;font-weight:700;color:#0e0e0c;letter-spacing:-.02em}p.sub{margin:0;font-size:13px;color:#9ca3af}.body{padding:8px 36px 16px}table{width:100%;border-collapse:collapse}.dl{display:inline-block;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;text-decoration:none;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;margin:16px 0 8px}.foot{padding:16px 36px;border-top:1px solid #f3f3f1;font-size:12px;color:#9ca3af}</style></head><body><div class="card"><div class="bar"></div><div class="head"><a href="${APP_URL}" class="logo"><div class="logo-m">L</div><span class="logo-n">Lederly</span></a><h1>${sched.label}</h1><p class="sub">${dt} &nbsp;·&nbsp; ${sched.shop} &nbsp;·&nbsp; ${changes.length} product${changes.length!==1?'s':''} updated</p></div><div class="body"><a href="/api/schedule/recap/${id}/csv?token=${token}" class="dl">↓ Download CSV</a><table>${rows}</table></div><div class="foot">Sent by <a href="${APP_URL}" style="color:#1a5c38;text-decoration:none;font-weight:500">Lederly</a> — bulk product editing for Shopify</div></div></body></html>`);
 });
 
-app.get('/api/schedule/recap/:id/csv', (req, res) => {
+app.get('/api/schedule/recap/:id/csv', async (req, res) => {
   const { id } = req.params;
   const { token } = req.query;
   if (!SCHED_SECRET || token !== schedRecapToken(id)) return res.status(403).send('Invalid or expired link.');
-  const sched = readSchedules().find(s => s.id === id);
+  const sched = (await readSchedules()).find(s => s.id === id);
   if (!sched) return res.status(404).send('Schedule not found.');
   const csv = buildChangesCSV(sched.changes || []);
   const label = (sched.label || id).slice(0, 40).replace(/[^a-z0-9]/gi, '-');
@@ -1347,16 +1381,18 @@ app.get('/api/schedule/recap/:id/csv', (req, res) => {
 app.use((req, res) => res.status(404).json({ ok: false, error: 'Not found' }));
 app.use((err, req, res, _n) => res.status(err.status || 500).json({ ok: false, error: safeErr(err), requestId: req.requestId }));
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Lederly on http://localhost:${PORT}`);
   console.log(`OAuth: ${SHOPIFY_CLIENT_ID ? 'OK' : 'NOT configured'}`);
+  console.log(`Storage: ${dbPool ? 'PostgreSQL' : `file (${SCHED_FILE})`}`);
   if (SCHED_SECRET) {
-    console.log(`Scheduling: ENABLED — file: ${SCHED_FILE} (${schedFileStatus()})`);
-    const existing = readSchedules();
-    console.log(`Scheduling: ${existing.length} schedule(s) on disk, ${existing.filter(s=>s.status==='pending').length} pending`);
-    if (IS_PROD && SCHED_FILE === path.join(__dirname, 'schedules.json')) {
-      console.warn('[scheduler] WARNING: SCHED_FILE is at the default location (project root). On Railway this will be LOST on every deploy. Set SCHED_FILE=/data/schedules.json and mount a Volume in Railway.');
+    const existing = await readSchedules();
+    console.log(`Scheduling: ENABLED — ${existing.length} schedule(s), ${existing.filter(s=>s.status==='pending').length} pending`);
+    if (!dbPool && IS_PROD && SCHED_FILE === path.join(__dirname, 'schedules.json')) {
+      console.warn('[scheduler] WARNING: no DATABASE_URL and SCHED_FILE at default path. Schedules will be LOST on redeploy. Set DATABASE_URL or mount a Railway Volume.');
     }
+    await recoverStuckSchedules();
+    await pruneSchedules();
   } else {
     console.log(`Scheduling: DISABLED (set SCHED_SECRET)`);
   }

@@ -1649,6 +1649,11 @@ function boot(){
     }catch(err){ toast(err.message); btn.disabled=false; }
   });
 
+  // CSV Import
+  $('btn-import-csv').addEventListener('click', ()=> $('csv-file-input').click());
+  $('csv-file-input').addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) openImportModal(f); e.target.value=''; });
+  $('m-import-apply').addEventListener('click', applyImport);
+
   // Generic close buttons
   document.addEventListener('click',e=>{
     const id=e.target.closest('[data-close]')?.dataset.close;
@@ -1680,6 +1685,309 @@ function boot(){
     // Pre-fill shop domain if remembered
     if(savedShop) $('f-shop').value=savedShop;
   })();
+}
+
+// ═══════════ CSV IMPORT ═══════════
+let _importData = null; // { rows, mapping, matched }
+
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const result = [];
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const row = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (c === ',' && !inQ) { row.push(cur); cur = ''; }
+      else cur += c;
+    }
+    row.push(cur);
+    result.push(row);
+  }
+  return result;
+}
+
+// Known column name aliases → internal field keys
+const CSV_FIELD_MAP = {
+  handle:           'handle',
+  title:            'title',
+  'body (html)':    'bodyHtml',
+  body:             'bodyHtml',
+  description:      'bodyHtml',
+  vendor:           'vendor',
+  tags:             'tags',
+  published:        'status',
+  status:           'status',
+  type:             'productType',
+  'product type':   'productType',
+  'variant sku':    'sku',
+  sku:              'sku',
+  'variant price':  'price',
+  price:            'price',
+  'variant compare at price': 'compareAtPrice',
+  'compare at price':         'compareAtPrice',
+  'compare at':               'compareAtPrice',
+  'variant inventory qty':    'inventoryQty',
+  'inventory qty':            'inventoryQty',
+  qty:              'inventoryQty',
+  quantity:         'inventoryQty',
+  'seo title':      'seoTitle',
+  'seo description':'seoDesc',
+  'meta title':     'seoTitle',
+  'meta description':'seoDesc',
+};
+const IMPORT_FIELD_LABELS = {
+  handle:'Handle (match key)', title:'Title', bodyHtml:'Description', vendor:'Vendor',
+  tags:'Tags', status:'Status (Active/Draft)', productType:'Product Type',
+  sku:'SKU (variant match)', price:'Price', compareAtPrice:'Compare at Price',
+  inventoryQty:'Inventory Qty', seoTitle:'SEO Title', seoDesc:'SEO Description',
+};
+
+function autoDetectMapping(headers) {
+  const map = {};
+  headers.forEach((h, i) => {
+    const key = CSV_FIELD_MAP[h.toLowerCase().trim()];
+    if (key && !map[key]) map[key] = i;
+  });
+  return map;
+}
+
+function openImportModal(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const rows = parseCSV(text);
+    if (rows.length < 2) { toast('CSV has no data rows.'); return; }
+    const headers = rows[0];
+    const dataRows = rows.slice(1).filter(r => r.some(c => c.trim()));
+    const mapping = autoDetectMapping(headers);
+    _importData = { headers, dataRows, mapping, file: file.name };
+    renderImportModal();
+    openModal('m-import');
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function renderImportModal() {
+  const { headers, dataRows, mapping, file } = _importData;
+  $('m-import-sub').textContent = `${file} — ${dataRows.length} rows`;
+
+  const hasHandle = mapping.handle !== undefined;
+  const hasSku    = mapping.sku    !== undefined;
+  const hasTitle  = mapping.title  !== undefined;
+  const matchKey  = hasHandle ? 'handle' : hasSku ? 'sku' : hasTitle ? 'title' : null;
+
+  const fieldOptions = Object.entries(IMPORT_FIELD_LABELS)
+    .map(([k,l]) => `<option value="${k}">${l}</option>`).join('');
+
+  const colRows = headers.map((h, i) => {
+    const autoField = Object.keys(mapping).find(k => mapping[k] === i) || '';
+    const preview = dataRows.slice(0,3).map(r => esc(r[i]||'')).join(', ');
+    return `<tr>
+      <td style="padding:5px 8px;font-size:11px;font-family:var(--mono);color:var(--t2);white-space:nowrap">${esc(h)}</td>
+      <td style="padding:5px 8px">
+        <select class="import-col-sel mf-unit-sel" data-col="${i}" style="width:100%;font-size:11px">
+          <option value="">— skip —</option>${fieldOptions}
+        </select>
+      </td>
+      <td style="padding:5px 8px;font-size:10px;color:var(--t4);font-family:var(--mono);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${preview}</td>
+    </tr>`;
+  }).join('');
+
+  $('m-import-body').innerHTML = `
+    <div style="background:${matchKey?'var(--green-bg)':'#fef3c7'};border:1px solid ${matchKey?'var(--green-brd)':'#fde68a'};border-radius:var(--r6);padding:9px 12px;font-size:11px;color:${matchKey?'var(--green)':'#92400e'};font-family:var(--mono)">
+      ${matchKey ? `✓ Products matched by <strong>${IMPORT_FIELD_LABELS[matchKey]}</strong>` : '⚠ No match column found (Handle, SKU, or Title required). Assign one below.'}
+    </div>
+    <div style="overflow-x:auto;max-height:320px;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr>
+          <th style="padding:6px 8px;font-size:9px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--t4);text-align:left;border-bottom:1px solid var(--b1);background:var(--s1);position:sticky;top:0">CSV Column</th>
+          <th style="padding:6px 8px;font-size:9px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--t4);text-align:left;border-bottom:1px solid var(--b1);background:var(--s1);position:sticky;top:0">Import as</th>
+          <th style="padding:6px 8px;font-size:9px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--t4);text-align:left;border-bottom:1px solid var(--b1);background:var(--s1);position:sticky;top:0">Preview</th>
+        </tr></thead>
+        <tbody>${colRows}</tbody>
+      </table>
+    </div>`;
+
+  // Set auto-detected values on selects
+  headers.forEach((_, i) => {
+    const sel = $('m-import-body').querySelector(`[data-col="${i}"]`);
+    const field = Object.keys(mapping).find(k => mapping[k] === i) || '';
+    if (sel) sel.value = field;
+  });
+
+  // Bind select change → update mapping + preview
+  $('m-import-body').querySelectorAll('.import-col-sel').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const col = Number(sel.dataset.col);
+      // Remove any existing assignment of this field
+      const prev = Object.keys(_importData.mapping).find(k => _importData.mapping[k] === col);
+      if (prev) delete _importData.mapping[prev];
+      if (sel.value) {
+        // Remove any prior column assigned to this field
+        delete _importData.mapping[sel.value];
+        _importData.mapping[sel.value] = col;
+      }
+      updateImportPreview();
+    });
+  });
+
+  updateImportPreview();
+}
+
+function updateImportPreview() {
+  const { dataRows, mapping } = _importData;
+  const matchKey = mapping.handle !== undefined ? 'handle' : mapping.sku !== undefined ? 'sku' : mapping.title !== undefined ? 'title' : null;
+  const matched = matchKey ? computeImportMatches() : [];
+  const changed = matched.filter(m => Object.keys(m.changes.product||{}).length + Object.keys(m.changes.variants||{}).length > 0);
+  const info = $('m-import-info');
+  if (!matchKey) {
+    info.textContent = 'Assign a match column to continue.';
+    $('m-import-apply').disabled = true;
+    return;
+  }
+  const total = dataRows.length;
+  const notFound = matched.filter(m => !m.found).length;
+  info.textContent = `${changed.length} product${changed.length!==1?'s':''} will change · ${notFound} not found in loaded products`;
+  $('m-import-apply').disabled = changed.length === 0;
+  _importData.matched = matched;
+}
+
+function computeImportMatches() {
+  const { headers, dataRows, mapping } = _importData;
+  const matchKey = mapping.handle !== undefined ? 'handle' : mapping.sku !== undefined ? 'sku' : 'title';
+  const matchColIdx = mapping[matchKey];
+  const results = [];
+  // Group rows by handle (Shopify exports one row per variant)
+  const groups = new Map();
+  for (const row of dataRows) {
+    const matchVal = (row[matchColIdx]||'').trim().toLowerCase();
+    if (!matchVal) continue;
+    if (!groups.has(matchVal)) groups.set(matchVal, []);
+    groups.get(matchVal).push(row);
+  }
+
+  for (const [matchVal, rows] of groups) {
+    let prod = null;
+    if (matchKey === 'handle') {
+      prod = S.products.find(p => p.handle?.toLowerCase() === matchVal);
+    } else if (matchKey === 'sku') {
+      // find product that has a variant with this SKU
+      prod = S.products.find(p => (p.variants||[]).some(v => v.sku?.toLowerCase() === matchVal));
+    } else {
+      prod = S.products.find(p => p.title?.toLowerCase() === matchVal);
+    }
+
+    const productChanges = {};
+    const variantChanges = {};
+
+    // Use first row for product-level fields
+    const firstRow = rows[0];
+    if (mapping.title !== undefined) {
+      const v = (firstRow[mapping.title]||'').trim();
+      if (v && prod && v !== prod.title) productChanges.title = v;
+    }
+    if (mapping.bodyHtml !== undefined) {
+      const v = (firstRow[mapping.bodyHtml]||'').trim();
+      if (v && prod) {
+        // Plain text → wrap in <p>
+        const html = v.startsWith('<') ? v : '<p>'+v.replace(/\n\n+/g,'</p><p>').replace(/\n/g,'<br>')+'</p>';
+        if (html !== (prod.bodyHtml||'')) productChanges.bodyHtml = html;
+      }
+    }
+    if (mapping.vendor !== undefined) {
+      const v = (firstRow[mapping.vendor]||'').trim();
+      if (v && prod && v !== prod.vendor) productChanges.vendor = v;
+    }
+    if (mapping.tags !== undefined) {
+      const v = (firstRow[mapping.tags]||'').trim();
+      if (prod && v !== (prod.tags||[]).join(', ')) productChanges.tags = v.split(',').map(t=>t.trim()).filter(Boolean);
+    }
+    if (mapping.status !== undefined) {
+      const raw = (firstRow[mapping.status]||'').trim().toUpperCase();
+      const mapped = raw === 'TRUE' || raw === 'ACTIVE' ? 'ACTIVE' : raw === 'FALSE' || raw === 'DRAFT' ? 'DRAFT' : raw === 'ARCHIVED' ? 'ARCHIVED' : null;
+      if (mapped && prod && mapped !== prod.status) productChanges.status = mapped;
+    }
+    if (mapping.productType !== undefined) {
+      const v = (firstRow[mapping.productType]||'').trim();
+      if (v && prod && v !== prod.productType) productChanges.productType = v;
+    }
+    if (mapping.seoTitle !== undefined || mapping.seoDesc !== undefined) {
+      const st = mapping.seoTitle !== undefined ? (firstRow[mapping.seoTitle]||'').trim() : null;
+      const sd = mapping.seoDesc  !== undefined ? (firstRow[mapping.seoDesc ]||'').trim() : null;
+      if (st !== null && prod && st !== (prod.seo?.title||'')) productChanges.seoTitle = st;
+      if (sd !== null && prod && sd !== (prod.seo?.description||'')) productChanges.seoDesc = sd;
+    }
+
+    // Per-row variant fields
+    for (const row of rows) {
+      if (!prod) break;
+      const rowSku = mapping.sku !== undefined ? (row[mapping.sku]||'').trim() : null;
+      let variant = null;
+      if (rowSku) {
+        variant = (prod.variants||[]).find(v => v.sku === rowSku);
+      } else {
+        variant = prod.variants?.[0];
+      }
+      if (!variant) continue;
+      const vc = variantChanges[variant.id] || {};
+      if (mapping.price !== undefined) {
+        const v = (row[mapping.price]||'').trim().replace(/[^0-9.]/g,'');
+        if (v && v !== String(variant.price||'')) vc.price = v;
+      }
+      if (mapping.compareAtPrice !== undefined) {
+        const v = (row[mapping.compareAtPrice]||'').trim().replace(/[^0-9.]/g,'');
+        if (v !== undefined && v !== String(variant.compareAtPrice||'')) vc.compareAtPrice = v || null;
+      }
+      if (Object.keys(vc).length) variantChanges[variant.id] = vc;
+    }
+
+    results.push({ matchVal, found: !!prod, prod, changes: { product: productChanges, variants: variantChanges } });
+  }
+  return results;
+}
+
+function applyImport() {
+  const { matched } = _importData || {};
+  if (!matched) return;
+  let count = 0;
+  for (const { found, prod, changes } of matched) {
+    if (!found || !prod) continue;
+    const { product: pf, variants: vf } = changes;
+    if (!pf && !vf) continue;
+    pushH('CSV import');
+    if (pf.title    !== undefined) { prod.title    = pf.title;    ensureC(prod.id).product.title    = pf.title; }
+    if (pf.bodyHtml !== undefined) { prod.bodyHtml  = pf.bodyHtml; ensureC(prod.id).product.bodyHtml  = pf.bodyHtml; }
+    if (pf.vendor   !== undefined) { prod.vendor    = pf.vendor;   ensureC(prod.id).product.vendor    = pf.vendor; }
+    if (pf.tags     !== undefined) { prod.tags      = pf.tags;     ensureC(prod.id).product.tags      = pf.tags; }
+    if (pf.status   !== undefined) { prod.status    = pf.status;   ensureC(prod.id).product.status    = pf.status; }
+    if (pf.productType !== undefined) { prod.productType = pf.productType; ensureC(prod.id).product.productType = pf.productType; }
+    if (pf.seoTitle !== undefined || pf.seoDesc !== undefined) {
+      if (!prod.seo) prod.seo = { title:'', description:'' };
+      const c = ensureC(prod.id); if (!c.product.seo) c.product.seo = {};
+      if (pf.seoTitle !== undefined) { prod.seo.title       = pf.seoTitle; c.product.seo.title       = pf.seoTitle; }
+      if (pf.seoDesc  !== undefined) { prod.seo.description = pf.seoDesc;  c.product.seo.description = pf.seoDesc;  }
+    }
+    for (const [vid, vc] of Object.entries(vf || {})) {
+      const variant = (prod.variants||[]).find(v => v.id === vid);
+      if (!variant) continue;
+      const c = ensureC(prod.id);
+      if (!c.variants) c.variants = {};
+      if (!c.variants[vid]) c.variants[vid] = { id: vid };
+      if (vc.price !== undefined)          { variant.price          = vc.price;          c.variants[vid].price          = vc.price; }
+      if (vc.compareAtPrice !== undefined)  { variant.compareAtPrice  = vc.compareAtPrice; c.variants[vid].compareAtPrice  = vc.compareAtPrice; }
+    }
+    count++;
+  }
+  closeModal('m-import');
+  _importData = null;
+  renderTable();
+  updateSaveBtn();
+  toast(`${count} product${count!==1?'s':''} updated from CSV. Review changes and save.`);
 }
 
 document.addEventListener('DOMContentLoaded', boot);
