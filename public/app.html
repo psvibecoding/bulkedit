@@ -186,6 +186,15 @@
       <div><h2>Save changes</h2><p id="m-save-sub" class="modal-sub"></p></div>
       <button class="close-btn" data-close="m-save">✕</button>
     </div>
+    <div id="m-save-prog" style="display:none;padding:14px 24px 4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span id="m-save-prog-label" style="font-size:11px;font-family:var(--mono);color:var(--t3)">Preparing…</span>
+        <span id="m-save-prog-pct" style="font-size:11px;font-family:var(--mono);color:var(--t3);font-variant-numeric:tabular-nums">0%</span>
+      </div>
+      <div style="height:3px;background:var(--border,#e4e4de);border-radius:2px;overflow:hidden">
+        <div id="m-save-prog-bar" style="height:100%;width:0%;background:#1a5c38;border-radius:2px;transition:width .2s ease,background .3s ease"></div>
+      </div>
+    </div>
     <div id="m-save-diff" class="modal-body diff-list"></div>
     <div class="modal-foot" style="justify-content:space-between">
       <button class="btn-ghost sm" id="btn-dl-recap">↓ Download recap</button>

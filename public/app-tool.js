@@ -999,25 +999,45 @@ function openSaveModal(){
   openModal('m-save');
 }
 
+function setSaveProgress(done,total,errors){
+  const prog=$('m-save-prog'),bar=$('m-save-prog-bar'),lbl=$('m-save-prog-label'),pct=$('m-save-prog-pct');
+  if(!prog)return;
+  prog.style.display='';
+  const p=total>0?Math.round(done/total*100):0;
+  bar.style.width=p+'%';
+  bar.style.background=errors>0?'#f59e0b':'#1a5c38';
+  lbl.textContent=done>=total?(errors>0?`${errors} failed · ${done-errors} saved`:'All saved ✓'):`Saving ${done} of ${total}…`;
+  pct.textContent=p+'%';
+}
+
 async function confirmSave(){
   const payloads=Object.values(S.changes); if(!payloads.length)return;
   const btn=$('m-save-confirm'); btn.disabled=true; btn.textContent='Saving…';
+  const bar=$('m-save-prog-bar'); if(bar){bar.style.width='0%';bar.style.background='#1a5c38';}
+  const prog=$('m-save-prog'); if(prog)prog.style.display='none';
   setStatus('Saving…','saving');
   try{
-    if(S.demo){ await delay(600); commitAll(payloads); return; }
+    if(S.demo){
+      for(let i=1;i<=payloads.length;i++){await delay(35);setSaveProgress(i,payloads.length,0);}
+      commitAll(payloads); return;
+    }
 
     const savedPids=[], failed=[];
+    let done=0;
 
-    // Save each product individually — catch per-product errors
-    for(const c of payloads){
-      try{
-        const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
-        setStatus(`Saving ${savedPids.length+failed.length+1} / ${payloads.length}…`,'saving');
-        await api('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});
-        savedPids.push(c.productId);
-      }catch(e){
-        failed.push({pid:c.productId,title:getProd(c.productId)?.title||c.productId,err:e.message});
-      }
+    // Save in parallel batches of 5 — per-item error handling
+    for(let i=0;i<payloads.length;i+=5){
+      await Promise.all(payloads.slice(i,i+5).map(async c=>{
+        try{
+          const mf=(c.metafields||[]).map(({_idx,...rest})=>rest);
+          await api('/api/save-product',{productId:c.productId,product:c.product,variants:Object.values(c.variants||{}),metafields:mf});
+          savedPids.push(c.productId);
+        }catch(e){
+          failed.push({pid:c.productId,title:getProd(c.productId)?.title||c.productId,err:e.message});
+        }
+        done++;
+        setSaveProgress(done,payloads.length,failed.length);
+      }));
     }
 
     // Inventory — only for products that saved OK

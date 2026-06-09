@@ -91,7 +91,7 @@ setInterval(() => { const n = Date.now(); for (const [k,v] of buckets) if (n > v
 
 const byIpShop     = req => `${req.ip}:${req.headers['x-shopify-shop']||'?'}`;
 const apiLimiter     = rateLimit({ windowMs: 60000,  max: 600, keyFn: byIpShop });
-const writeLimiter   = rateLimit({ windowMs: 60000,  max: 300, keyFn: req => byIpShop(req)+':w' });
+const writeLimiter   = rateLimit({ windowMs: 60000,  max: 600, keyFn: req => byIpShop(req)+':w' });
 const authLimiter    = rateLimit({ windowMs: 60000,  max: 20,  keyFn: req => req.ip });
 const contactLimiter  = rateLimit({ windowMs: 900000, max: 5,   keyFn: req => req.ip });
 const feedbackLimiter = rateLimit({ windowMs: 3600000, max: 10, keyFn: req => req.ip });
@@ -1073,7 +1073,7 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
     const dt = new Date(scheduledFor);
     if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
     if (dt <= new Date()) throw new Error('Scheduled time must be in the future');
-    if (!Array.isArray(changes) || !changes.length || changes.length > 200) throw new Error('Invalid changes');
+    if (!Array.isArray(changes) || !changes.length || changes.length > 500) throw new Error('Invalid changes');
     if (!label || !String(label).trim()) throw new Error('Label is required');
     let notifyEmail = '';
     if (providedEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(providedEmail))) {
