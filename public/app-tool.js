@@ -432,8 +432,8 @@ function rowHTML(p,v){
 <td><div class="colls-wrap">${collsHTML}</div></td>
 <td class="v-title">${esc(v.title||'Default')}</td>
 <td><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"></td>
-<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}">${priceBadge}</td>
-<td><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}">${catBadge}</td>
+<td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}"><div class="badge-stack">${priceBadge}</div></div></td>
+<td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"><div class="badge-stack">${catBadge}</div></div></td>
 <td><input class="ce ce-num" type="number" min="0" step="1" data-vid="${esc(v.id)}" data-vf="inventoryQuantity" value="${esc(String(v.inventoryQuantity??0))}"></td>
 <td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
 </tr>`;
