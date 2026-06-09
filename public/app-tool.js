@@ -1,6 +1,6 @@
 'use strict';
 /* ═══════════════════════════════════════════
-   BulkEdit — app-tool.js v8
+   Lederly — app-tool.js v8
    OAuth only · Metafield definitions · Collections
 ═══════════════════════════════════════════ */
 
@@ -1110,7 +1110,7 @@ function buildRecap(payloads){
 }
 
 function dlText(text,filename,mime='text/plain'){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime})); a.download=filename; a.click(); }
-function manualRecap(){ dlText(buildRecap(Object.values(S.changes)),`bulkedit-recap-${Date.now()}.csv`,'text/csv'); }
+function manualRecap(){ dlText(buildRecap(Object.values(S.changes)),`lederly-recap-${Date.now()}.csv`,'text/csv'); }
 
 /* ── SCHEDULES (server-side) ── */
 function updateSchedBadge(){

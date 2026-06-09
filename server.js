@@ -22,7 +22,7 @@ const APP_URL             = (process.env.APP_URL || 'http://localhost:8787').rep
 const SCHED_SECRET        = process.env.SCHED_SECRET || '';
 const SCHED_FILE          = process.env.SCHED_FILE || path.join(__dirname, 'schedules.json');
 const RESEND_API_KEY      = process.env.RESEND_API_KEY || '';
-const NOTIFY_FROM         = process.env.NOTIFY_FROM || 'noreply@bulkedit.app';
+const NOTIFY_FROM         = process.env.NOTIFY_FROM || 'noreply@lederly.com';
 const NOTIFY_TZ           = process.env.NOTIFY_TZ   || 'UTC';
 const CONTACT_TO          = process.env.CONTACT_TO  || '';
 const PING_SECRET         = process.env.PING_SECRET || '';
@@ -30,6 +30,15 @@ const PING_SECRET         = process.env.PING_SECRET || '';
 // In-memory OAuth state (stateless — no DB)
 const oauthStates = new Map();
 setInterval(() => { const n = Date.now(); for (const [k,v] of oauthStates) if (n > v.exp) oauthStates.delete(k); }, 60000).unref();
+
+// ── ANALYTICS (in-memory + structured logs) ───────────────
+const analytics = { stores: new Set(), counts: {}, start: Date.now() };
+function track(event, shop, meta = {}) {
+  analytics.counts[event] = (analytics.counts[event] || 0) + 1;
+  if (shop) analytics.stores.add(shop);
+  const entry = { ev: event, ...(shop ? { s: shop.replace(/\.myshopify\.com$/, '').slice(0, 30) } : {}), ...meta, t: new Date().toISOString() };
+  console.log(`[ev] ${JSON.stringify(entry)}`);
+}
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
@@ -165,7 +174,7 @@ async function gql({ shop, token }, query, variables = {}) {
   try {
     const r = await fetch(`https://${shop}/admin/api/${API_VERSION}/graphql.json`, {
       method: 'POST', signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': token, 'User-Agent': 'BulkEdit/1.0' },
+      headers: { 'Content-Type': 'application/json', 'X-Shopify-Access-Token': token, 'User-Agent': 'Lederly/1.0' },
       body: JSON.stringify({ query, variables })
     });
     const text = await r.text();
@@ -383,10 +392,10 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
           <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:5px">Revert scheduled for ${revertDt}</div>
           <div style="font-size:13px;color:#78350f;line-height:1.6">
             Your changes will be automatically reverted at that time.
-            If you want to keep them permanently, cancel the revert from BulkEdit.
+            If you want to keep them permanently, cancel the revert from Lederly.
           </div>
           <div style="margin-top:12px">
-            <a href="${APP_URL}/app?openSchedules=1" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;letter-spacing:.01em">Open BulkEdit to cancel revert →</a>
+            <a href="${APP_URL}/app?openSchedules=1" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;letter-spacing:.01em">Open Lederly to cancel revert →</a>
           </div>
         </td>
       </tr></table>
@@ -404,7 +413,7 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BulkEdit notification</title>
+  <title>Lederly notification</title>
 </head>
 <body style="margin:0;padding:0;background:#eeecea;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased">
 <div style="max-width:580px;margin:0 auto;padding:48px 20px 64px">
@@ -414,11 +423,11 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
     <table style="margin:0 auto;border-collapse:collapse"><tr>
       <td style="padding-right:8px;vertical-align:middle">
         <div style="background:#1a5c38;border-radius:7px;width:28px;height:28px;text-align:center;line-height:28px">
-          <span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em">BE</span>
+          <span style="color:#fff;font-size:10px;font-weight:700;letter-spacing:.04em">L</span>
         </div>
       </td>
       <td style="vertical-align:middle">
-        <span style="font-size:12px;font-weight:600;color:#4b5563;letter-spacing:.12em;text-transform:uppercase">BulkEdit</span>
+        <span style="font-size:12px;font-weight:600;color:#4b5563;letter-spacing:.12em;text-transform:uppercase">Lederly</span>
       </td>
     </tr></table>
   </div>
@@ -457,14 +466,14 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
     <!-- Feedback nudge -->
     <div style="margin:8px 40px 0;background:#f9f9f7;border-radius:12px;padding:16px 20px;text-align:center">
-      <p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.5">Enjoying BulkEdit? We're in early access and your opinion shapes what we build next.</p>
+      <p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.5">Enjoying Lederly? We're in early access and your opinion shapes what we build next.</p>
       <a href="https://tally.so/r/D4abPX" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px">Share feedback — 1 question →</a>
     </div>
 
     <!-- Footer -->
     <div style="margin:8px 40px 0;padding:20px 0;border-top:1px solid #f3f3f1">
       <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.7">
-        Sent by <a href="https://bulkedit.app" style="color:#1a5c38;text-decoration:none;font-weight:500">BulkEdit</a> — bulk product editing for Shopify.<br>
+        Sent by <a href="https://lederly.com" style="color:#1a5c38;text-decoration:none;font-weight:500">Lederly</a> — bulk product editing for Shopify.<br>
         You received this because you enabled email notifications for this scheduled update.
       </p>
     </div>
@@ -472,11 +481,11 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
     <!-- Bottom bar -->
     <div style="background:#f9f9f7;border-top:1px solid #efefed;padding:14px 40px">
       <table style="width:100%;border-collapse:collapse"><tr>
-        <td style="font-size:11px;color:#b0b0a8">© 2026 BulkEdit</td>
+        <td style="font-size:11px;color:#b0b0a8">© 2026 Lederly</td>
         <td style="text-align:right;font-size:11px">
-          <a href="https://bulkedit.app/privacy" style="color:#b0b0a8;text-decoration:none">Privacy</a>
+          <a href="https://lederly.com/privacy" style="color:#b0b0a8;text-decoration:none">Privacy</a>
           &nbsp;·&nbsp;
-          <a href="https://bulkedit.app/terms" style="color:#b0b0a8;text-decoration:none">Terms</a>
+          <a href="https://lederly.com/terms" style="color:#b0b0a8;text-decoration:none">Terms</a>
         </td>
       </tr></table>
     </div>
@@ -491,7 +500,7 @@ async function sendEmail({ to, subject, html }) {
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_API_KEY}` },
-    body: JSON.stringify({ from: `BulkEdit <${NOTIFY_FROM}>`, to: [to], subject, html }),
+    body: JSON.stringify({ from: `Lederly <${NOTIFY_FROM}>`, to: [to], subject, html }),
   });
   const body = await r.text();
   if (!r.ok) { console.error('[notify] resend error:', body); return { ok: false, error: `Resend error (${r.status}): ${body}` }; }
@@ -637,7 +646,7 @@ app.post('/api/feedback', feedbackLimiter, async (req, res) => {
     if (!message) return res.status(400).json({ ok: false, error: 'Message required' });
     if (RESEND_API_KEY && CONTACT_TO) {
       const html = `<div style="font-family:sans-serif;max-width:520px">
-        <h2 style="margin:0 0 16px">💬 BulkEdit user feedback</h2>
+        <h2 style="margin:0 0 16px">💬 Lederly user feedback</h2>
         <p><strong>Shop:</strong> ${shop}</p>
         ${email ? `<p><strong>Reply to:</strong> <a href="mailto:${email}">${email}</a></p>` : '<p><em>No reply email provided</em></p>'}
         <p style="margin-top:16px"><strong>Message:</strong></p>
@@ -659,8 +668,8 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
     if (!name)    throw new Error('Name is required.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Valid email is required.');
     if (!message) throw new Error('Message is required.');
-    const html = `<div style="font-family:sans-serif;max-width:520px;color:#111"><h2 style="margin:0 0 16px">New message from BulkEdit contact form</h2><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p style="margin-top:12px"><strong>Message:</strong></p><p style="white-space:pre-wrap;background:#f5f5f3;padding:12px;border-radius:8px;margin-top:6px">${message}</p></div>`;
-    const result = await sendEmail({ to: CONTACT_TO, subject: `BulkEdit: message from ${name}`, html });
+    const html = `<div style="font-family:sans-serif;max-width:520px;color:#111"><h2 style="margin:0 0 16px">New message from Lederly contact form</h2><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p style="margin-top:12px"><strong>Message:</strong></p><p style="white-space:pre-wrap;background:#f5f5f3;padding:12px;border-radius:8px;margin-top:6px">${message}</p></div>`;
+    const result = await sendEmail({ to: CONTACT_TO, subject: `Lederly: message from ${name}`, html });
     if (!result.ok) throw new Error('Could not send message. Please try again later.');
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e) }); }
@@ -727,6 +736,7 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
     });
     const td = await tr.json();
     if (!td.access_token) throw new Error('No token');
+    track('connect', shop);
     // Pass token to frontend via URL — never stored server-side
     res.redirect(`/app?shop=${encodeURIComponent(shop)}&token=${encodeURIComponent(td.access_token)}`);
   } catch (e) {
@@ -775,6 +785,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
           }
         }
       }`, { first, query: search, after });
+    track('products_load', s.shop, { n: d.products.nodes.length, more: d.products.pageInfo.hasNextPage });
     res.json({ ok: true, products: d.products.nodes, pageInfo: d.products.pageInfo });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -845,6 +856,7 @@ app.post('/api/inventory-set', apiLimiter, writeLimiter, async (req, res) => {
       }`, { input: { name: 'available', reason: 'correction', ignoreCompareQuantity: true, quantities: items } });
     const errs = d.inventorySetQuantities?.userErrors || [];
     if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+    track('inventory_set', s.shop, { n: items.length });
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -923,9 +935,7 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
       results.push({ type: 'metafields', count: cleanMf.length });
     }
 
-    const productCount = results.filter(r => r.type === 'product').length
-      + results.filter(r => r.type === 'variants').reduce((a, r) => a + (r.count || 0), 0);
-    console.log(JSON.stringify({ event: 'save', shop: s.shop, products: req.body?.productId ? 1 : 0, fields: Object.keys(req.body?.product || {}).length, variants: (req.body?.variants || []).length, metafields: (req.body?.metafields || []).length, ts: new Date().toISOString() }));
+    track('save', s.shop, { v: variants.length, mf: metafields.length });
     res.json({ ok: true, results });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -1046,7 +1056,7 @@ app.post('/api/notify-test', apiLimiter, async (req, res) => {
     let html;
     try { html = buildEmailHtml({ shop, label: 'Email test', scheduledFor: new Date().toISOString(), executedAt: new Date().toISOString(), changes: [] }, true); }
     catch (renderErr) { return res.json({ ok: false, error: `Template error: ${renderErr.message}`, to, from: NOTIFY_FROM }); }
-    const result = await sendEmail({ to, subject: '✅ BulkEdit — email test', html });
+    const result = await sendEmail({ to, subject: '✅ Lederly — email test', html });
     if (!result.ok) return res.json({ ok: false, error: result.error, to, from: NOTIFY_FROM });
     res.json({ ok: true, sent: true, to, from: NOTIFY_FROM });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
@@ -1096,6 +1106,7 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
     const schedules = readSchedules();
     schedules.push(sched);
     if (!writeSchedules(schedules)) throw new Error('Could not save schedule. On Railway, mount a Volume and set SCHED_FILE=/data/schedules.json');
+    track('schedule_create', s.shop, { products: (changes||[]).length });
     const { encToken: _, ...safe } = sched;
     res.json({ ok: true, schedule: safe });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
@@ -1195,11 +1206,25 @@ app.post('/api/schedule/run', apiLimiter, writeLimiter, async (req, res) => {
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
+app.get('/api/admin/stats', (req, res) => {
+  const secret = req.headers['x-ping-secret'] || req.query.secret;
+  if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  const uptimeSec = Math.floor((Date.now() - analytics.start) / 1000);
+  res.json({
+    ok: true,
+    uptime: `${Math.floor(uptimeSec/3600)}h ${Math.floor((uptimeSec%3600)/60)}m`,
+    uniqueStores: analytics.stores.size,
+    stores: [...analytics.stores],
+    events: analytics.counts,
+    since: new Date(analytics.start).toISOString(),
+  });
+});
+
 app.use((req, res) => res.status(404).json({ ok: false, error: 'Not found' }));
 app.use((err, req, res, _n) => res.status(err.status || 500).json({ ok: false, error: safeErr(err), requestId: req.requestId }));
 
 app.listen(PORT, () => {
-  console.log(`BulkEdit on http://localhost:${PORT}`);
+  console.log(`Lederly on http://localhost:${PORT}`);
   console.log(`OAuth: ${SHOPIFY_CLIENT_ID ? 'OK' : 'NOT configured'}`);
   if (SCHED_SECRET) {
     console.log(`Scheduling: ENABLED — file: ${SCHED_FILE} (${schedFileStatus()})`);
