@@ -209,15 +209,7 @@ function renderLoadMore(){
 }
 
 function renderPaginationWarning(){
-  const existing=document.getElementById('page-warn');
-  const show=S.pageInfo?.hasNextPage&&(S.filter!=='all'||S.tagFilter);
-  if(!show){ if(existing)existing.remove(); return; }
-  if(existing)return;
-  const el=document.createElement('div');
-  el.id='page-warn';
-  el.style.cssText='margin:4px 16px 0;padding:6px 12px;background:#fefce8;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f;font-family:var(--mono)';
-  el.textContent=`⚠ Filters apply only to the ${S.products.length} loaded products — load all to filter the full catalog.`;
-  document.querySelector('.toolbar')?.after(el);
+  document.getElementById('page-warn')?.remove();
 }
 
 async function loadMfDefs(){
@@ -1444,7 +1436,12 @@ function buildSuggestions(){
 }
 
 /* ── FILTER ── */
-function setFilter(f){ S.filter=f; document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.f===f)); renderTable(); }
+async function setFilter(f){
+  S.filter=f;
+  document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
+  if(f!=='all' && S.pageInfo.hasNextPage && !S.demo) await loadAllProducts(S.searchQ);
+  renderTable();
+}
 
 /* ── TABS ── */
 function switchTab(name){
@@ -1553,9 +1550,10 @@ function boot(){
 
   // Filters
   document.querySelectorAll('.filter').forEach(btn=>btn.addEventListener('click',()=>setFilter(btn.dataset.f)));
-  $('tag-filter').addEventListener('change', e=>{
+  $('tag-filter').addEventListener('change', async e=>{
     S.tagFilter=e.target.value;
     $('tag-filter').classList.toggle('active', !!S.tagFilter);
+    if(S.tagFilter && S.pageInfo.hasNextPage && !S.demo) await loadAllProducts(S.searchQ);
     renderTable();
   });
 
