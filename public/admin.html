@@ -240,20 +240,17 @@ function drawBars(daily){
   const dates = getDates();
   const active = KEY_EVENTS.filter(ev=>!state.hiddenEvents.has(ev));
   const H = 160;
-  // max daily total (for proportional bar height)
-  const maxDay = Math.max(...dates.map(d=>active.reduce((s,ev)=>s+(daily[d]?.[ev]||0),0)),1);
+  const maxVal = Math.max(...dates.flatMap(d=>active.map(ev=>daily[d]?.[ev]||0)), 1);
 
   const bars = dates.map(date=>{
     const day = daily[date]||{};
-    const dayTotal = active.reduce((s,ev)=>s+(day[ev]||0),0);
-    const barH = dayTotal>0 ? Math.max(3, Math.round(dayTotal/maxDay*H)) : 3;
-    const segs = active.filter(ev=>day[ev]).map(ev=>{
-      const segH = Math.max(1, Math.round((day[ev]/dayTotal)*barH));
-      return `<div class="bar-seg" style="height:${segH}px;background:${color(ev)}" title="${ev}: ${day[ev]}"></div>`;
+    const evBars = active.map(ev=>{
+      const h = day[ev] ? Math.max(2, Math.round((day[ev]/maxVal)*H)) : 0;
+      return h > 0
+        ? `<div style="flex:1;height:${h}px;background:${color(ev)};border-radius:2px 2px 0 0;min-width:2px" title="${ev}: ${day[ev]}"></div>`
+        : `<div style="flex:1;min-width:2px"></div>`;
     }).join('');
-    return `<div class="bar-day" style="height:${H}px;display:flex;align-items:flex-end">
-      <div class="bar-stack" style="height:${barH}px;width:100%">${segs}</div>
-    </div>`;
+    return `<div class="bar-day" style="height:${H}px;display:flex;align-items:flex-end;gap:1px">${evBars}</div>`;
   }).join('');
 
   const labels = dates.map(date=>`<div class="chart-xlabel">${date.slice(5)}</div>`).join('');
