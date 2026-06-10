@@ -66,6 +66,14 @@ if (process.env.DATABASE_URL) {
   dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_ts    ON analytics_events(ts)`).catch(() => {});
   dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_event ON analytics_events(event)`).catch(() => {});
   dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_shop  ON analytics_events(shop) WHERE shop IS NOT NULL`).catch(() => {});
+  dbPool.query(`CREATE TABLE IF NOT EXISTS store_info (
+    shop TEXT PRIMARY KEY,
+    name TEXT,
+    country_code TEXT,
+    country TEXT,
+    first_seen TIMESTAMPTZ DEFAULT NOW(),
+    last_seen TIMESTAMPTZ DEFAULT NOW()
+  )`).catch(e => console.error('[db] store_info init error:', e.message));
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
@@ -1118,8 +1126,20 @@ app.use('/api/', (req, res, next) => { maybeRunSchedules(); next(); });
 app.post('/api/test', apiLimiter, async (req, res) => {
   try {
     const s = getSession(req);
-    const d = await gql(s, `query { shop { name myshopifyDomain email } }`);
+    const d = await gql(s, `query { shop { name myshopifyDomain email billingAddress { countryCode country } } }`);
     res.json({ ok: true, shop: d.shop });
+    // Upsert store info (fire-and-forget)
+    if (dbPool) {
+      const { name, billingAddress } = d.shop;
+      const cc = billingAddress?.countryCode || null;
+      const country = billingAddress?.country || null;
+      dbPool.query(
+        `INSERT INTO store_info (shop, name, country_code, country, first_seen, last_seen)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())
+         ON CONFLICT (shop) DO UPDATE SET name=$2, country_code=$3, country=$4, last_seen=NOW()`,
+        [s.shop, name || null, cc, country]
+      ).catch(e => console.error('[db] store_info upsert:', e.message));
+    }
     // Welcome email — fire-and-forget, only on first connect per shop
     isFirstConnect(s.shop).then(isNew => {
       if (isNew) sendWelcomeEmail(s.shop, d.shop.name, d.shop.email).catch(() => {});
@@ -1713,6 +1733,37 @@ app.get('/api/admin/stats', async (req, res) => {
     });
   } catch (e) {
     res.status(500).json({ ok: false, error: IS_PROD ? 'Stats error' : e.message });
+  }
+});
+
+app.get('/api/admin/stores', async (req, res) => {
+  const secret = req.headers['x-ping-secret'] || req.query.secret;
+  if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  if (!dbPool) return res.json({ ok: true, stores: [] });
+  try {
+    const r = await dbPool.query(`
+      SELECT
+        s.shop,
+        COALESCE(si.name, s.shop) AS name,
+        COALESCE(si.country_code, '—') AS country_code,
+        COALESCE(si.country, '—') AS country,
+        COALESCE(sp.plan, 'free') AS plan,
+        si.first_seen,
+        COALESCE(si.last_seen, MIN(ae.ts)) AS last_seen,
+        COUNT(ae.id) FILTER (WHERE ae.event='connect') AS connects,
+        COUNT(ae.id) FILTER (WHERE ae.event='save') AS saves,
+        COUNT(ae.id) FILTER (WHERE ae.event='schedule_run') AS schedules_run
+      FROM (SELECT DISTINCT shop FROM analytics_events WHERE shop IS NOT NULL) s
+      LEFT JOIN store_info si ON si.shop = s.shop
+      LEFT JOIN store_plans sp ON sp.shop = s.shop
+      LEFT JOIN analytics_events ae ON ae.shop = s.shop
+      GROUP BY s.shop, si.name, si.country_code, si.country, sp.plan, si.first_seen, si.last_seen
+      ORDER BY last_seen DESC NULLS LAST
+      LIMIT 200
+    `);
+    res.json({ ok: true, stores: r.rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: IS_PROD ? 'Error' : e.message });
   }
 });
 

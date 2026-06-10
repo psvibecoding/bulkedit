@@ -466,6 +466,40 @@ function renderEvents(events){
   </div>`;
 }
 
+/* ── Stores table ── */
+async function loadStores(){
+  const url=`/api/admin/stores${SECRET?'?secret='+encodeURIComponent(SECRET):''}`;
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return (await r.json()).stores||[];
+}
+function flagEmoji(cc){
+  if(!cc||cc==='—') return '';
+  try{ return cc.toUpperCase().replace(/./g,c=>String.fromCodePoint(c.charCodeAt(0)+127397))+' '; }catch{ return ''; }
+}
+function renderStores(stores){
+  if(!stores.length) return `<div class="section"><div class="section-head"><h2>Stores</h2></div><p style="font-size:12px;color:var(--ink3);padding:8px 0">No stores yet — country data captured on next connect.</p></div>`;
+  const rows=stores.map(s=>`<tr>
+    <td style="font-family:var(--mono);font-size:11px;color:var(--ink3)">${s.shop}</td>
+    <td style="font-size:12px;font-weight:500">${s.name!==s.shop?s.name:''}</td>
+    <td style="font-size:12px">${flagEmoji(s.country_code)}${s.country!=='—'?s.country:s.country_code}</td>
+    <td><span style="font-size:10px;font-family:var(--mono);background:${s.plan==='beta'?'#dcfce7':s.plan==='pro'?'#ede9fe':'#f1f5f9'};color:${s.plan==='beta'?'#166534':s.plan==='pro'?'#5b21b6':'#475569'};padding:2px 8px;border-radius:20px">${s.plan}</span></td>
+    <td style="text-align:right;font-family:var(--mono);font-size:12px">${fmt(s.saves)}</td>
+    <td style="text-align:right;font-family:var(--mono);font-size:12px">${fmt(s.schedules_run)}</td>
+    <td style="font-size:11px;color:var(--ink3)">${s.last_seen?new Date(s.last_seen).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'-'}</td>
+  </tr>`).join('');
+  return `<div class="section">
+    <div class="section-head"><h2>Stores <span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:6px">${stores.length} total</span></h2></div>
+    <table>
+      <thead><tr>
+        <th>Domain</th><th>Name</th><th>Country</th><th>Plan</th>
+        <th style="text-align:right">Saves</th><th style="text-align:right">Sched runs</th><th>Last seen</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
 /* ── Controls ── */
 function setDays(d){
   state.days=d; state.customFrom=null; state.customTo=null;
@@ -501,7 +535,7 @@ function redrawChart(){
 async function render(){
   const main=document.getElementById('main');
   try {
-    const d=await load();
+    const [d, stores]=await Promise.all([load(), loadStores().catch(()=>[])]);
     state.data=d;
     document.getElementById('hdr-ts').textContent='Updated '+new Date().toLocaleTimeString();
     main.innerHTML=
@@ -509,6 +543,7 @@ async function render(){
       `<div id="summary-wrap">${renderSummary(d)}</div>`+
       renderChartSection(d.daily)+
       renderFunnel(d.funnel)+
+      renderStores(stores)+
       renderEvents(d.events)+
       `<p class="refresh-note">Mode: ${d.mode||'?'} · Auto-refresh every 60s</p>`;
   } catch(e){
