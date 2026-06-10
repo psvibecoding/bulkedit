@@ -321,14 +321,15 @@ function loadDemoMode(){
   try{ fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'demo_start'})}).catch(()=>{}); }catch{}
 }
 
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 function saveProductsCache(storeName){
-  try{ sessionStorage.setItem('be_cache',JSON.stringify({storeName,products:S.products,mfDefs:S.mfDefs,ts:Date.now()})); }catch{}
+  try{ localStorage.setItem('be_cache',JSON.stringify({storeName,products:S.products,mfDefs:S.mfDefs,ts:Date.now()})); }catch{}
 }
 function loadProductsCache(){
   try{
-    const raw=sessionStorage.getItem('be_cache'); if(!raw)return null;
+    const raw=localStorage.getItem('be_cache'); if(!raw)return null;
     const c=JSON.parse(raw);
-    if(Date.now()-c.ts>10*60*1000)return null; // 10-min TTL
+    if(Date.now()-c.ts>CACHE_TTL)return null;
     return c;
   }catch{return null;}
 }
@@ -342,7 +343,7 @@ async function refreshInBackground(){
       saveProductsCache(t.shop.name);
     }
   }catch{
-    clearCredentials(); sessionStorage.removeItem('be_cache');
+    clearCredentials(); localStorage.removeItem('be_cache');
     showScreen('s-connect'); toast('Session expired — please reconnect.');
   }
 }
@@ -350,7 +351,7 @@ async function refreshInBackground(){
 function disconnect(){
   trackEv('disconnect');
   clearCredentials();
-  sessionStorage.removeItem('be_cache');
+  localStorage.removeItem('be_cache');
   Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',collFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
   const lm=document.getElementById('load-more-wrap'); if(lm)lm.style.display='none';
   S.selectedVids=new Set();
