@@ -82,6 +82,17 @@ const DEMO_PRODUCTS = [
     ]}},
 ];
 
+/* ── ANALYTICS ── */
+function trackEv(event, meta){
+  if(S.demo) return;
+  try{
+    const headers={'Content-Type':'application/json'};
+    if(S.shop) headers['X-Shopify-Shop']=S.shop;
+    if(S.token) headers['X-Shopify-Token']=S.token;
+    fetch('/api/track',{method:'POST',headers,body:JSON.stringify({event,...(meta||{})})}).catch(()=>{});
+  }catch{}
+}
+
 /* ── HELPERS ── */
 function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),3000); }
 function setStatus(msg,cls=''){
@@ -256,6 +267,8 @@ function loadDemoMode(){
   showScreen('s-app');
   toast('Demo loaded — changes won\'t be saved.');
   maybeStartTour();
+  // Track demo start (not S.demo guard — we want this one)
+  try{ fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:'demo_start'})}).catch(()=>{}); }catch{}
 }
 
 function saveProductsCache(storeName){
@@ -285,6 +298,7 @@ async function refreshInBackground(){
 }
 
 function disconnect(){
+  trackEv('disconnect');
   sessionStorage.removeItem('be_shop');
   sessionStorage.removeItem('be_token');
   sessionStorage.removeItem('be_cache');
@@ -980,6 +994,7 @@ function applyBulkModal(){
     });
     renderTable(); updateSaveBtn(); toast(`SEO updated on ${pids.length} products.`);
   }
+  trackEv('bulk_action',{type});
   closeModal('m-bulk');
 }
 
@@ -1192,7 +1207,7 @@ function buildRecap(payloads){
 }
 
 function dlText(text,filename,mime='text/plain'){ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime})); a.download=filename; a.click(); }
-function manualRecap(){ dlText(buildRecap(Object.values(S.changes)),`lederly-recap-${Date.now()}.csv`,'text/csv'); }
+function manualRecap(){ trackEv('export_csv'); dlText(buildRecap(Object.values(S.changes)),`lederly-recap-${Date.now()}.csv`,'text/csv'); }
 
 /* ── SCHEDULES (server-side) ── */
 function updateSchedBadge(){
@@ -1735,7 +1750,7 @@ function boot(){
     $('csv-file-input').click();
   });
   $('btn-csv-template').addEventListener('click', downloadCSVTemplate);
-  $('csv-file-input').addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f) openImportModal(f); e.target.value=''; });
+  $('csv-file-input').addEventListener('change', e=>{ const f=e.target.files?.[0]; if(f){ trackEv('csv_import'); openImportModal(f); } e.target.value=''; });
   $('m-import-apply').addEventListener('click', applyImport);
   $('m-import-tpl').addEventListener('click', downloadCSVTemplate);
 
@@ -2099,7 +2114,12 @@ function startTour(){
     prevBtnText: '← Back',
     doneBtnText: 'Done',
     popoverClass: 'lederly-tour',
-    onDestroyStarted: () => { localStorage.setItem('lederly_tour_v1','1'); d.destroy(); },
+    onDestroyStarted: () => {
+      const wasComplete = d.isLastStep();
+      localStorage.setItem('lederly_tour_v1','1');
+      d.destroy();
+      trackEv(wasComplete ? 'tour_complete' : 'tour_skip');
+    },
     onPopoverRender: (popover) => {
       const skip = document.createElement('button');
       skip.textContent = 'Skip tour';

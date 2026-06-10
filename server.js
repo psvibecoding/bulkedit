@@ -53,6 +53,16 @@ if (process.env.DATABASE_URL) {
     pushes INT NOT NULL DEFAULT 0,
     PRIMARY KEY (shop, month)
   )`).catch(e => console.error('[db] store_usage init error:', e.message));
+  dbPool.query(`CREATE TABLE IF NOT EXISTS analytics_events (
+    id BIGSERIAL PRIMARY KEY,
+    event TEXT NOT NULL,
+    shop TEXT,
+    meta JSONB,
+    ts TIMESTAMPTZ DEFAULT NOW()
+  )`).catch(e => console.error('[db] analytics_events init error:', e.message));
+  dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_ts    ON analytics_events(ts)`).catch(() => {});
+  dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_event ON analytics_events(event)`).catch(() => {});
+  dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_shop  ON analytics_events(shop) WHERE shop IS NOT NULL`).catch(() => {});
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
@@ -185,13 +195,19 @@ setInterval(() => { const n = Date.now(); for (const [k,v] of oauthStates) if (n
 const tokenStore = new Map();
 setInterval(() => { const n = Date.now(); for (const [k,v] of tokenStore) if (n > v.exp) tokenStore.delete(k); }, 30000).unref();
 
-// ── ANALYTICS (in-memory + structured logs) ───────────────
+// ── ANALYTICS ─────────────────────────────────────────────
 const analytics = { stores: new Set(), counts: {}, start: Date.now() };
 function track(event, shop, meta = {}) {
   analytics.counts[event] = (analytics.counts[event] || 0) + 1;
   if (shop) analytics.stores.add(shop);
   const entry = { ev: event, ...(shop ? { s: shop.replace(/\.myshopify\.com$/, '').slice(0, 30) } : {}), ...meta, t: new Date().toISOString() };
   console.log(`[ev] ${JSON.stringify(entry)}`);
+  if (dbPool) {
+    dbPool.query(
+      'INSERT INTO analytics_events (event, shop, meta) VALUES ($1, $2, $3)',
+      [event, shop || null, Object.keys(meta).length ? meta : null]
+    ).catch(() => {});
+  }
 }
 
 app.disable('x-powered-by');
@@ -262,6 +278,12 @@ const authLimiter    = rateLimit({ windowMs: 60000,  max: 20,  keyFn: req => req
 const contactLimiter  = rateLimit({ windowMs: 900000,  max: 5,  keyFn: req => req.ip });
 const feedbackLimiter = rateLimit({ windowMs: 3600000, max: 10, keyFn: req => req.ip });
 const waitlistLimiter = rateLimit({ windowMs: 3600000, max: 3,  keyFn: req => req.ip });
+const trackLimiter    = rateLimit({ windowMs: 60000,   max: 60, keyFn: req => req.ip });
+
+const TRACK_ALLOWED = new Set([
+  'page_view','cta_click','pricing_view','demo_start',
+  'tour_complete','tour_skip','bulk_action','export_csv','csv_import','disconnect'
+]);
 
 // ── HELPERS ───────────────────────────────────────────────
 function safeErr(err) {
@@ -1527,18 +1549,95 @@ app.post('/api/schedule/run', apiLimiter, writeLimiter, async (req, res) => {
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
-app.get('/api/admin/stats', (req, res) => {
+// Client-side event tracking (landing page + app actions)
+app.post('/api/track', trackLimiter, (req, res) => {
+  const event = String(req.body?.event || '').trim();
+  if (!TRACK_ALLOWED.has(event)) return res.status(400).json({ ok: false });
+  const meta = {};
+  if (req.body?.type) meta.type  = String(req.body.type).slice(0, 50);
+  if (req.body?.ref)  meta.ref   = String(req.body.ref).slice(0, 150);
+  if (req.body?.path) meta.path  = String(req.body.path).slice(0, 200);
+  let shop = null;
+  try { shop = cleanShop(req.headers['x-shopify-shop']); } catch {}
+  track(event, shop, meta);
+  res.json({ ok: true });
+});
+
+app.get('/api/admin/stats', async (req, res) => {
   const secret = req.headers['x-ping-secret'] || req.query.secret;
   if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
   const uptimeSec = Math.floor((Date.now() - analytics.start) / 1000);
-  res.json({
-    ok: true,
-    uptime: `${Math.floor(uptimeSec/3600)}h ${Math.floor((uptimeSec%3600)/60)}m`,
-    uniqueStores: analytics.stores.size,
-    stores: [...analytics.stores],
-    events: analytics.counts,
-    since: new Date(analytics.start).toISOString(),
-  });
+  const uptime = `${Math.floor(uptimeSec/3600)}h ${Math.floor((uptimeSec%3600)/60)}m`;
+
+  if (!dbPool) {
+    return res.json({
+      ok: true, mode: 'memory', uptime,
+      stores: { total: analytics.stores.size, active7d: 0, active30d: 0 },
+      funnel: {}, events: analytics.counts, daily: {},
+      note: 'No DATABASE_URL — data resets on restart'
+    });
+  }
+
+  try {
+    const [totalR, active7R, active30R, eventsR, dailyR, funnelR] = await Promise.all([
+      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL`),
+      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '7 days'`),
+      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '30 days'`),
+      dbPool.query(`
+        SELECT event,
+          COUNT(*) as total,
+          COUNT(*) FILTER (WHERE ts >= NOW()-INTERVAL '7 days')  as d7,
+          COUNT(*) FILTER (WHERE ts >= NOW()-INTERVAL '30 days') as d30
+        FROM analytics_events GROUP BY event ORDER BY total DESC`),
+      dbPool.query(`
+        SELECT to_char(ts AT TIME ZONE 'UTC','YYYY-MM-DD') as date, event, COUNT(*) as n
+        FROM analytics_events WHERE ts >= NOW()-INTERVAL '30 days'
+        GROUP BY 1,2 ORDER BY 1`),
+      dbPool.query(`
+        SELECT
+          COUNT(DISTINCT CASE WHEN event='connect'         THEN shop END) as connected,
+          COUNT(DISTINCT CASE WHEN event='save'            THEN shop END) as saved,
+          COUNT(DISTINCT CASE WHEN event='schedule_create' THEN shop END) as scheduled,
+          COUNT(DISTINCT CASE WHEN event='demo_start'      THEN shop END) as demoed,
+          (SELECT COUNT(*) FROM analytics_events WHERE event='page_view' AND ts >= NOW()-INTERVAL '30 days') as pv_30d,
+          (SELECT COUNT(*) FROM analytics_events WHERE event='page_view' AND ts >= NOW()-INTERVAL '7 days')  as pv_7d,
+          (SELECT COUNT(*) FROM analytics_events WHERE event='cta_click' AND ts >= NOW()-INTERVAL '30 days') as cta_30d
+        FROM analytics_events WHERE shop IS NOT NULL`),
+    ]);
+
+    const events = {};
+    for (const r of eventsR.rows) events[r.event] = { total: +r.total, d7: +r.d7, d30: +r.d30 };
+
+    const daily = {};
+    for (const r of dailyR.rows) {
+      if (!daily[r.date]) daily[r.date] = {};
+      daily[r.date][r.event] = +r.n;
+    }
+
+    const f = funnelR.rows[0];
+    res.json({
+      ok: true, mode: 'postgres', uptime,
+      stores: { total: +totalR.rows[0].n, active7d: +active7R.rows[0].n, active30d: +active30R.rows[0].n },
+      funnel: {
+        page_views_30d: +f.pv_30d, page_views_7d: +f.pv_7d,
+        cta_clicks_30d: +f.cta_30d,
+        demoed: +f.demoed, connected: +f.connected, saved: +f.saved, scheduled: +f.scheduled,
+      },
+      events, daily,
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: IS_PROD ? 'Stats error' : e.message });
+  }
+});
+
+app.get('/admin', (req, res) => {
+  const secret = req.query.secret;
+  if (PING_SECRET && secret !== PING_SECRET) {
+    return res.status(401).type('html').send(
+      '<!doctype html><html><body style="font-family:sans-serif;padding:40px"><h2>Unauthorized</h2><p>Provide <code>?secret=PING_SECRET</code></p></body></html>'
+    );
+  }
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/api/schedule/recap/:id', async (req, res) => {

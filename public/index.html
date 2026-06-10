@@ -889,5 +889,36 @@
 </footer>
 
 <script src="/index.js"></script>
+<script>
+(function(){
+  function ev(event, meta){
+    fetch('/api/track',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({event,...(meta||{})})
+    }).catch(()=>{});
+  }
+  // Page view
+  const ref = document.referrer ? new URL(document.referrer).hostname : (new URLSearchParams(location.search).get('ref')||'direct');
+  ev('page_view',{ref:ref.slice(0,100)});
+  // CTA clicks — any link pointing to /app
+  document.addEventListener('click',function(e){
+    const a=e.target.closest('a[href="/app"],a[href^="/app?"]');
+    if(!a)return;
+    const near=a.closest('section,nav');
+    const ref=near?.id||near?.className?.split(' ')[0]||'unknown';
+    ev('cta_click',{ref:ref.slice(0,80)});
+  });
+  // Pricing section visibility
+  const pricing=document.getElementById('pricing');
+  if(pricing&&'IntersectionObserver' in window){
+    let fired=false;
+    new IntersectionObserver(function(entries,obs){
+      if(fired||!entries[0].isIntersecting)return;
+      fired=true; obs.disconnect();
+      ev('pricing_view');
+    },{threshold:0.2}).observe(pricing);
+  }
+})();
+</script>
 </body>
 </html>
