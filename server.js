@@ -276,7 +276,10 @@ app.use(helmet({
   hsts: IS_PROD ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false
 }));
 
-app.use(express.json({ limit: '256kb', strict: true }));
+app.use((req, res, next) => {
+  const limit = req.path === '/api/schedule/create' ? '10mb' : '512kb';
+  express.json({ limit, strict: true })(req, res, next);
+});
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: true,
   maxAge: 0,
