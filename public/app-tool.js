@@ -1575,8 +1575,16 @@ function buildGroupedSchedHTML(list){
 }
 
 function renderSchedTabs(all){
-  const pending=all.filter(s=>['pending','running','failed'].includes(s.status));
-  const done=all.filter(s=>['executed','cancelled'].includes(s.status));
+  // IDs of parent schedules whose auto-revert is still in flight
+  const awaitingRevert=new Set(
+    all.filter(s=>s.linkedTo&&['pending','running'].includes(s.status)).map(s=>s.linkedTo)
+  );
+  // A main schedule stays in Pending until its paired revert also completes
+  const pending=all.filter(s=>
+    ['pending','running','failed'].includes(s.status)||
+    (s.status==='executed'&&awaitingRevert.has(s.id))
+  );
+  const done=all.filter(s=>['executed','cancelled'].includes(s.status)&&!awaitingRevert.has(s.id));
   const list=_schedTab==='pending'?pending:done;
   const body=$('m-sched-jobs'); if(!body)return;
   const tabsHTML=`<div class="sched-tabs">

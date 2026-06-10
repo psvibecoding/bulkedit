@@ -575,6 +575,9 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
 
   const FIELD_LABELS = { status: 'Status', vendor: 'Vendor', title: 'Title', tags: 'Tags', productType: 'Type', price: 'Price', compareAtPrice: 'Compare at', bodyHtml: 'Description' };
 
+  const shareEncText = encodeURIComponent("I've been using Lederly to bulk edit my Shopify products — saves me hours. Free to try:");
+  const shareEncUrl  = encodeURIComponent('https://lederly.com');
+
   const recapToken = schedRecapToken(sched.id);
   const visibleChanges = (sched.changes || []).slice(0, 10);
   const hiddenCount = n - visibleChanges.length;
@@ -764,10 +767,19 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       </div>` : ''}
     </div>
 
-    <!-- Feedback nudge -->
-    <div style="margin:8px 40px 0;background:#f9f9f7;border-radius:12px;padding:16px 20px;text-align:center">
-      <p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.5">Questions or feedback? Reply to this email — we read and respond to everything.</p>
-      <a href="${APP_URL}/app" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px">Open Lederly →</a>
+    <!-- Feedback + share -->
+    <div style="margin:8px 40px 0;background:#f9f9f7;border-radius:12px;padding:20px 24px">
+      <div style="text-align:center;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e9e7e2">
+        <p style="margin:0 0 10px;font-size:13px;color:#6b7280;line-height:1.5">Enjoying Lederly? It takes 1 minute and helps us build better features.</p>
+        <a href="https://tally.so/r/D4abPX" style="display:inline-block;background:#1a5c38;color:#ffffff;text-decoration:none;font-size:12px;font-weight:600;padding:8px 18px;border-radius:8px;letter-spacing:.01em">Share feedback 🤩</a>
+      </div>
+      <p style="margin:0 0 12px;font-size:13px;color:#6b7280;line-height:1.5;text-align:center">Know a Shopify merchant who'd save time with Lederly?</p>
+      <table style="margin:0 auto;border-collapse:collapse"><tr>
+        <td style="padding:0 4px"><a href="https://wa.me/?text=${shareEncText}%20${shareEncUrl}" style="display:inline-block;background:#25D366;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 13px;border-radius:8px">WhatsApp</a></td>
+        <td style="padding:0 4px"><a href="https://twitter.com/intent/tweet?text=${shareEncText}&url=${shareEncUrl}" style="display:inline-block;background:#000;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 13px;border-radius:8px">𝕏 Twitter</a></td>
+        <td style="padding:0 4px"><a href="https://www.linkedin.com/sharing/share-offsite/?url=${shareEncUrl}" style="display:inline-block;background:#0A66C2;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 13px;border-radius:8px">LinkedIn</a></td>
+        <td style="padding:0 4px"><a href="https://t.me/share/url?url=${shareEncUrl}&text=${shareEncText}" style="display:inline-block;background:#2AABEE;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 13px;border-radius:8px">Telegram</a></td>
+      </tr></table>
     </div>
 
     <!-- Footer -->
