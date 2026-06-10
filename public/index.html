@@ -16,12 +16,14 @@
   <meta property="og:site_name"   content="Lederly"/>
   <meta property="og:title"       content="Lederly — Bulk Edit &amp; Schedule Shopify Products"/>
   <meta property="og:description" content="Bulk edit prices, tags and metafields across your entire Shopify catalog. Schedule changes to go live automatically — with auto-revert when the sale ends. Free to start."/>
-  <meta property="og:url"         content="https://lederly.com/"/>
+  <meta property="og:url"          content="https://lederly.com/"/>
+  <meta property="og:image"        content="https://lederly.com/og.svg"/>
 
   <!-- Twitter / X -->
-  <meta name="twitter:card"        content="summary"/>
+  <meta name="twitter:card"        content="summary_large_image"/>
   <meta name="twitter:title"       content="Lederly — Bulk Edit &amp; Schedule Shopify Products"/>
   <meta name="twitter:description" content="Bulk edit prices, tags and metafields across your entire Shopify catalog. Schedule changes to go live automatically — with auto-revert. Free to start."/>
+  <meta name="twitter:image"       content="https://lederly.com/og.svg"/>
 
   <!-- Schema.org -->
   <script type="application/ld+json">
@@ -240,6 +242,7 @@
     .rc-votes{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--reddit-orange);font-family:var(--mono)}
     .rc-arrow{font-size:13px;line-height:1}
     .rc-comments{font-size:12px;color:var(--ink4);font-family:var(--mono)}
+    .pain-note{text-align:center;font-size:12px;color:var(--ink3);margin-bottom:20px;opacity:.7}
     .pain-bridge{text-align:center;font-family:var(--serif);font-size:23px;font-style:italic;color:var(--ink2);padding-top:28px;border-top:1px solid var(--border)}
     .pain-bridge strong{font-style:normal;color:var(--green)}
 
@@ -635,55 +638,41 @@
   <div class="pain-inner">
     <span class="section-tag reveal">You're not alone</span>
     <h2 class="section-title reveal">Every Shopify merchant<br>has been here</h2>
-    <p class="section-sub reveal">Shopify's built-in editor is missing the tools most stores actually need. Thousands of merchants have said so — loudly.</p>
+    <p class="section-sub reveal">Shopify's built-in editor is missing the tools most stores actually need. These pain points come up over and over in the Shopify community.</p>
 
     <div class="reddit-grid">
       <div class="reddit-card reveal">
         <div class="rc-header">
-          <span class="rc-sub">r/shopify</span>
+          <span class="rc-sub">Shopify community</span>
           <span class="rc-dot">·</span>
-          <span class="rc-user">u/shopowner_jen</span>
-          <span class="rc-time">3 mo</span>
+          <span class="rc-time">r/shopify</span>
         </div>
         <p class="rc-title">"Is there any way to schedule Shopify price changes for Black Friday without staying up until midnight?"</p>
         <p class="rc-body">Every year I set my alarm for 11:55pm to manually change 300 product prices. There has to be a better way. Shopify's built-in scheduler only works for product visibility, not prices.</p>
-        <div class="rc-footer">
-          <span class="rc-votes"><span class="rc-arrow">▲</span> 2.1k</span>
-          <span class="rc-comments">💬 341 comments</span>
-        </div>
       </div>
 
       <div class="reddit-card reveal reveal-d1">
         <div class="rc-header">
-          <span class="rc-sub">r/ecommerce</span>
+          <span class="rc-sub">Shopify community</span>
           <span class="rc-dot">·</span>
-          <span class="rc-user">u/storefront_ops</span>
-          <span class="rc-time">8 mo</span>
+          <span class="rc-time">r/ecommerce</span>
         </div>
         <p class="rc-title">"3 hours to change prices on 200 Shopify products — there has to be a better way"</p>
         <p class="rc-body">Downloaded CSV, reformatted in Excel, fixed encoding errors, re-imported, found new errors, fixed again. This workflow is insane for something I need to do every sale event.</p>
-        <div class="rc-footer">
-          <span class="rc-votes"><span class="rc-arrow">▲</span> 894</span>
-          <span class="rc-comments">💬 167 comments</span>
-        </div>
       </div>
 
       <div class="reddit-card reveal reveal-d2">
         <div class="rc-header">
-          <span class="rc-sub">r/shopify</span>
+          <span class="rc-sub">Shopify community</span>
           <span class="rc-dot">·</span>
-          <span class="rc-user">u/thebrandmechanic</span>
-          <span class="rc-time">5 mo</span>
+          <span class="rc-time">r/shopify</span>
         </div>
         <p class="rc-title">"Forgot to revert my sale prices after BFCM. Sold at discount for 3 days before I noticed."</p>
         <p class="rc-body">Lost a lot of margin on ~180 orders before I caught it. Is there any tool that can auto-revert prices after a sale? Seems basic but I can't find anything that does it properly.</p>
-        <div class="rc-footer">
-          <span class="rc-votes"><span class="rc-arrow">▲</span> 1.8k</span>
-          <span class="rc-comments">💬 276 comments</span>
-        </div>
       </div>
     </div>
 
+    <p class="pain-note reveal">Pain points paraphrased from real discussions in Shopify and e-commerce communities.</p>
     <p class="pain-bridge reveal">We read every thread. Then we built <strong>Lederly</strong>.</p>
   </div>
 </section>
@@ -913,6 +902,13 @@
   </a>
   <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a> · <a href="/terms" style="color:var(--ink3);text-decoration:none">Terms</a></p>
 </footer>
+
+<!-- GDPR minimal consent banner -->
+<div id="gdpr" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;background:#0e0e0c;color:#e5e3de;font-family:system-ui,sans-serif;font-size:13px;padding:12px 20px;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <span>We use anonymous analytics to improve Lederly. No cookies, no personal data stored. <a href="/privacy" style="color:#6ee09b;text-decoration:none">Privacy policy →</a></span>
+  <button onclick="document.getElementById('gdpr').style.display='none';localStorage.setItem('gdpr_ok','1')" style="background:#1a5c38;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Got it</button>
+</div>
+<script>if(!localStorage.getItem('gdpr_ok')){var g=document.getElementById('gdpr');if(g)g.style.display='flex';}</script>
 
 <script src="/index.js"></script>
 <script>

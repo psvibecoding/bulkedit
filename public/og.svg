@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#f2f0ec"/>
+  <!-- Top green accent -->
+  <rect width="1200" height="5" fill="#1a5c38"/>
+
+  <!-- Logo mark -->
+  <rect x="72" y="72" width="48" height="48" rx="10" fill="#1a5c38"/>
+  <text x="96" y="105" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-weight="700" font-size="22" fill="white">L</text>
+  <text x="138" y="104" font-family="system-ui,Arial,sans-serif" font-size="14" font-weight="600" fill="#6b7280" letter-spacing="3">LEDERLY</text>
+
+  <!-- Main headline -->
+  <text x="72" y="232" font-family="Georgia,serif" font-size="82" font-weight="700" fill="#0e0e0c">Bulk edit.</text>
+  <text x="72" y="326" font-family="Georgia,serif" font-size="82" font-weight="700" fill="#0e0e0c">Schedule.</text>
+  <text x="72" y="420" font-family="Georgia,serif" font-size="82" font-weight="700" font-style="italic" fill="#1a5c38">Auto-revert.</text>
+
+  <!-- Subtitle -->
+  <text x="72" y="472" font-family="system-ui,Arial,sans-serif" font-size="21" fill="#6b7280">For Shopify merchants who run flash sales.</text>
+
+  <!-- Free beta pill -->
+  <rect x="72" y="496" width="168" height="46" rx="23" fill="#1a5c38"/>
+  <text x="156" y="525" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-size="15" font-weight="600" fill="white">Free beta →</text>
+
+  <!-- URL -->
+  <text x="72" y="594" font-family="system-ui,Arial,sans-serif" font-size="16" fill="#b4b4ac">lederly.com</text>
+
+  <!-- Card 1: Scheduling -->
+  <rect x="700" y="64" width="436" height="108" rx="16" fill="white"/>
+  <rect x="700" y="80" width="4" height="76" fill="#1a5c38"/>
+  <text x="724" y="104" font-family="system-ui,Arial,sans-serif" font-size="14" font-weight="600" fill="#0e0e0c">Scheduled: Black Friday Sale</text>
+  <text x="724" y="126" font-family="system-ui,Arial,sans-serif" font-size="12" fill="#6b7280">Nov 29 · 00:00 — auto-reverts Dec 2 · 09:00</text>
+  <text x="724" y="148" font-family="system-ui,Arial,sans-serif" font-size="12" fill="#9ca3af">156 products · Email notification on</text>
+
+  <!-- Card 2: Bulk editing -->
+  <rect x="700" y="188" width="436" height="108" rx="16" fill="white"/>
+  <rect x="700" y="204" width="4" height="76" fill="#2563eb"/>
+  <text x="724" y="228" font-family="system-ui,Arial,sans-serif" font-size="14" font-weight="600" fill="#0e0e0c">Bulk price edit — 200 products</text>
+  <text x="724" y="250" font-family="system-ui,Arial,sans-serif" font-size="12" fill="#6b7280">Rule: Decrease by 20% · Review before saving</text>
+  <text x="724" y="272" font-family="system-ui,Arial,sans-serif" font-size="12" fill="#9ca3af">Full diff shown — no surprises, ever</text>
+
+  <!-- Card 3: Metafields -->
+  <rect x="700" y="312" width="436" height="108" rx="16" fill="white"/>
+  <rect x="700" y="328" width="4" height="76" fill="#7c3aed"/>
+  <text x="724" y="352" font-family="system-ui,Arial,sans-serif" font-size="14" font-weight="600" fill="#0e0e0c">Variant metafields · Tags · Status</text>
+  <text x="724" y="374" font-family="system-ui,Arial,sans-serif" font-size="12" fill="#6b7280">Edit any field across all variants at once</text>
+  <text x="724" y="396" font-family="system-ui,Arial,sans-serif" font-size="12" fill="#9ca3af">The gap Shopify still doesn't fill</text>
+
+  <!-- Card 4: Beta highlight -->
+  <rect x="700" y="436" width="436" height="108" rx="16" fill="#1a5c38"/>
+  <text x="724" y="470" font-family="system-ui,Arial,sans-serif" font-size="11" font-weight="600" fill="white" fill-opacity="0.45" letter-spacing="2">FREE BETA</text>
+  <text x="724" y="496" font-family="system-ui,Arial,sans-serif" font-size="16" font-weight="700" fill="white">All Pro features unlocked</text>
+  <text x="724" y="520" font-family="system-ui,Arial,sans-serif" font-size="12" fill="white" fill-opacity="0.65">Scheduling · CSV import · Auto-revert · No account</text>
+</svg>

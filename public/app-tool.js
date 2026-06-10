@@ -779,22 +779,22 @@ function openBulkModal(type){
   if(type==='status'){
     body.innerHTML=`<div class="bulk-field"><label>New status</label><select id="bv-status"><option value="ACTIVE">● Active</option><option value="DRAFT">○ Draft</option><option value="ARCHIVED">⊘ Archived</option></select></div>`;
   }else if(type==='price'){
-    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-price-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount</option><option value="amt-down">Decrease by amount</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option></select></div><div class="bulk-field" id="bv-price-val-wrap"><label id="bv-price-val-lbl">New price ($)</label><input id="bv-price-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="checkbox" id="bv-also-compare"> Also apply to Compare at price</label></div>`;
+    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-price-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount</option><option value="amt-down">Decrease by amount</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option></select></div><div class="bulk-field" id="bv-price-val-wrap"><label id="bv-price-val-lbl">New price</label><input id="bv-price-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><div class="bulk-field"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="checkbox" id="bv-also-compare"> Also apply to Compare at price</label></div>`;
     body.querySelector('#bv-price-rule').addEventListener('change',e=>{
       const rule=e.target.value;
       const wrap=$('bv-price-val-wrap'),lbl=$('bv-price-val-lbl');
       const isRound=rule==='round99'||rule==='round00';
       if(wrap)wrap.style.display=isRound?'none':'';
-      if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount';}
+      if(lbl){if(rule==='set')lbl.textContent='New price';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount';}
     });
   }else if(type==='compareAt'){
-    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-cat-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount</option><option value="amt-down">Decrease by amount</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option><option value="clear">Clear (remove strikethrough)</option></select></div><div class="bulk-field" id="bv-cat-val-wrap"><label id="bv-cat-val-lbl">New price ($)</label><input id="bv-cat-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><p style="font-size:11px;color:var(--t3);margin:0 0 4px;font-family:var(--mono)">Relative rules (%, amount, round) apply only to variants that already have a Compare at price.</p>`;
+    body.innerHTML=`<div class="bulk-field"><label>Rule</label><select id="bv-cat-rule"><option value="set">Set fixed price</option><option value="pct-up">Increase by %</option><option value="pct-down">Decrease by %</option><option value="amt-up">Increase by amount</option><option value="amt-down">Decrease by amount</option><option value="round99">Round to .99</option><option value="round00">Round to .00</option><option value="clear">Clear (remove strikethrough)</option></select></div><div class="bulk-field" id="bv-cat-val-wrap"><label id="bv-cat-val-lbl">New price</label><input id="bv-cat-val" type="number" step=".01" min="0" placeholder="0.00" autofocus></div><p style="font-size:11px;color:var(--t3);margin:0 0 4px;font-family:var(--mono)">Relative rules (%, amount, round) apply only to variants that already have a Compare at price.</p>`;
     body.querySelector('#bv-cat-rule').addEventListener('change',e=>{
       const rule=e.target.value;
       const wrap=$('bv-cat-val-wrap'),lbl=$('bv-cat-val-lbl');
       const hide=rule==='round99'||rule==='round00'||rule==='clear';
       if(wrap)wrap.style.display=hide?'none':'';
-      if(lbl){if(rule==='set')lbl.textContent='New price ($)';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount';}
+      if(lbl){if(rule==='set')lbl.textContent='New price';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount';}
     });
   }else if(type==='qty'){
     body.innerHTML=`<div class="bulk-field"><label>Action</label><select id="bv-qty-rule"><option value="set">Set exact quantity</option><option value="add">Increase by</option><option value="sub">Decrease by</option></select></div><div class="bulk-field"><label id="bv-qty-lbl">Quantity</label><input id="bv-qty-val" type="number" min="0" step="1" placeholder="0" autofocus></div>`;
@@ -2125,7 +2125,7 @@ function startTour(){
       skip.textContent = 'Skip tour';
       skip.className = 'driver-skip-btn';
       skip.addEventListener('click', () => d.destroy());
-      popover.footer.insertBefore(skip, popover.footerButtons);
+      popover.footer.appendChild(skip);
     },
     steps: [
       {

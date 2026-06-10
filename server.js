@@ -13,8 +13,11 @@ const PORT       = Number(process.env.PORT || 8787);
 const API_VERSION= process.env.SHOPIFY_API_VERSION || '2026-01';
 const NODE_ENV   = process.env.NODE_ENV || 'development';
 const IS_PROD    = NODE_ENV === 'production';
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || (IS_PROD ? '' : 'http://localhost:8787,http://127.0.0.1:8787'))
-  .split(',').map(v => v.trim()).filter(Boolean);
+const ALLOWED_ORIGINS = [
+  ...(process.env.ALLOWED_ORIGINS || (IS_PROD ? '' : 'http://localhost:8787,http://127.0.0.1:8787'))
+    .split(',').map(v => v.trim()).filter(Boolean),
+  ...(process.env.APP_URL ? [(process.env.APP_URL).replace(/\/$/, '')] : [])
+].filter((v, i, a) => v && a.indexOf(v) === i);
 const SHOPIFY_TIMEOUT_MS  = Number(process.env.SHOPIFY_TIMEOUT_MS || 15000);
 const SHOPIFY_CLIENT_ID   = process.env.SHOPIFY_CLIENT_ID   || '';
 const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET || '';
@@ -969,6 +972,23 @@ app.post('/api/waitlist', waitlistLimiter, async (req, res) => {
     if (RESEND_API_KEY && CONTACT_TO) {
       await sendEmail({ to: CONTACT_TO, subject: 'Lederly waitlist signup', html: `<p>New waitlist signup: <strong>${email}</strong></p>` });
     }
+    if (RESEND_API_KEY) {
+      sendEmail({
+        to: email,
+        subject: "You're on the Lederly waitlist 🌿",
+        html: `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#0e0e0c">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:32px">
+  <div style="width:36px;height:36px;background:#1a5c38;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px">L</div>
+  <span style="font-size:13px;font-weight:600;color:#6b7280;letter-spacing:2px;text-transform:uppercase">Lederly</span>
+</div>
+<h1 style="font-size:26px;font-weight:700;margin:0 0 12px">You're on the list.</h1>
+<p style="color:#6b7280;line-height:1.6;margin:0 0 20px">Thanks for signing up! We'll let you know as soon as a paid plan opens up.</p>
+<p style="color:#6b7280;line-height:1.6;margin:0 0 28px">In the meantime, <strong style="color:#0e0e0c">the beta is live right now</strong> — all Pro features unlocked for free, no account needed.</p>
+<a href="https://lederly.com/app" style="display:inline-block;background:#1a5c38;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:10px">Try the free beta →</a>
+<p style="font-size:12px;color:#9ca3af;margin-top:32px;border-top:1px solid #e5e3de;padding-top:20px">You're receiving this because you signed up at lederly.com. No further emails unless you reply to this one.</p>
+</div>`
+      }).catch(() => {});
+    }
     if (dbPool) {
       await dbPool.query(
         `CREATE TABLE IF NOT EXISTS waitlist (email TEXT PRIMARY KEY, created_at TIMESTAMPTZ DEFAULT NOW())`
@@ -1721,3 +1741,17 @@ app.listen(PORT, async () => {
   if (PING_SECRET) console.log(`Ping endpoint: protected`);
   else console.log(`Ping endpoint: OPEN (set PING_SECRET to protect it)`);
 });
+
+function alertError(label, err) {
+  console.error(`[${label}]`, err);
+  if (RESEND_API_KEY && CONTACT_TO) {
+    sendEmail({
+      to: CONTACT_TO,
+      subject: `🚨 Lederly ${label}`,
+      html: `<pre style="font-family:monospace;font-size:13px;white-space:pre-wrap">${String(err?.stack || err)}</pre>`
+    }).catch(() => {});
+  }
+}
+
+process.on('uncaughtException',  (err)    => alertError('uncaughtException', err));
+process.on('unhandledRejection', (reason) => alertError('unhandledRejection', reason));
