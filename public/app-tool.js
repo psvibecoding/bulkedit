@@ -470,9 +470,9 @@ function rowHTML(p,v){
   const shopUrl=shopifyAdminUrl(p.id);
   const mainScheds=schedList.filter(b=>!b.isRevert);
   const revertScheds=schedList.filter(b=>b.isRevert);
-  const rb=revertScheds.length>0?`<div class="sched-val-badge-amber">↩ auto-revert · ${esc(new Date(revertScheds[0].scheduledFor).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}))}</div>`:'';
-  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">→ ${Number(b.vf.price).toFixed(2)}</div>`).join('')+(revertScheds.some(b=>b.vf.price!==undefined)?rb:'');
-  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge">→ ${esc(val)}</div>`;}).join('')+(revertScheds.some(b=>b.vf.compareAtPrice!==undefined)?rb:'');
+  const rb=revertScheds.length>0?`<div class="sched-val-badge-amber" title="${esc(revertScheds[0].label)}">⏰ ↩ auto-revert</div>`:'';
+  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge" title="${esc(b.label)}">⏰ → ${Number(b.vf.price).toFixed(2)}</div>`).join('')+revertScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge-amber" title="${esc(b.label)}">⏰ ↩ ${Number(b.vf.price).toFixed(2)}</div>`).join('');
+  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge" title="${esc(b.label)}">⏰ → ${esc(val)}</div>`;}).join('')+revertScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge-amber" title="${esc(b.label)}">⏰ ↩ ${esc(val)}</div>`;}).join('');
   const statusBadge=mainScheds.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">${esc(b.pf.status)} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.status)?rb:'');
   const vendorBadge=mainScheds.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.vendor!==undefined)?rb:'');
   const tagsBadge=mainScheds.filter(b=>b.pf.tags!==undefined).map(b=>{

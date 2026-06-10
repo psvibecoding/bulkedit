@@ -161,8 +161,8 @@ thead th:nth-child(6){min-width:160px}
 thead th:nth-child(7){width:130px}
 thead th:nth-child(8){width:88px}
 thead th:nth-child(9){width:110px}
-thead th:nth-child(10){width:148px}
-thead th:nth-child(11){width:148px}
+thead th:nth-child(10){width:160px}
+thead th:nth-child(11){width:160px}
 thead th:nth-child(12){width:62px}
 thead th:nth-child(13){width:auto;min-width:180px}
 
@@ -193,7 +193,8 @@ tr.r-changed .mod-chip{display:inline-block}
 .ce:hover{background:var(--s2);border-color:var(--b1)}
 .ce:focus{background:var(--white);border-color:var(--green);box-shadow:0 0 0 2px var(--green-bg)}
 .ce.dirty{border-color:rgba(26,92,56,.25);background:#f5fbf7}
-.ce-num{font-family:var(--mono);font-size:12px;text-align:right;width:100%}
+.ce-num{font-family:var(--mono);font-size:12px;text-align:right;width:100%;-moz-appearance:textfield}
+.ce-num::-webkit-inner-spin-button,.ce-num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .num-cell{display:flex;flex-direction:column;align-items:stretch;gap:1px;width:100%}
 .badge-stack{display:flex;flex-direction:column;gap:2px;width:100%}
 .ce-sku{font-family:var(--mono);font-size:11px;letter-spacing:.02em;color:var(--t2)}
