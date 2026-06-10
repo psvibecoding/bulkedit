@@ -69,11 +69,13 @@ if (process.env.DATABASE_URL) {
   dbPool.query(`CREATE TABLE IF NOT EXISTS store_info (
     shop TEXT PRIMARY KEY,
     name TEXT,
+    email TEXT,
     country_code TEXT,
     country TEXT,
     first_seen TIMESTAMPTZ DEFAULT NOW(),
     last_seen TIMESTAMPTZ DEFAULT NOW()
   )`).catch(e => console.error('[db] store_info init error:', e.message));
+  dbPool.query(`ALTER TABLE store_info ADD COLUMN IF NOT EXISTS email TEXT`).catch(() => {});
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
@@ -1059,9 +1061,10 @@ app.post('/api/contact', contactLimiter, async (req, res) => {
 
 app.post('/api/waitlist', waitlistLimiter, async (req, res) => {
   try {
-    const email = String(req.body?.email || '').trim().slice(0, 200);
+    const email  = String(req.body?.email  || '').trim().slice(0, 200);
+    const source = String(req.body?.source || '').trim().slice(0, 80);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Valid email is required.');
-    track('waitlist_signup', null, { email: email.replace(/(.{2}).*(@.*)/, '$1***$2') });
+    track('waitlist_signup', null, { email: email.replace(/(.{2}).*(@.*)/, '$1***$2'), source: source || undefined });
     if (RESEND_API_KEY && CONTACT_TO) {
       await sendEmail({ to: CONTACT_TO, subject: 'Lederly waitlist signup', html: `<p>New waitlist signup: <strong>${email}</strong></p>` });
     }
@@ -1188,14 +1191,14 @@ app.post('/api/test', apiLimiter, async (req, res) => {
     res.json({ ok: true, shop: d.shop });
     // Upsert store info (fire-and-forget)
     if (dbPool) {
-      const { name, billingAddress } = d.shop;
+      const { name, email: shopEmail, billingAddress } = d.shop;
       const cc = billingAddress?.countryCode || null;
       const country = billingAddress?.country || null;
       dbPool.query(
-        `INSERT INTO store_info (shop, name, country_code, country, first_seen, last_seen)
-         VALUES ($1, $2, $3, $4, NOW(), NOW())
-         ON CONFLICT (shop) DO UPDATE SET name=$2, country_code=$3, country=$4, last_seen=NOW()`,
-        [s.shop, name || null, cc, country]
+        `INSERT INTO store_info (shop, name, email, country_code, country, first_seen, last_seen)
+         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+         ON CONFLICT (shop) DO UPDATE SET name=$2, email=COALESCE($3, store_info.email), country_code=$4, country=$5, last_seen=NOW()`,
+        [s.shop, name || null, shopEmail || null, cc, country]
       ).catch(e => console.error('[db] store_info upsert:', e.message));
     }
     // Welcome email — fire-and-forget, only on first connect per shop
@@ -1750,7 +1753,7 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 
   try {
-    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR] = await Promise.all([
+    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR] = await Promise.all([
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL`),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '7 days'`),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '30 days'`),
@@ -1789,6 +1792,7 @@ app.get('/api/admin/stats', async (req, res) => {
           COUNT(*) FILTER (WHERE event='schedule_fail')                                            AS schedule_runs_fail,
           COUNT(*) FILTER (WHERE event='app_open')                                                 AS app_opens
         FROM analytics_events`),
+      dbPool.query(`SELECT COUNT(*) as n FROM waitlist`).catch(() => ({ rows: [{ n: 0 }] })),
     ]);
 
     const events = {};
@@ -1809,6 +1813,7 @@ app.get('/api/admin/stats', async (req, res) => {
 
     res.json({
       ok: true, mode: 'postgres', uptime,
+      waitlist_count: +(waitlistR?.rows?.[0]?.n || 0),
       stores: { total: storesConnected, active7d: +active7R.rows[0].n, active30d: +active30R.rows[0].n },
       funnel: {
         page_views_30d: +f.pv_30d, page_views_7d: +f.pv_7d,
@@ -1850,6 +1855,7 @@ app.get('/api/admin/stores', async (req, res) => {
       SELECT
         s.shop,
         COALESCE(si.name, s.shop) AS name,
+        si.email,
         COALESCE(si.country_code, '—') AS country_code,
         COALESCE(si.country, '—') AS country,
         COALESCE(sp.plan, 'free') AS plan,
@@ -1862,7 +1868,7 @@ app.get('/api/admin/stores', async (req, res) => {
       LEFT JOIN store_info si ON si.shop = s.shop
       LEFT JOIN store_plans sp ON sp.shop = s.shop
       LEFT JOIN analytics_events ae ON ae.shop = s.shop
-      GROUP BY s.shop, si.name, si.country_code, si.country, sp.plan, si.first_seen, si.last_seen
+      GROUP BY s.shop, si.name, si.email, si.country_code, si.country, sp.plan, si.first_seen, si.last_seen
       ORDER BY last_seen DESC NULLS LAST
       LIMIT 200
     `);

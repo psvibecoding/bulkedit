@@ -187,6 +187,7 @@ function renderKPIs(d){
   <div class="section-label">Overview · all time</div>
   <div class="kpis">
     <div class="kpi kpi-green"><div class="kpi-val">${fmt(s.total)}</div><div class="kpi-lbl">Stores connected</div></div>
+    <div class="kpi kpi-blue"><div class="kpi-val">${fmt(d.waitlist_count)}</div><div class="kpi-lbl">Waitlist signups</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(s.active7d)}</div><div class="kpi-lbl">Active stores</div><div class="kpi-sub">last 7 days</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(s.active30d)}</div><div class="kpi-lbl">Active stores</div><div class="kpi-sub">last 30 days</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(f.page_views_30d)}</div><div class="kpi-lbl">Page views</div><div class="kpi-sub">last 30 days</div></div>
@@ -498,9 +499,11 @@ function flagEmoji(cc){
 }
 function renderStores(stores){
   if(!stores.length) return `<div class="section"><div class="section-head"><h2>Stores</h2></div><p style="font-size:12px;color:var(--ink3);padding:8px 0">No stores yet — country data captured on next connect.</p></div>`;
+  const emailsCsv = stores.filter(s=>s.email).map(s=>`${s.name||s.shop},${s.email}`).join('\n');
   const rows=stores.map(s=>`<tr>
     <td style="font-family:var(--mono);font-size:11px;color:var(--ink3)">${s.shop}</td>
     <td style="font-size:12px;font-weight:500">${s.name!==s.shop?s.name:''}</td>
+    <td style="font-size:11px;font-family:var(--mono);color:var(--ink3)">${s.email?`<a href="mailto:${s.email}" style="color:var(--green);text-decoration:none">${s.email}</a>`:'—'}</td>
     <td style="font-size:12px">${flagEmoji(s.country_code)}${s.country!=='—'?s.country:s.country_code}</td>
     <td><span style="font-size:10px;font-family:var(--mono);background:${s.plan==='beta'?'#dcfce7':s.plan==='pro'?'#ede9fe':'#f1f5f9'};color:${s.plan==='beta'?'#166534':s.plan==='pro'?'#5b21b6':'#475569'};padding:2px 8px;border-radius:20px">${s.plan}</span></td>
     <td style="text-align:right;font-family:var(--mono);font-size:12px">${fmt(s.saves)}</td>
@@ -508,15 +511,27 @@ function renderStores(stores){
     <td style="font-size:11px;color:var(--ink3)">${s.last_seen?new Date(s.last_seen).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'-'}</td>
   </tr>`).join('');
   return `<div class="section">
-    <div class="section-head"><h2>Stores <span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:6px">${stores.length} total</span></h2></div>
-    <div class="table-scroll"><table style="min-width:600px">
+    <div class="section-head">
+      <h2>Stores <span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:6px">${stores.length} total · ${stores.filter(s=>s.email).length} with email</span></h2>
+      ${emailsCsv?`<button onclick="downloadEmailsCsv()" style="font-size:11px;font-family:var(--mono);background:var(--green-bg);border:1px solid rgba(26,92,56,.2);color:var(--green);border-radius:6px;padding:4px 10px;cursor:pointer">↓ Export emails</button>`:''}
+    </div>
+    <div class="table-scroll"><table style="min-width:700px">
       <thead><tr>
-        <th>Domain</th><th>Name</th><th>Country</th><th>Plan</th>
+        <th>Domain</th><th>Name</th><th>Email</th><th>Country</th><th>Plan</th>
         <th style="text-align:right">Saves</th><th style="text-align:right">Sched runs</th><th>Last seen</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-  </div>`;
+  </div>
+  <script>
+  function downloadEmailsCsv(){
+    const csv="Name,Email\\n${emailsCsv.replace(/\\/g,'\\\\').replace(/`/g,'\\`')}";
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+    a.download='lederly-beta-emails-${new Date().toISOString().slice(0,10)}.csv';
+    a.click();
+  }
+  <\/script>`;
 }
 
 /* ── Controls ── */

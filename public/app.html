@@ -365,6 +365,44 @@
   </div>
 </div>
 
+<!-- WELCOME BETA MODAL -->
+<div id="m-welcome" class="overlay hidden">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head" style="border-bottom:none;padding-bottom:4px">
+      <div>
+        <h2 style="font-size:18px">You're in the beta 🌿</h2>
+        <p class="modal-sub">All features unlocked — free, no credit card.</p>
+      </div>
+    </div>
+    <div class="modal-body" style="padding-top:4px">
+      <ul style="list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:9px">
+        <li style="font-size:13px;color:var(--t2);display:flex;align-items:baseline;gap:9px"><span>✏️</span><span><strong>Inline editing</strong> — click any cell to edit title, price, tags, or description</span></li>
+        <li style="font-size:13px;color:var(--t2);display:flex;align-items:baseline;gap:9px"><span>⚡</span><span><strong>Bulk actions</strong> — select products and change price, status, or tags at once</span></li>
+        <li style="font-size:13px;color:var(--t2);display:flex;align-items:baseline;gap:9px"><span>⏱️</span><span><strong>Scheduling</strong> — set a date, changes go live automatically</span></li>
+        <li style="font-size:13px;color:var(--t2);display:flex;align-items:baseline;gap:9px"><span>↩️</span><span><strong>Auto-revert</strong> — prices reset automatically when the sale ends</span></li>
+      </ul>
+      <div class="field">
+        <label for="welcome-source" style="font-size:11px;color:var(--t3);font-weight:500;letter-spacing:.04em;text-transform:uppercase">How did you find Lederly?</label>
+        <select id="welcome-source" class="mf-unit-sel" style="width:100%;margin-top:4px">
+          <option value="">— Select one —</option>
+          <option value="reddit">Reddit</option>
+          <option value="google">Google search</option>
+          <option value="twitter">Twitter / X</option>
+          <option value="friend">Friend or colleague</option>
+          <option value="linkedin">LinkedIn</option>
+          <option value="producthunt">Product Hunt</option>
+          <option value="shopify_community">Shopify community</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <a href="https://tally.so/r/D4abPX" target="_blank" rel="noopener" style="font-size:13px;color:var(--t3);text-decoration:none;font-family:var(--mono)">Share feedback →</a>
+      <button class="btn-cta sm" id="btn-welcome-done">Let's go →</button>
+    </div>
+  </div>
+</div>
+
 <!-- IMPORT CSV MODAL -->
 <div id="m-import" class="overlay hidden">
   <div class="modal modal-wide">
@@ -408,6 +446,6 @@
 <div id="toast" class="toast"></div>
 <div id="stip" class="stip" style="display:none"></div>
 <script src="/driver.iife.js"></script>
-<script src="/app-tool.js?v=76"></script>
+<script src="/app-tool.js?v=77"></script>
 </body>
 </html>

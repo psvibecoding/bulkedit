@@ -208,6 +208,7 @@ async function afterOAuth(shop, token, silent=false){
     showScreen('s-app');
     loadSchedules();
     if(!silent) toast('Connected — all info loaded. Session only, no data stored.');
+    if(!silent) setTimeout(maybeShowWelcome, 800);
     maybeStartTour();
     const shouldOpenSchedules = new URLSearchParams(location.search).get('openSchedules')==='1' || sessionStorage.getItem('openSchedules')==='1';
     if(shouldOpenSchedules){
@@ -1963,6 +1964,14 @@ function boot(){
   $('m-import-apply').addEventListener('click', applyImport);
   $('m-import-tpl').addEventListener('click', downloadCSVTemplate);
 
+  // Welcome modal
+  $('btn-welcome-done').addEventListener('click', ()=>{
+    const source=$('welcome-source').value;
+    if(source) trackEv('beta_source',{source});
+    localStorage.setItem('be_welcome_done','1');
+    closeModal('m-welcome');
+  });
+
   // Generic close buttons
   document.addEventListener('click',e=>{
     const id=e.target.closest('[data-close]')?.dataset.close;
@@ -2445,6 +2454,12 @@ function startTour(){
     ]
   });
   d.drive();
+}
+
+function maybeShowWelcome(){
+  if(S.demo) return;
+  if(localStorage.getItem('be_welcome_done')) return;
+  openModal('m-welcome');
 }
 
 function maybeStartTour(){
