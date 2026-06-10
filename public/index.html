@@ -147,6 +147,13 @@
     .am-pill-active{background:var(--green-bg);color:var(--green);border:1px solid var(--green-brd)}
     .am-old{color:var(--ink4);text-decoration:line-through;font-size:9px;margin-right:2px}
     .am-new{color:var(--green);font-weight:600}
+    @keyframes am-flash{0%,100%{background:transparent}40%{background:rgba(26,92,56,.18)}}
+    @keyframes am-price-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+    @keyframes am-pulse{0%,100%{box-shadow:0 0 0 0 rgba(26,92,56,.4)}60%{box-shadow:0 0 0 6px rgba(26,92,56,0)}}
+    .am-cell-flash{animation:am-flash .45s ease}
+    .am-new-anim{animation:am-price-in .22s ease forwards;display:inline}
+    .am-save-pulse{animation:am-pulse .9s ease infinite!important;opacity:1!important}
+    .am-save-on{opacity:1!important}
     .am-chk{width:11px;height:11px;accent-color:var(--green);cursor:default;vertical-align:middle}
     .am-statusbar{padding:5px 12px;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px}
     .am-status-l{font-size:8px;color:var(--ink3);font-family:var(--mono)}
@@ -404,7 +411,7 @@
       <p class="hero-trust">No account · No data stored · OAuth secured</p>
     </div>
 
-    <div class="am-window">
+    <div class="am-window" id="am-demo">
       <div class="am-topbar">
         <div class="am-tl">
           <span class="am-logo">L</span>
@@ -412,10 +419,8 @@
           <span class="am-search">⌕ Search…</span>
         </div>
         <div class="am-tr">
-          <button class="am-btn">↩</button>
-          <button class="am-btn">↪</button>
           <button class="am-btn-sched">✦ Schedule</button>
-          <button class="am-btn-save">↑ Push to Shopify <span class="am-save-badge">5</span></button>
+          <button class="am-btn-save" id="am-save-btn" style="opacity:.35">↑ Push to Shopify <span id="am-save-badge" class="am-save-badge">0</span></button>
         </div>
       </div>
       <div class="am-tabs">
@@ -440,51 +445,51 @@
           </tr>
         </thead>
         <tbody>
-          <tr class="mod">
-            <td><input type="checkbox" class="am-chk" checked></td>
+          <tr id="am-r0">
+            <td><input type="checkbox" class="am-chk" id="am-c0"></td>
             <td><span class="am-thumb" style="background:#c8b8a2"></span></td>
             <td>Merino Sweater — S</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td><span class="am-old">89.00</span><span class="am-new">69.00</span></td>
-            <td><span class="am-new">89.00</span></td>
+            <td id="am-p0">89.00</td>
+            <td>—</td>
           </tr>
-          <tr class="mod">
-            <td><input type="checkbox" class="am-chk" checked></td>
+          <tr id="am-r1">
+            <td><input type="checkbox" class="am-chk" id="am-c1"></td>
             <td><span class="am-thumb" style="background:#c8b8a2"></span></td>
             <td>Merino Sweater — M</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td><span class="am-old">89.00</span><span class="am-new">69.00</span></td>
-            <td><span class="am-new">89.00</span></td>
+            <td id="am-p1">89.00</td>
+            <td>—</td>
           </tr>
-          <tr class="mod">
-            <td><input type="checkbox" class="am-chk" checked></td>
+          <tr id="am-r2">
+            <td><input type="checkbox" class="am-chk" id="am-c2"></td>
             <td><span class="am-thumb" style="background:#8b7560"></span></td>
             <td>Leather Crossbody Bag</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td><span class="am-old">149.00</span><span class="am-new">119.00</span></td>
-            <td><span class="am-new">149.00</span></td>
+            <td id="am-p2">149.00</td>
+            <td>—</td>
           </tr>
-          <tr class="mod">
-            <td><input type="checkbox" class="am-chk" checked></td>
+          <tr id="am-r3">
+            <td><input type="checkbox" class="am-chk"></td>
             <td><span class="am-thumb" style="background:#a8c4a0"></span></td>
             <td>Yoga Mat 6mm</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td><span class="am-old">78.00</span><span class="am-new">65.00</span></td>
-            <td><span class="am-new">78.00</span></td>
+            <td>78.00</td>
+            <td>—</td>
           </tr>
-          <tr class="mod">
-            <td><input type="checkbox" class="am-chk" checked></td>
+          <tr id="am-r4">
+            <td><input type="checkbox" class="am-chk"></td>
             <td><span class="am-thumb" style="background:#d4c5a8"></span></td>
             <td>Organic Cotton Tee</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td><span class="am-old">34.00</span><span class="am-new">24.00</span></td>
-            <td><span class="am-new">34.00</span></td>
+            <td>34.00</td>
+            <td>—</td>
           </tr>
         </tbody>
       </table>
       <div class="am-statusbar">
-        <span class="am-status-l">5 changes staged · push live or schedule</span>
-        <span class="am-status-r">↑ Push to Shopify or schedule →</span>
+        <span id="am-status" class="am-status-l">Ready</span>
+        <span class="am-status-r">lederly.com</span>
       </div>
     </div>
   </div>
@@ -927,6 +932,86 @@
       fired=true; obs.disconnect();
       ev('pricing_view');
     },{threshold:0.2}).observe(pricing);
+  }
+})();
+</script>
+<script>
+(function(){
+  var rows=[
+    {row:'am-r0',cell:'am-p0',chk:'am-c0',orig:'89.00',sale:'69.00'},
+    {row:'am-r1',cell:'am-p1',chk:'am-c1',orig:'89.00',sale:'69.00'},
+    {row:'am-r2',cell:'am-p2',chk:'am-c2',orig:'149.00',sale:'119.00'}
+  ];
+  var badge=0;
+  function $id(id){return document.getElementById(id);}
+  function reset(){
+    badge=0;
+    var sb=$id('am-save-badge');
+    var sv=$id('am-save-btn');
+    var st=$id('am-status');
+    if(sb)sb.textContent='0';
+    if(sv){sv.style.opacity='.35';sv.classList.remove('am-save-pulse','am-save-on');}
+    if(st){st.textContent='Ready';st.style.color='';}
+    rows.forEach(function(r){
+      var row=$id(r.row);
+      var cell=$id(r.cell);
+      var chk=$id(r.chk);
+      if(row)row.classList.remove('mod');
+      if(cell)cell.innerHTML=r.orig;
+      if(chk)chk.checked=false;
+    });
+  }
+  function editRow(idx){
+    var r=rows[idx];
+    var cell=$id(r.cell);
+    var row=$id(r.row);
+    var chk=$id(r.chk);
+    if(!cell||!row)return;
+    cell.classList.add('am-cell-flash');
+    setTimeout(function(){cell.classList.remove('am-cell-flash');},450);
+    setTimeout(function(){
+      cell.innerHTML='<span class="am-old">'+r.orig+'</span><span class="am-new am-new-anim">'+r.sale+'</span>';
+      if(chk)chk.checked=true;
+      row.classList.add('mod');
+      badge++;
+      var sb=$id('am-save-badge');
+      var sv=$id('am-save-btn');
+      var st=$id('am-status');
+      if(sb)sb.textContent=badge;
+      if(sv)sv.style.opacity='1';
+      if(st)st.textContent=badge+' change'+(badge>1?'s':'')+' staged';
+    },350);
+  }
+  function run(){
+    reset();
+    setTimeout(function(){editRow(0);},900);
+    setTimeout(function(){editRow(1);},2200);
+    setTimeout(function(){editRow(2);},3500);
+    setTimeout(function(){
+      var sv=$id('am-save-btn');
+      if(sv)sv.classList.add('am-save-pulse');
+    },4800);
+    setTimeout(function(){
+      var st=$id('am-status');
+      if(st){st.textContent='Pushing to Shopify…';st.style.color='#1a5c38';}
+      var sv=$id('am-save-btn');
+      if(sv){sv.classList.remove('am-save-pulse');sv.classList.add('am-save-on');}
+    },5800);
+    setTimeout(function(){
+      var st=$id('am-status');
+      if(st){st.textContent='✓ 3 changes saved';st.style.color='#1a5c38';}
+    },6600);
+    setTimeout(run,9000);
+  }
+  if('IntersectionObserver' in window){
+    var started=false;
+    var obs=new IntersectionObserver(function(entries){
+      if(!started&&entries[0].isIntersecting){started=true;run();}
+    },{threshold:0.3});
+    var demo=$id('am-demo');
+    if(demo)obs.observe(demo);
+  }else{
+    run();
   }
 })();
 </script>
