@@ -90,6 +90,25 @@ tr:last-child td{border-bottom:none}
 .error{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;color:#dc2626;font-size:14px}
 .loading{color:var(--ink3);font-size:14px;padding:40px;text-align:center}
 .refresh-note{font-size:11px;color:var(--ink3);text-align:right;margin-top:12px;font-family:var(--mono)}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* ── Mobile ── */
+@media(max-width:640px){
+  header{padding:12px 16px}
+  main{padding:16px 12px 60px}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi{padding:12px 14px}
+  .kpi-val{font-size:22px}
+  .section{padding:14px 14px;margin-bottom:12px}
+  .section-head{margin-bottom:12px}
+  .controls{gap:6px}
+  .btn-group button{padding:5px 8px;font-size:10px}
+  .date-range{padding:4px 7px}
+  .date-range input{width:80px;font-size:10px}
+  .funnel-row{grid-template-columns:110px 1fr 48px;gap:8px}
+  .funnel-lbl{font-size:11px}
+  .summary-body{font-size:12px}
+  .section-label{margin:20px 0 10px}
+}
 </style>
 </head>
 <body>
@@ -459,10 +478,10 @@ function renderEvents(events){
     </tr>`).join('');
   return `<div class="section">
     <div class="section-head"><h2>Events breakdown</h2></div>
-    <table>
+    <div class="table-scroll"><table>
       <thead><tr><th>Event</th><th style="text-align:right">Total</th><th style="text-align:right;color:var(--green)">7d</th><th style="text-align:right">30d</th></tr></thead>
       <tbody>${rows}</tbody>
-    </table>
+    </table></div>
   </div>`;
 }
 
@@ -490,13 +509,13 @@ function renderStores(stores){
   </tr>`).join('');
   return `<div class="section">
     <div class="section-head"><h2>Stores <span style="font-size:11px;font-weight:400;color:var(--ink3);margin-left:6px">${stores.length} total</span></h2></div>
-    <table>
+    <div class="table-scroll"><table style="min-width:600px">
       <thead><tr>
         <th>Domain</th><th>Name</th><th>Country</th><th>Plan</th>
         <th style="text-align:right">Saves</th><th style="text-align:right">Sched runs</th><th>Last seen</th>
       </tr></thead>
       <tbody>${rows}</tbody>
-    </table>
+    </table></div>
   </div>`;
 }
 
