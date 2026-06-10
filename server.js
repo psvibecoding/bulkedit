@@ -1341,6 +1341,42 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
+// Bulk save — up to 20 products per request, processed sequentially server-side
+app.post('/api/save-products-bulk', apiLimiter, writeLimiter, async (req, res) => {
+  try {
+    const s = getSession(req);
+    const products = req.body?.products;
+    if (!Array.isArray(products) || !products.length) return res.status(400).json({ ok: false, error: 'No products' });
+    if (products.length > 20) return res.status(400).json({ ok: false, error: 'Max 20 products per request' });
+
+    const plan = await getStorePlan(s.shop);
+    if (plan === 'free') {
+      const used = await getPushesThisMonth(s.shop);
+      if (used + products.length > 100) return res.status(400).json({ ok: false, error: 'Free plan limit reached: 100 products pushed this month.' });
+    }
+
+    const results = [];
+    let saved = 0;
+    for (const p of products) {
+      const { productId, product, variants = [], metafields = [] } = p;
+      try {
+        const mf = (metafields || []).map(({ _idx, ...rest }) => rest);
+        await execSaveProduct(s, { productId, product, variants, metafields: mf });
+        results.push({ productId, ok: true });
+        saved++;
+      } catch (e) {
+        results.push({ productId, ok: false, error: safeErr(e) });
+      }
+    }
+
+    track('save', s.shop, { v: products.reduce((n, p) => n + (p.variants?.length || 0), 0), bulk: products.length });
+    if (plan === 'free' && saved > 0) {
+      for (let i = 0; i < saved; i++) await incrementPushes(s.shop);
+    }
+    res.json({ ok: true, results });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
 // ── COLLECTIONS API ───────────────────────────────────────
 
 // Get all collections (custom + smart)
