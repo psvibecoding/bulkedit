@@ -41,18 +41,19 @@
 
     <h2>What data we collect</h2>
     <ul>
-      <li><strong>Shopify access token</strong> — used only during your session to read and write products on your behalf. Stored in your browser's sessionStorage only. Never saved on our servers.</li>
-      <li><strong>Store domain</strong> — used to identify your store for plan tracking and usage limits.</li>
-      <li><strong>Store email</strong> — fetched from Shopify on first connection to send a welcome email. Not stored permanently.</li>
+      <li><strong>Shopify access token</strong> — used during your session to read and write products on your behalf. Held in your browser's memory only and gone when you close the tab. It is not saved on our servers, with one exception: when you create a schedule, an encrypted copy (AES-256) is kept so the schedule can run, and deleted afterwards.</li>
+      <li><strong>Store domain and name</strong> — used to identify your store for plan tracking and usage limits.</li>
+      <li><strong>Store email</strong> — fetched from Shopify on first connection and stored with your store record, used for service emails (welcome, schedule confirmations). Deleted automatically when you uninstall the app, or earlier on request.</li>
+      <li><strong>Scheduled changes</strong> — when you create a schedule, the changes you staged (product IDs, new and previous field values such as prices) are stored until the schedule runs, then deleted within 30 days.</li>
       <li><strong>Notification email</strong> — if provided when creating a schedule, used to send a confirmation. Stored with the schedule record.</li>
       <li><strong>Waitlist email</strong> — stored to contact you about plan availability if you join the waitlist.</li>
-      <li><strong>Usage counts</strong> — push count and schedule count per store per month, for plan limit enforcement. No product data is stored.</li>
+      <li><strong>Usage counts</strong> — push count and schedule count per store per month, for plan limit enforcement.</li>
     </ul>
 
     <h2>What we do NOT collect</h2>
     <ul>
-      <li>We do not store your product data, prices, or catalog content.</li>
-      <li>We do not store your Shopify access token server-side.</li>
+      <li>We do not store your product data, prices, or catalog content — outside of the specific changes you explicitly schedule, which are deleted after execution.</li>
+      <li>We do not store your Shopify access token server-side — except the encrypted copy needed to run a schedule you created, deleted after it runs.</li>
       <li>We do not sell your data to third parties.</li>
       <li>We do not use cookies for tracking or advertising.</li>
     </ul>
@@ -65,7 +66,7 @@
     </ul>
 
     <h2>Data retention</h2>
-    <p>Schedule records are automatically deleted 30 days after execution. Usage counts reset monthly. You can request deletion at any time.</p>
+    <p>Schedule records are automatically deleted 30 days after execution. Usage counts reset monthly. When you uninstall the app, Shopify notifies us and all data about your store (store record, email, plan, usage, pending schedules) is deleted automatically. You can also request deletion at any time.</p>
 
     <h2>Security</h2>
     <p>Shopify tokens used for scheduled operations are encrypted at rest with AES-256-CBC. All communication is over HTTPS. Rate limiting and input validation are applied on all endpoints.</p>

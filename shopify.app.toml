@@ -1,0 +1,26 @@
+# Shopify app configuration — deploy with: shopify app deploy
+# Docs: https://shopify.dev/docs/apps/build/cli-for-apps/app-configuration
+#
+# REPLACE client_id below with the Client ID from your app
+# (Partner/Dev Dashboard → Lederly → Settings/Overview → Client ID — same value as SHOPIFY_CLIENT_ID on Railway)
+
+client_id = "REPLACE_WITH_YOUR_CLIENT_ID"
+name = "Lederly"
+application_url = "https://lederly.com"
+embedded = false
+
+[access_scopes]
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,read_collections,write_collections"
+
+[auth]
+redirect_urls = ["https://lederly.com/auth/callback"]
+
+[webhooks]
+api_version = "2026-01"
+
+# Mandatory privacy/compliance webhooks (GDPR)
+# Server handles these at /webhooks/* with HMAC verification — topic is read
+# from the X-Shopify-Topic header, so a single URI covers all three.
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+uri = "https://lederly.com/webhooks/compliance"
