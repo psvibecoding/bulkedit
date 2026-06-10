@@ -1341,7 +1341,7 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
-// Bulk save — up to 20 products per request, processed sequentially server-side
+// Bulk save — up to 20 products per request, processed 4-concurrent server-side
 app.post('/api/save-products-bulk', apiLimiter, writeLimiter, async (req, res) => {
   try {
     const s = getSession(req);
@@ -1355,20 +1355,23 @@ app.post('/api/save-products-bulk', apiLimiter, writeLimiter, async (req, res) =
       if (used + products.length > 100) return res.status(400).json({ ok: false, error: 'Free plan limit reached: 100 products pushed this month.' });
     }
 
-    const results = [];
-    let saved = 0;
-    for (const p of products) {
-      const { productId, product, variants = [], metafields = [] } = p;
-      try {
-        const mf = (metafields || []).map(({ _idx, ...rest }) => rest);
-        await execSaveProduct(s, { productId, product, variants, metafields: mf });
-        results.push({ productId, ok: true });
-        saved++;
-      } catch (e) {
-        results.push({ productId, ok: false, error: safeErr(e) });
-      }
+    // Process 4 products concurrently per round — ~4× faster without hitting Shopify rate limits
+    const INNER = 4;
+    const results = new Array(products.length);
+    for (let i = 0; i < products.length; i += INNER) {
+      await Promise.allSettled(
+        products.slice(i, i + INNER).map((p, localIdx) => {
+          const idx = i + localIdx;
+          const { productId, product, variants = [], metafields = [] } = p;
+          const mf = (metafields || []).map(({ _idx, ...rest }) => rest);
+          return execSaveProduct(s, { productId, product, variants, metafields: mf })
+            .then(() => { results[idx] = { productId, ok: true }; })
+            .catch(e => { results[idx] = { productId, ok: false, error: safeErr(e) }; });
+        })
+      );
     }
 
+    const saved = results.filter(r => r?.ok).length;
     track('save', s.shop, { v: products.reduce((n, p) => n + (p.variants?.length || 0), 0), bulk: products.length });
     if (plan === 'free' && saved > 0) {
       for (let i = 0; i < saved; i++) await incrementPushes(s.shop);

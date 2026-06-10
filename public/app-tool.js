@@ -1155,30 +1155,36 @@ async function confirmSave(){
     const savedPids=[], failed=[];
     let done=0;
     const BATCH=20;
+    const PARALLEL=3; // 3 batches in parallel → ~3× faster
 
-    for(let i=0;i<payloads.length;i+=BATCH){
-      const chunk=payloads.slice(i,i+BATCH);
-      try{
-        const products=chunk.map(c=>({
-          productId:c.productId,
-          product:c.product,
-          variants:Object.values(c.variants||{}),
-          metafields:(c.metafields||[]).map(({_idx,...rest})=>rest),
-        }));
-        const r=await api('/api/save-products-bulk',{products});
-        for(const res of r.results){
-          const c=chunk.find(x=>x.productId===res.productId);
-          if(res.ok){ savedPids.push(res.productId); }
-          else{ failed.push({pid:res.productId,title:getProd(res.productId)?.title||res.productId,err:res.error||'Failed'}); }
-          done++; setSaveProgress(done,payloads.length,failed.length);
-        }
-      }catch(e){
-        // Whole batch failed — mark all as failed
-        chunk.forEach(c=>{
-          failed.push({pid:c.productId,title:getProd(c.productId)?.title||c.productId,err:e.message});
-          done++; setSaveProgress(done,payloads.length,failed.length);
-        });
-      }
+    // Pre-build all batches, then send PARALLEL at a time
+    const allBatches=[];
+    for(let i=0;i<payloads.length;i+=BATCH) allBatches.push(payloads.slice(i,i+BATCH));
+
+    for(let i=0;i<allBatches.length;i+=PARALLEL){
+      await Promise.allSettled(
+        allBatches.slice(i,i+PARALLEL).map(async chunk=>{
+          try{
+            const products=chunk.map(c=>({
+              productId:c.productId,
+              product:c.product,
+              variants:Object.values(c.variants||{}),
+              metafields:(c.metafields||[]).map(({_idx,...rest})=>rest),
+            }));
+            const r=await api('/api/save-products-bulk',{products});
+            for(const res of r.results){
+              if(res.ok){ savedPids.push(res.productId); }
+              else{ failed.push({pid:res.productId,title:getProd(res.productId)?.title||res.productId,err:res.error||'Failed'}); }
+              done++; setSaveProgress(done,payloads.length,failed.length);
+            }
+          }catch(e){
+            chunk.forEach(c=>{
+              failed.push({pid:c.productId,title:getProd(c.productId)?.title||c.productId,err:e.message});
+              done++; setSaveProgress(done,payloads.length,failed.length);
+            });
+          }
+        })
+      );
     }
 
     // Inventory — only for products that saved OK
