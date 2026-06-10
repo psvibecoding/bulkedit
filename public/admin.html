@@ -29,6 +29,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
 .kpi-green  .kpi-val{color:var(--green)}
 .kpi-blue   .kpi-val{color:#2563eb}
 .kpi-purple .kpi-val{color:#7c3aed}
+.kpi-warn   .kpi-val{color:#d97706}
 /* Sections */
 .section{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:16px}
 .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
@@ -102,19 +103,25 @@ tr:last-child td{border-bottom:none}
 const SECRET = new URLSearchParams(location.search).get('secret') || '';
 
 const COLORS = {
-  connect:         '#1a5c38',
-  save:            '#2563eb',
-  schedule_create: '#7c3aed',
-  page_view:       '#d97706',
-  cta_click:       '#db2777',
-  demo_start:      '#0891b2',
-  bulk_action:     '#059669',
-  export_csv:      '#64748b',
-  tour_complete:   '#4f46e5',
-  tour_skip:       '#9ca3af',
-  products_load:   '#ea580c',
+  connect:          '#1a5c38',
+  app_open:         '#4ade80',
+  save:             '#2563eb',
+  save_attempt:     '#93c5fd',
+  schedule_create:  '#7c3aed',
+  schedule_run:     '#a78bfa',
+  schedule_partial: '#f59e0b',
+  schedule_fail:    '#ef4444',
+  page_view:        '#d97706',
+  cta_click:        '#db2777',
+  demo_start:       '#0891b2',
+  bulk_action:      '#059669',
+  export_csv:       '#64748b',
+  tour_complete:    '#4f46e5',
+  tour_skip:        '#9ca3af',
+  products_load:    '#ea580c',
+  disconnect:       '#6b7280',
 };
-const KEY_EVENTS = ['page_view','cta_click','connect','save','bulk_action','schedule_create','demo_start'];
+const KEY_EVENTS = ['page_view','cta_click','connect','app_open','save_attempt','save','bulk_action','schedule_create','schedule_run','schedule_fail'];
 
 function color(ev){ return COLORS[ev] || '#94a3b8'; }
 function fmt(n, dec){ if(n==null) return '—'; return dec!=null ? Number(n).toFixed(dec) : Number(n).toLocaleString(); }
@@ -180,6 +187,15 @@ function renderKPIs(d){
     <div class="kpi"><div class="kpi-val">${fmt(dp.avg_saves_per_store,1)}</div><div class="kpi-lbl">Avg saves / store</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(dp.avg_products_per_store)}</div><div class="kpi-lbl">Avg products / store</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(dp.avg_bulk_per_store,1)}</div><div class="kpi-lbl">Avg bulk / store</div></div>
+    <div class="kpi ${dp.save_success_rate>=90?'kpi-green':dp.save_success_rate>=70?'':'kpi-warn'}">
+      <div class="kpi-val">${dp.save_success_rate!=null?dp.save_success_rate+'%':'—'}</div>
+      <div class="kpi-lbl">Save success rate</div><div class="kpi-sub">${fmt(dp.total_saves)} ok / ${fmt(dp.total_save_attempts)} attempts</div>
+    </div>
+    <div class="kpi ${dp.schedule_reliability>=95?'kpi-green':dp.schedule_reliability!=null&&dp.schedule_reliability<80?'kpi-warn':''}">
+      <div class="kpi-val">${dp.schedule_reliability!=null?dp.schedule_reliability+'%':'—'}</div>
+      <div class="kpi-lbl">Schedule reliability</div><div class="kpi-sub">${fmt(dp.schedule_runs_ok)} ok · ${fmt(dp.schedule_runs_fail)} fail</div>
+    </div>
+    <div class="kpi"><div class="kpi-val">${fmt(dp.app_opens)}</div><div class="kpi-lbl">Return sessions</div><div class="kpi-sub">app opens (no re-auth)</div></div>
   </div>`;
 }
 
@@ -360,12 +376,34 @@ function renderSummary(data){
     if(bulkRatio>=50) parts.push(`<span class="good">Bulk actions are widely used</span> — ${totals.bulk_action} bulk ops vs ${totals.connect} connect events in this period.`);
   }
 
-  // Scheduling signal
+  // Save success rate
+  if(totals.save_attempt && totals.save){
+    const successRate=Math.round(totals.save/totals.save_attempt*100);
+    const cls=successRate>=90?'good':successRate>=70?'neutral':'warn';
+    parts.push(`Save success rate: <span class="${cls}">${successRate}%</span> (${totals.save} completed / ${totals.save_attempt} attempted).`);
+  }
+
+  // Schedule reliability
+  const runsOk=(totals.schedule_run||0), runsFail=(totals.schedule_fail||0), runsPartial=(totals.schedule_partial||0);
+  if(runsOk+runsFail+runsPartial>0){
+    const total=runsOk+runsFail+runsPartial;
+    const reliability=Math.round(runsOk/total*100);
+    const cls=reliability>=95?'good':reliability>=80?'neutral':'bad';
+    parts.push(`Schedule reliability: <span class="${cls}">${reliability}%</span> (${runsOk} ok, ${runsPartial} partial, ${runsFail} failed out of ${total} runs).`);
+  }
+
+  // Scheduling adoption signal
   if(f.scheduled>0){
     const schedPct=Math.round(f.scheduled/f.connected*100);
     parts.push(`${f.scheduled} store${f.scheduled!==1?'s':''} used scheduling (${schedPct}% of connected).`);
   } else if(dp.total_saves>0){
     parts.push(`<span class="neutral">No schedules created yet.</span> Scheduling is a Pro upsell opportunity.`);
+  }
+
+  // Return session signal
+  if(totals.app_open && totals.connect){
+    const returnRatio=(totals.app_open/totals.connect).toFixed(1);
+    parts.push(`Return sessions: <strong>${totals.app_open}</strong> app opens vs ${totals.connect} connects (~${returnRatio}x per connected store).`);
   }
 
   return `<div class="summary">

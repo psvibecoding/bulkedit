@@ -877,11 +877,15 @@ async function executeSchedule(sched, schedules) {
     if (prodErrors.length) {
       sched.error = `${prodErrors.length}/${changes.length} products failed: ${prodErrors.slice(0, 3).join('; ')}`;
     }
+    track(prodErrors.length === 0 ? 'schedule_run' : 'schedule_partial', sched.shop, {
+      products: changes.length, errors: prodErrors.length, isRevert: !!sched.linkedTo
+    });
     const linkedRevert = schedules.find(s => s.linkedTo === sched.id && s.status === 'pending') || null;
     sendNotification(sched, prodErrors.length === 0, linkedRevert).catch(() => {});
   } catch (e) {
     sched.status = 'failed';
     sched.error  = safeErr(e);
+    track('schedule_fail', sched.shop, { error: safeErr(e).slice(0, 120) });
     sendNotification(sched, false, null).catch(() => {});
   }
   await updateScheduleById(sched);
@@ -1630,10 +1634,15 @@ app.get('/api/admin/stats', async (req, res) => {
           COALESCE(SUM((meta->>'v')::int) FILTER (WHERE event='save'), 0)                          AS variants_saved,
           COALESCE(SUM((meta->>'n')::int) FILTER (WHERE event='products_load'), 0)                 AS products_loaded,
           COUNT(*) FILTER (WHERE event='save')                                                      AS total_saves,
+          COUNT(*) FILTER (WHERE event='save_attempt')                                             AS total_save_attempts,
           COUNT(DISTINCT shop) FILTER (WHERE event='save'          AND shop IS NOT NULL)            AS stores_saved,
           COUNT(DISTINCT shop) FILTER (WHERE event='products_load' AND shop IS NOT NULL)            AS stores_loaded,
           COUNT(*) FILTER (WHERE event='bulk_action')                                               AS total_bulk_actions,
-          COUNT(DISTINCT shop) FILTER (WHERE event='bulk_action'   AND shop IS NOT NULL)            AS stores_bulk
+          COUNT(DISTINCT shop) FILTER (WHERE event='bulk_action'   AND shop IS NOT NULL)            AS stores_bulk,
+          COUNT(*) FILTER (WHERE event='schedule_run')                                             AS schedule_runs_ok,
+          COUNT(*) FILTER (WHERE event='schedule_partial')                                         AS schedule_runs_partial,
+          COUNT(*) FILTER (WHERE event='schedule_fail')                                            AS schedule_runs_fail,
+          COUNT(*) FILTER (WHERE event='app_open')                                                 AS app_opens
         FROM analytics_events`),
     ]);
 
@@ -1665,7 +1674,16 @@ app.get('/api/admin/stats', async (req, res) => {
         variants_saved:        +dR.variants_saved,
         products_loaded:       +dR.products_loaded,
         total_saves:           totalSaves,
+        total_save_attempts:   +dR.total_save_attempts,
         total_bulk_actions:    +dR.total_bulk_actions,
+        app_opens:             +dR.app_opens,
+        schedule_runs_ok:      +dR.schedule_runs_ok,
+        schedule_runs_partial: +dR.schedule_runs_partial,
+        schedule_runs_fail:    +dR.schedule_runs_fail,
+        save_success_rate:     +dR.total_save_attempts > 0
+          ? Math.round(totalSaves / +dR.total_save_attempts * 100) : null,
+        schedule_reliability:  (+dR.schedule_runs_ok + +dR.schedule_runs_fail + +dR.schedule_runs_partial) > 0
+          ? Math.round(+dR.schedule_runs_ok / (+dR.schedule_runs_ok + +dR.schedule_runs_fail + +dR.schedule_runs_partial) * 100) : null,
         activation_rate:       storesConnected > 0 ? Math.round(storesSaved / storesConnected * 100) : 0,
         avg_saves_per_store:   storesSaved > 0 ? +(totalSaves / storesSaved).toFixed(1) : 0,
         avg_products_per_store:storesLoaded > 0 ? Math.round(+dR.products_loaded / storesLoaded) : 0,

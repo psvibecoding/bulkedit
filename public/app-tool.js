@@ -130,6 +130,7 @@ async function afterOAuth(shop, token, silent=false){
 
   // Fast restore from cache — show app instantly, then refresh in background
   if(silent){
+    trackEv('app_open', { returning: true });
     const cache=loadProductsCache();
     if(cache){
       S.products=cache.products||[]; S.originals=clone(S.products);
@@ -994,7 +995,7 @@ function applyBulkModal(){
     });
     renderTable(); updateSaveBtn(); toast(`SEO updated on ${pids.length} products.`);
   }
-  trackEv('bulk_action',{type});
+  trackEv('bulk_action',{type, n: getSelPids().length});
   closeModal('m-bulk');
 }
 
@@ -1085,6 +1086,7 @@ function setSaveProgress(done,total,errors){
 
 async function confirmSave(){
   const payloads=Object.values(S.changes); if(!payloads.length)return;
+  trackEv('save_attempt', { n: payloads.length });
   const btn=$('m-save-confirm'); btn.disabled=true; btn.textContent='Saving…';
   const bar=$('m-save-prog-bar'); if(bar){bar.style.width='0%';bar.style.background='#1a5c38';}
   const prog=$('m-save-prog'); if(prog)prog.style.display='none';
