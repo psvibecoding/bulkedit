@@ -278,6 +278,60 @@ app.use(helmet({
   hsts: IS_PROD ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false
 }));
 
+// ── SHOPIFY WEBHOOKS ──────────────────────────────────────
+// Mandatory compliance webhooks (customers/data_request, customers/redact,
+// shop/redact — configured in the Partner Dashboard) plus app/uninstalled
+// (registered per-shop after OAuth). HMAC needs the raw body, so this route
+// is registered before the JSON parser below.
+function verifyWebhookHmac(req) {
+  if (!SHOPIFY_CLIENT_SECRET) return false;
+  const hmac   = String(req.get('X-Shopify-Hmac-Sha256') || '');
+  const digest = crypto.createHmac('sha256', SHOPIFY_CLIENT_SECRET).update(req.body).digest('base64');
+  try { return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(digest)); } catch { return false; }
+}
+
+async function purgeShopData(shop) {
+  if (dbPool) {
+    await dbPool.query(`DELETE FROM store_info  WHERE shop=$1`, [shop]).catch(() => {});
+    await dbPool.query(`DELETE FROM store_plans WHERE shop=$1`, [shop]).catch(() => {});
+    await dbPool.query(`DELETE FROM store_usage WHERE shop=$1`, [shop]).catch(() => {});
+    await dbPool.query(`DELETE FROM schedules   WHERE data->>'shop'=$1`, [shop]).catch(() => {});
+    await dbPool.query(`UPDATE analytics_events SET shop=NULL WHERE shop=$1`, [shop]).catch(() => {});
+  } else {
+    const schedules = await readSchedules().catch(() => []);
+    await writeSchedules(schedules.filter(s => s.shop !== shop)).catch(() => {});
+  }
+}
+
+app.post('/webhooks/*', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) => {
+  if (!verifyWebhookHmac(req)) return res.status(401).send('HMAC validation failed');
+  const topic = String(req.get('X-Shopify-Topic') || '');
+  let shop = '';
+  try { shop = cleanShop(String(req.get('X-Shopify-Shop-Domain') || '')); } catch {}
+  res.status(200).send('OK'); // ack immediately — Shopify retries on non-200
+  try {
+    switch (topic) {
+      case 'app/uninstalled': {
+        if (!shop) break;
+        track('uninstall', shop);
+        // Token is revoked on uninstall — pending schedules would only fail
+        const schedules = await readSchedules();
+        for (const s of schedules) {
+          if (s.shop === shop && s.status === 'pending') { s.status = 'cancelled'; await updateScheduleById(s); }
+        }
+        break;
+      }
+      case 'shop/redact':
+        if (shop) { track('shop_redact', null); await purgeShopData(shop); }
+        break;
+      case 'customers/data_request':
+      case 'customers/redact':
+        // No customer data is ever stored — nothing to return or erase
+        break;
+    }
+  } catch (e) { console.error('[webhook]', topic, e.message); }
+});
+
 app.use((req, res, next) => {
   const limit = req.path === '/api/schedule/create' ? '10mb' : '512kb';
   express.json({ limit, strict: true })(req, res, next);
@@ -1161,6 +1215,13 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
     const td = await tr.json();
     if (!td.access_token) throw new Error('No token');
     track('connect', shop);
+    // Register app/uninstalled webhook — fire-and-forget, duplicate registration is a harmless userError
+    gql({ shop, token: td.access_token }, `
+      mutation WebhookCreate($url: URL!) {
+        webhookSubscriptionCreate(topic: APP_UNINSTALLED, webhookSubscription: { callbackUrl: $url, format: JSON }) {
+          userErrors { message }
+        }
+      }`, { url: `${APP_URL}/webhooks/app/uninstalled` }).catch(() => {});
     // Issue a short-lived one-time code — actual token never appears in URL or logs
     const onetimeCode = crypto.randomBytes(16).toString('hex');
     tokenStore.set(onetimeCode, { token: td.access_token, shop, exp: Date.now() + 30000 });
