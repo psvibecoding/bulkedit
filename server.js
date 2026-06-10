@@ -1659,6 +1659,7 @@ app.get('/admin', (req, res) => {
       '<!doctype html><html><body style="font-family:sans-serif;padding:40px"><h2>Unauthorized</h2><p>Provide <code>?secret=PING_SECRET</code></p></body></html>'
     );
   }
+  res.removeHeader('Content-Security-Policy');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
