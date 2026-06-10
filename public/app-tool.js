@@ -1125,6 +1125,9 @@ function openSaveModal(){
     });
     return `<div class="diff-item"><div class="diff-item-head">${imgEl}<span class="diff-title">${esc(p.title)}</span></div><div class="diff-rows">${diffs.length?diffs.join(''):'<span style="font-size:11px;color:var(--t3)">Variant / metafield changes</span>'}</div></div>`;
   }).join('');
+  // Reset cancel button to its initial state each time modal opens
+  const cb=$('m-save-cancel');
+  if(cb){cb.disabled=false;cb.textContent='Cancel';cb.setAttribute('data-close','m-save');}
   openModal('m-save');
 }
 
@@ -1143,6 +1146,7 @@ async function confirmSave(){
   const payloads=Object.values(S.changes); if(!payloads.length)return;
   trackEv('save_attempt', { n: payloads.length });
   const btn=$('m-save-confirm'); btn.disabled=true; btn.textContent='Saving…';
+  const cancelBtn=$('m-save-cancel'); if(cancelBtn){cancelBtn.disabled=true; cancelBtn.textContent='Saving…'; cancelBtn.removeAttribute('data-close');}
   const bar=$('m-save-prog-bar'); if(bar){bar.style.width='0%';bar.style.background='#1a5c38';}
   const prog=$('m-save-prog'); if(prog)prog.style.display='none';
   setStatus('Saving…','saving');
@@ -1232,7 +1236,10 @@ async function confirmSave(){
     else toast(e.message);
     setStatus('Save failed','dirty');
   }
-  finally{ btn.disabled=false; btn.textContent='Save to Shopify →'; }
+  finally{
+    btn.disabled=false; btn.textContent='Save to Shopify →';
+    if(cancelBtn){cancelBtn.disabled=false; cancelBtn.textContent='Close'; cancelBtn.setAttribute('data-close','m-save');}
+  }
 }
 
 function commitAll(payloads){
