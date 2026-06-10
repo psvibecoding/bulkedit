@@ -166,9 +166,7 @@ thead th:nth-child(11){width:148px}
 thead th:nth-child(12){width:62px}
 thead th:nth-child(13){width:auto;min-width:180px}
 
-thead th{padding:9px 12px;text-align:left;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);font-family:var(--mono);font-weight:600;background:var(--s1);border-bottom:2px solid var(--b1);position:sticky;top:0;z-index:5;white-space:nowrap;user-select:none}
-thead th:first-child{text-align:center}
-thead th:nth-child(10),thead th:nth-child(11),thead th:nth-child(12){text-align:right}
+thead th{padding:9px 12px;text-align:center;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);font-family:var(--mono);font-weight:600;background:var(--s1);border-bottom:2px solid var(--b1);position:sticky;top:0;z-index:5;white-space:nowrap;user-select:none}
 
 tbody tr{border-bottom:1px solid var(--b1);transition:background .1s;background:var(--white)}
 tbody tr:hover{background:var(--s1)}

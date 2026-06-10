@@ -470,8 +470,8 @@ function rowHTML(p,v){
   const mainScheds=schedList.filter(b=>!b.isRevert);
   const revertScheds=schedList.filter(b=>b.isRevert);
   const rb=revertScheds.length>0?`<div class="sched-val-badge-amber">↩ auto-revert · ${esc(new Date(revertScheds[0].scheduledFor).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}))}</div>`:'';
-  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">new price ${Number(b.vf.price).toFixed(2)} scheduled</div>`).join('')+(revertScheds.some(b=>b.vf.price!==undefined)?rb:'');
-  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge">compare at ${esc(val)} scheduled</div>`;}).join('')+(revertScheds.some(b=>b.vf.compareAtPrice!==undefined)?rb:'');
+  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge">→ ${Number(b.vf.price).toFixed(2)}</div>`).join('')+(revertScheds.some(b=>b.vf.price!==undefined)?rb:'');
+  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge">→ ${esc(val)}</div>`;}).join('')+(revertScheds.some(b=>b.vf.compareAtPrice!==undefined)?rb:'');
   const statusBadge=mainScheds.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge">${esc(b.pf.status)} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.status)?rb:'');
   const vendorBadge=mainScheds.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.vendor!==undefined)?rb:'');
   const tagsBadge=mainScheds.filter(b=>b.pf.tags!==undefined).map(b=>{
@@ -486,7 +486,7 @@ function rowHTML(p,v){
   }).join('')+(revertScheds.some(b=>b.pf.tags!==undefined)?rb:'');
   const descBadge=mainScheds.filter(b=>b.pf.bodyHtml!==undefined).map(()=>`<div class="sched-val-badge">description scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.bodyHtml!==undefined)?rb:'');
   const seoBadge=mainScheds.filter(b=>b.pf.seo!==undefined).map(()=>`<div class="sched-val-badge">SEO scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.seo!==undefined)?rb:'');
-  const skuBadge=mainScheds.filter(b=>b.vf.sku!==undefined).map(b=>`<div class="sched-val-badge">SKU: ${esc(b.vf.sku||'(empty)')} sched.</div>`).join('');
+  const skuBadge=mainScheds.filter(b=>b.vf.sku!==undefined).map(b=>`<div class="sched-val-badge">→ ${esc(b.vf.sku||'(empty)')}</div>`).join('');
   const seoMissing=!p.seo?.title&&!p.seo?.description;
   const seoIndicator=seoMissing?`<span class="seo-missing" title="No SEO title/description set">SEO</span>`:'';
   const bodyStripped=(p.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
@@ -1109,9 +1109,11 @@ function openSaveModal(){
     });
     Object.values(c.variants||{}).forEach(v=>{
       const origV=orig?.variants?.nodes?.find(x=>x.id===v.id);
-      const vLbl=p.variants.nodes.find(x=>x.id===v.id)?.title||'variant';
+      const vTitle=p.variants.nodes.find(x=>x.id===v.id)?.title||'variant';
+      const isDefault=p.variants.nodes.length===1||vTitle==='Default Title';
+      const vLbl=isDefault?'':vTitle+' ';
       ['price','compareAtPrice','sku'].forEach(field=>{
-        if(v[field]!==undefined){const old=origV?String(origV[field]??''):'?';const nw=String(v[field]??'');if(old!==nw)diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} ${esc(field)}</span><span class="diff-old">${esc(old||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(nw)}</span></div>`);}
+        if(v[field]!==undefined){const old=origV?String(origV[field]??''):'?';const nw=String(v[field]??'');if(old!==nw)diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl+field)}</span><span class="diff-old">${esc(old||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(nw)}</span></div>`);}
       });
     });
     if((c.metafields||[]).length)diffs.push(`<div class="diff-row"><span class="diff-field">metafields</span><span class="diff-new">${c.metafields.length} change${c.metafields.length!==1?'s':''}</span></div>`);
