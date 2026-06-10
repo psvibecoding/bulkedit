@@ -541,7 +541,13 @@ function defRow(def, ownerId, currentVal){
     return `<div class="mf-def-row">${lbl}<input class="mf-val-inp" type="date" ${attrs} data-mf="smart" value="${esc(currentVal)}"></div>`;
   }
   if(t==='date_time'){
-    const dtVal=currentVal?currentVal.replace(' ','T').slice(0,16):'';
+    // Shopify stores UTC ISO strings — convert to local time for the datetime-local input
+    let dtVal='';
+    if(currentVal){
+      const d=new Date(currentVal);
+      dtVal=isNaN(d.getTime())?currentVal.replace(' ','T').slice(0,16)
+        :new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+    }
     return `<div class="mf-def-row">${lbl}<input class="mf-val-inp" type="datetime-local" ${attrs} data-mf="smart" value="${esc(dtVal)}"></div>`;
   }
   if(t==='json'){
@@ -683,6 +689,10 @@ function markVar(vid,field,value,el){
   updateSaveBtn();
 }
 function applyMfChange(ownerId, ownerType, ns, key, type, val, dirtyEl){
+  // Convert datetime-local (local time, no tz) to UTC ISO string for Shopify
+  if(type==='date_time' && val){
+    try{ const d=new Date(val); if(!isNaN(d.getTime())) val=d.toISOString(); }catch{}
+  }
   pushH(`Edit metafield ${key}`);
   let p, ownerNodes;
   if(ownerType==='PRODUCT'){
@@ -1161,6 +1171,22 @@ async function confirmSave(){
       commitAll(payloads); return;
     }
 
+    // Validate JSON metafields before sending anything
+    for(const c of payloads){
+      for(const mf of (c.metafields||[])){
+        if(mf.type==='json'&&mf.value){
+          try{ JSON.parse(mf.value); }
+          catch{
+            const title=getProd(c.productId)?.title||c.productId;
+            toast(`Invalid JSON in "${mf.namespace}.${mf.key}" for "${title}". Fix before saving.`);
+            btn.disabled=false; btn.textContent='Save to Shopify →';
+            if(cancelBtn){cancelBtn.disabled=false; cancelBtn.setAttribute('data-close','m-save');}
+            return;
+          }
+        }
+      }
+    }
+
     const savedPids=[], failed=[];
     let done=0;
     const BATCH=20;
@@ -1419,7 +1445,7 @@ function buildRevertChanges(){
         origVal=origV?.metafields?.nodes?.find(m=>m.namespace===mf.namespace&&m.key===mf.key)?.value??'';
       }
       return{...mf,value:origVal};
-    });
+    }).filter(mf=>mf.value!==''); // skip metafields that were empty before — Shopify rejects blank values
     return{productId:c.productId,product:productRevert,variants:variantsRevert,metafields:metafieldsRevert};
   }).filter(Boolean);
 }

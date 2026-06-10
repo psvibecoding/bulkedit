@@ -384,14 +384,24 @@ function safeMetafields(mf = []) {
     const namespace = String(m.namespace || '').trim();
     const key       = String(m.key || '').trim();
     const type      = String(m.type || '').trim();
-    const value     = String(m.value ?? '');
+    let   value     = String(m.value ?? '');
     if (!ownerId.match(/^gid:\/\/shopify\/(Product|ProductVariant)\//)) throw new Error('Invalid metafield owner');
     if (!/^[a-zA-Z0-9_-]{2,64}$/.test(namespace)) throw new Error('Invalid namespace');
     if (!/^[a-zA-Z0-9_-]{2,64}$/.test(key))       throw new Error('Invalid key');
     if (!/^[a-zA-Z0-9_.-]{2,80}$/.test(type))     throw new Error('Invalid type');
     if (value.length > 5000)                        throw new Error('Value too long');
+    // Validate JSON type values early with a clear error
+    if (type === 'json' && value) {
+      try { JSON.parse(value); } catch { throw new Error(`Invalid JSON for metafield ${namespace}.${key}`); }
+    }
+    // Normalize date_time to ISO 8601 UTC (Shopify requires it)
+    if (type === 'date_time' && value) {
+      const d = new Date(value);
+      if (!isNaN(d.getTime())) value = d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    }
     return { ownerId, namespace, key, type, value };
-  });
+  })
+  .filter(m => m.value !== ''); // skip blank values — Shopify rejects them and they mean "no change"
 }
 
 async function gql({ shop, token }, query, variables = {}, _retry = 0) {
