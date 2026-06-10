@@ -1217,6 +1217,9 @@ async function confirmSave(){
 
     renderTable(); updateSaveBtn(); updateUndoUI();
 
+    // Silently reload from Shopify so the table reflects actual saved values
+    if(savedPids.length) { localStorage.removeItem('be_cache'); loadProducts(S.searchQ).catch(()=>{}); }
+
     const allFailed=[...failed,...(invFailed.length?[{pid:'inv',title:'Inventory',err:invFailed.join(', ')}]:[])];
 
     if(allFailed.length){
