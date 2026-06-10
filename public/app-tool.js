@@ -1326,6 +1326,7 @@ async function loadSchedules(){
   updateSchedBadge();
   updatePlanBadge();
   renderTable();
+  startSchedPoller(); // auto-start if any pending on load
 }
 
 function openScheduleModal(){
@@ -1505,6 +1506,7 @@ async function confirmSchedule(){
     document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
     const msg=revertAt?`Scheduled for ${scheduledFor.toLocaleString()} · reverts at ${revertAt.toLocaleString()}.`:`Scheduled for ${scheduledFor.toLocaleString()}.`;
     toast(msg);
+    startSchedPoller(); // start polling now that a new schedule exists
     trackPushAndMaybeShare();
   }catch(e){
     if(/limit|upgrade|plan|schedules/i.test(e.message)) showUpgradeModal(e.message);
@@ -1617,7 +1619,61 @@ async function renderSchedJobsList(){
     S.schedules=r.schedules||[];
     updateSchedBadge();
     renderSchedTabs(S.schedules);
+    startSchedPoller(); // start background polling if any pending
   }catch(e){ body.innerHTML=`<p class="sched-empty" style="color:var(--red)">${esc(e.message)}</p>`; }
+}
+
+// ── Background schedule poller ──
+// Polls every 15s when there are pending/running schedules.
+// Reloads products when a schedule completes.
+let _schedPollTimer=null;
+let _schedStatusSnap={}; // id → status last seen
+
+function startSchedPoller(){
+  if(_schedPollTimer) return; // already running
+  const hasPending=(S.schedules||[]).some(s=>['pending','running'].includes(s.status));
+  if(!hasPending) return;
+  // Snapshot current statuses
+  _schedStatusSnap={};
+  (S.schedules||[]).forEach(s=>{_schedStatusSnap[s.id]=s.status;});
+  _schedPollTimer=setInterval(_pollSchedTick, 15000);
+}
+
+function stopSchedPoller(){
+  if(_schedPollTimer){ clearInterval(_schedPollTimer); _schedPollTimer=null; }
+}
+
+async function _pollSchedTick(){
+  if(S.demo) return;
+  try{
+    const r=await api('/api/schedule/list',{});
+    const fresh=r.schedules||[];
+    // Detect completions
+    let completed=[];
+    for(const s of fresh){
+      const prev=_schedStatusSnap[s.id];
+      if(prev&&['pending','running'].includes(prev)&&s.status==='executed'){
+        completed.push(s.label||s.id);
+      }
+    }
+    // Update snapshot + store
+    _schedStatusSnap={};
+    fresh.forEach(s=>{_schedStatusSnap[s.id]=s.status;});
+    S.schedules=fresh;
+    updateSchedBadge();
+    renderSchedTabs(S.schedules);
+
+    if(completed.length){
+      const names=completed.slice(0,2).map(l=>`"${l}"`).join(', ');
+      toast(`Schedule ${names} completed — refreshing products…`);
+      localStorage.removeItem('be_cache');
+      await loadProducts(S.searchQ);
+    }
+
+    // Stop when no more pending
+    const stillPending=fresh.some(s=>['pending','running'].includes(s.status));
+    if(!stillPending) stopSchedPoller();
+  }catch{} // silent — retry next tick
 }
 
 /* ── SEARCH ── */
@@ -1854,6 +1910,9 @@ function boot(){
           notifyEmail:(emailEl?.value||'').trim()||undefined,
         });
         _editingSchedId=null;
+        // Reload products so the table reflects current Shopify state after any schedule change
+        localStorage.removeItem('be_cache');
+        loadProducts(S.searchQ).catch(()=>{});
       }
       await renderSchedJobsList();
     }catch(err){ toast(err.message); btn.disabled=false; }
