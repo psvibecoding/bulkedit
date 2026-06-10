@@ -1601,7 +1601,7 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 
   try {
-    const [totalR, active7R, active30R, eventsR, dailyR, funnelR] = await Promise.all([
+    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR] = await Promise.all([
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL`),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '7 days'`),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '30 days'`),
@@ -1613,7 +1613,7 @@ app.get('/api/admin/stats', async (req, res) => {
         FROM analytics_events GROUP BY event ORDER BY total DESC`),
       dbPool.query(`
         SELECT to_char(ts AT TIME ZONE 'UTC','YYYY-MM-DD') as date, event, COUNT(*) as n
-        FROM analytics_events WHERE ts >= NOW()-INTERVAL '30 days'
+        FROM analytics_events WHERE ts >= NOW()-INTERVAL '90 days'
         GROUP BY 1,2 ORDER BY 1`),
       dbPool.query(`
         SELECT
@@ -1625,6 +1625,16 @@ app.get('/api/admin/stats', async (req, res) => {
           (SELECT COUNT(*) FROM analytics_events WHERE event='page_view' AND ts >= NOW()-INTERVAL '7 days')  as pv_7d,
           (SELECT COUNT(*) FROM analytics_events WHERE event='cta_click' AND ts >= NOW()-INTERVAL '30 days') as cta_30d
         FROM analytics_events WHERE shop IS NOT NULL`),
+      dbPool.query(`
+        SELECT
+          COALESCE(SUM((meta->>'v')::int) FILTER (WHERE event='save'), 0)                          AS variants_saved,
+          COALESCE(SUM((meta->>'n')::int) FILTER (WHERE event='products_load'), 0)                 AS products_loaded,
+          COUNT(*) FILTER (WHERE event='save')                                                      AS total_saves,
+          COUNT(DISTINCT shop) FILTER (WHERE event='save'          AND shop IS NOT NULL)            AS stores_saved,
+          COUNT(DISTINCT shop) FILTER (WHERE event='products_load' AND shop IS NOT NULL)            AS stores_loaded,
+          COUNT(*) FILTER (WHERE event='bulk_action')                                               AS total_bulk_actions,
+          COUNT(DISTINCT shop) FILTER (WHERE event='bulk_action'   AND shop IS NOT NULL)            AS stores_bulk
+        FROM analytics_events`),
     ]);
 
     const events = {};
@@ -1636,14 +1646,30 @@ app.get('/api/admin/stats', async (req, res) => {
       daily[r.date][r.event] = +r.n;
     }
 
-    const f = funnelR.rows[0];
+    const f  = funnelR.rows[0];
+    const dR = deepR.rows[0];
+    const storesConnected = +totalR.rows[0].n;
+    const storesSaved     = +dR.stores_saved;
+    const totalSaves      = +dR.total_saves;
+    const storesLoaded    = +dR.stores_loaded;
+
     res.json({
       ok: true, mode: 'postgres', uptime,
-      stores: { total: +totalR.rows[0].n, active7d: +active7R.rows[0].n, active30d: +active30R.rows[0].n },
+      stores: { total: storesConnected, active7d: +active7R.rows[0].n, active30d: +active30R.rows[0].n },
       funnel: {
         page_views_30d: +f.pv_30d, page_views_7d: +f.pv_7d,
         cta_clicks_30d: +f.cta_30d,
         demoed: +f.demoed, connected: +f.connected, saved: +f.saved, scheduled: +f.scheduled,
+      },
+      deep: {
+        variants_saved:        +dR.variants_saved,
+        products_loaded:       +dR.products_loaded,
+        total_saves:           totalSaves,
+        total_bulk_actions:    +dR.total_bulk_actions,
+        activation_rate:       storesConnected > 0 ? Math.round(storesSaved / storesConnected * 100) : 0,
+        avg_saves_per_store:   storesSaved > 0 ? +(totalSaves / storesSaved).toFixed(1) : 0,
+        avg_products_per_store:storesLoaded > 0 ? Math.round(+dR.products_loaded / storesLoaded) : 0,
+        avg_bulk_per_store:    +dR.stores_bulk > 0 ? +(+dR.total_bulk_actions / +dR.stores_bulk).toFixed(1) : 0,
       },
       events, daily,
     });
