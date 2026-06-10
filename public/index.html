@@ -147,13 +147,6 @@
     .am-pill-active{background:var(--green-bg);color:var(--green);border:1px solid var(--green-brd)}
     .am-old{color:var(--ink4);text-decoration:line-through;font-size:9px;margin-right:2px}
     .am-new{color:var(--green);font-weight:600}
-    @keyframes am-flash{0%,100%{background:transparent}40%{background:rgba(26,92,56,.18)}}
-    @keyframes am-price-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
-    @keyframes am-pulse{0%,100%{box-shadow:0 0 0 0 rgba(26,92,56,.4)}60%{box-shadow:0 0 0 6px rgba(26,92,56,0)}}
-    .am-cell-flash{animation:am-flash .45s ease}
-    .am-new-anim{animation:am-price-in .22s ease forwards;display:inline}
-    .am-save-pulse{animation:am-pulse .9s ease infinite!important;opacity:1!important}
-    .am-save-on{opacity:1!important}
     .am-chk{width:11px;height:11px;accent-color:var(--green);cursor:default;vertical-align:middle}
     .am-statusbar{padding:5px 12px;background:var(--bg);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px}
     .am-status-l{font-size:8px;color:var(--ink3);font-family:var(--mono)}
@@ -411,7 +404,7 @@
       <p class="hero-trust">No account · No data stored · OAuth secured</p>
     </div>
 
-    <div class="am-window" id="am-demo">
+    <div class="am-window">
       <div class="am-topbar">
         <div class="am-tl">
           <span class="am-logo">L</span>
@@ -419,8 +412,10 @@
           <span class="am-search">⌕ Search…</span>
         </div>
         <div class="am-tr">
+          <button class="am-btn">↩</button>
+          <button class="am-btn">↪</button>
           <button class="am-btn-sched">✦ Schedule</button>
-          <button class="am-btn-save" id="am-save-btn" style="opacity:.35">↑ Push to Shopify <span id="am-save-badge" class="am-save-badge">0</span></button>
+          <button class="am-btn-save">↑ Push to Shopify <span class="am-save-badge">5</span></button>
         </div>
       </div>
       <div class="am-tabs">
@@ -445,51 +440,51 @@
           </tr>
         </thead>
         <tbody>
-          <tr id="am-r0">
-            <td><input type="checkbox" class="am-chk" id="am-c0"></td>
+          <tr class="mod">
+            <td><input type="checkbox" class="am-chk" checked></td>
             <td><span class="am-thumb" style="background:#c8b8a2"></span></td>
             <td>Merino Sweater — S</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td id="am-p0">89.00</td>
-            <td>—</td>
+            <td><span class="am-old">89.00</span><span class="am-new">69.00</span></td>
+            <td><span class="am-new">89.00</span></td>
           </tr>
-          <tr id="am-r1">
-            <td><input type="checkbox" class="am-chk" id="am-c1"></td>
+          <tr class="mod">
+            <td><input type="checkbox" class="am-chk" checked></td>
             <td><span class="am-thumb" style="background:#c8b8a2"></span></td>
             <td>Merino Sweater — M</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td id="am-p1">89.00</td>
-            <td>—</td>
+            <td><span class="am-old">89.00</span><span class="am-new">69.00</span></td>
+            <td><span class="am-new">89.00</span></td>
           </tr>
-          <tr id="am-r2">
-            <td><input type="checkbox" class="am-chk" id="am-c2"></td>
+          <tr class="mod">
+            <td><input type="checkbox" class="am-chk" checked></td>
             <td><span class="am-thumb" style="background:#8b7560"></span></td>
             <td>Leather Crossbody Bag</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td id="am-p2">149.00</td>
-            <td>—</td>
+            <td><span class="am-old">149.00</span><span class="am-new">119.00</span></td>
+            <td><span class="am-new">149.00</span></td>
           </tr>
-          <tr id="am-r3">
-            <td><input type="checkbox" class="am-chk"></td>
+          <tr class="mod">
+            <td><input type="checkbox" class="am-chk" checked></td>
             <td><span class="am-thumb" style="background:#a8c4a0"></span></td>
             <td>Yoga Mat 6mm</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td>78.00</td>
-            <td>—</td>
+            <td><span class="am-old">78.00</span><span class="am-new">65.00</span></td>
+            <td><span class="am-new">78.00</span></td>
           </tr>
-          <tr id="am-r4">
-            <td><input type="checkbox" class="am-chk"></td>
+          <tr class="mod">
+            <td><input type="checkbox" class="am-chk" checked></td>
             <td><span class="am-thumb" style="background:#d4c5a8"></span></td>
             <td>Organic Cotton Tee</td>
             <td><span class="am-pill am-pill-active">Active</span></td>
-            <td>34.00</td>
-            <td>—</td>
+            <td><span class="am-old">34.00</span><span class="am-new">24.00</span></td>
+            <td><span class="am-new">34.00</span></td>
           </tr>
         </tbody>
       </table>
       <div class="am-statusbar">
-        <span id="am-status" class="am-status-l">Ready</span>
-        <span class="am-status-r">lederly.com</span>
+        <span class="am-status-l">5 changes staged · push live or schedule</span>
+        <span class="am-status-r">↑ Push to Shopify or schedule →</span>
       </div>
     </div>
   </div>
@@ -901,7 +896,39 @@
   <span>We use anonymous analytics to improve Lederly. No cookies, no personal data stored. <a href="/privacy" style="color:#6ee09b;text-decoration:none">Privacy policy →</a></span>
   <button onclick="document.getElementById('gdpr').style.display='none';localStorage.setItem('gdpr_ok','1')" style="background:#1a5c38;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Got it</button>
 </div>
+<script>if(!localStorage.getItem('gdpr_ok')){var g=document.getElementById('gdpr');if(g)g.style.display='flex';}</script>
+
 <script src="/index.js"></script>
-<script src="/landing.js"></script>
+<script>
+(function(){
+  function ev(event, meta){
+    fetch('/api/track',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({event,...(meta||{})})
+    }).catch(()=>{});
+  }
+  // Page view
+  const ref = document.referrer ? new URL(document.referrer).hostname : (new URLSearchParams(location.search).get('ref')||'direct');
+  ev('page_view',{ref:ref.slice(0,100)});
+  // CTA clicks — any link pointing to /app
+  document.addEventListener('click',function(e){
+    const a=e.target.closest('a[href="/app"],a[href^="/app?"]');
+    if(!a)return;
+    const near=a.closest('section,nav');
+    const ref=near?.id||near?.className?.split(' ')[0]||'unknown';
+    ev('cta_click',{ref:ref.slice(0,80)});
+  });
+  // Pricing section visibility
+  const pricing=document.getElementById('pricing');
+  if(pricing&&'IntersectionObserver' in window){
+    let fired=false;
+    new IntersectionObserver(function(entries,obs){
+      if(fired||!entries[0].isIntersecting)return;
+      fired=true; obs.disconnect();
+      ev('pricing_view');
+    },{threshold:0.2}).observe(pricing);
+  }
+})();
+</script>
 </body>
 </html>
