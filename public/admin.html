@@ -268,16 +268,30 @@ function drawLine(daily){
   const dates=getDates();
   const active=KEY_EVENTS.filter(ev=>!state.hiddenEvents.has(ev));
   const allVals=dates.flatMap(d=>active.map(ev=>daily[d]?.[ev]||0));
+  const totalEvents=allVals.reduce((a,b)=>a+b,0);
   const maxVal=Math.max(...allVals,1);
   const W=1000, H=100, n=dates.length;
 
-  const lines=active.map(ev=>{
-    const pts=dates.map((date,i)=>{
-      const x=n>1?Math.round(i/(n-1)*W):W/2;
-      const y=Math.round(H-((daily[date]?.[ev]||0)/maxVal)*(H-4));
-      return x+','+y;
-    }).join(' ');
-    return `<polyline points="${pts}" fill="none" stroke="${color(ev)}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  if(totalEvents===0){
+    return `<div class="line-chart-wrap" style="display:flex;align-items:center;justify-content:center">
+      <span style="font-size:12px;color:var(--ink3);font-family:var(--mono)">No activity in this period</span>
+    </div>${renderLegend()}`;
+  }
+
+  const elements=active.map(ev=>{
+    const pts=dates.map((date,i)=>({
+      x: n>1 ? Math.round(i/(n-1)*W) : W/2,
+      y: Math.round(H-((daily[date]?.[ev]||0)/maxVal)*(H-8)),
+      v: daily[date]?.[ev]||0
+    }));
+    if(n===1){
+      // Single date: render a dot
+      return pts[0].v>0
+        ? `<circle cx="${pts[0].x}" cy="${pts[0].y}" r="6" fill="${color(ev)}"/>`
+        : '';
+    }
+    const pointStr=pts.map(p=>p.x+','+p.y).join(' ');
+    return `<polyline points="${pointStr}" fill="none" stroke="${color(ev)}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>`;
   }).join('');
 
   const step=Math.max(1,Math.floor(n/6));
@@ -288,7 +302,7 @@ function drawLine(daily){
   }).join('');
 
   return `<div class="line-chart-wrap">
-    <svg viewBox="0 0 ${W} ${H+24}" preserveAspectRatio="none">${lines}${labels}</svg>
+    <svg viewBox="0 0 ${W} ${H+24}" preserveAspectRatio="none">${elements}${labels}</svg>
   </div>${renderLegend()}`;
 }
 
