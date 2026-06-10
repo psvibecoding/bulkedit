@@ -161,6 +161,10 @@ async function api(path,body={},signal=null){
   const opts={method:'POST',headers:apiH(),body:JSON.stringify(body)};
   if(signal) opts.signal=signal;
   const r=await fetch(path,opts);
+  const ct=r.headers.get('content-type')||'';
+  if(!ct.includes('application/json')){
+    throw new Error(`Server error (${r.status}) — please try again`);
+  }
   const j=await r.json(); if(!j.ok)throw new Error(j.error||'Request failed'); return j;
 }
 
@@ -480,6 +484,9 @@ function rowHTML(p,v){
     if(removed.length) parts.push(`<div class="sched-val-badge-red">- ${esc(removed.join(', '))} scheduled</div>`);
     return parts.join('');
   }).join('')+(revertScheds.some(b=>b.pf.tags!==undefined)?rb:'');
+  const descBadge=mainScheds.filter(b=>b.pf.bodyHtml!==undefined).map(()=>`<div class="sched-val-badge">description scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.bodyHtml!==undefined)?rb:'');
+  const seoBadge=mainScheds.filter(b=>b.pf.seo!==undefined).map(()=>`<div class="sched-val-badge">SEO scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.seo!==undefined)?rb:'');
+  const skuBadge=mainScheds.filter(b=>b.vf.sku!==undefined).map(b=>`<div class="sched-val-badge">SKU: ${esc(b.vf.sku||'(empty)')} sched.</div>`).join('');
   const seoMissing=!p.seo?.title&&!p.seo?.description;
   const seoIndicator=seoMissing?`<span class="seo-missing" title="No SEO title/description set">SEO</span>`:'';
   const bodyStripped=(p.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
@@ -488,13 +495,13 @@ function rowHTML(p,v){
   return `<tr class="${cls}" data-pid="${esc(p.id)}" data-vid="${esc(v.id)}">
 <td><input type="checkbox" class="row-chk" data-vid="${esc(v.id)}" ${sel?'checked':''}></td>
 <td>${imgCell}</td>
-<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div>${descInp}<span class="mod-chip">modified</span></div></td>
+<td><div class="title-cell"><div class="title-row"><input class="ce${dirty?' dirty':''}" data-pid="${esc(p.id)}" data-field="title" value="${esc(p.title)}"><a class="shopify-link" href="${esc(shopUrl)}" target="_blank" rel="noopener" title="Open in Shopify">↗</a>${seoIndicator}</div>${descInp}${descBadge||seoBadge?`<div class="badge-stack">${descBadge}${seoBadge}</div>`:''}<span class="mod-chip">modified</span></div></td>
 <td><div><span class="status-pill ${stCls}" data-pid="${esc(p.id)}">${stLbl}</span>${statusBadge}</div></td>
 <td><div><input class="ce" data-pid="${esc(p.id)}" data-field="vendor" value="${esc(p.vendor||'')}"></div>${vendorBadge}</td>
-<td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div>${tagsBadge}</td>
+<td><div class="tags-wrap" id="tw-${esc(p.id)}">${tagsHTML}</div>${tagsBadge?`<div class="badge-stack">${tagsBadge}</div>`:''}</td>
 <td><div class="colls-wrap">${collsHTML}</div></td>
 <td class="v-title">${esc(v.title||'Default')}</td>
-<td><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"></td>
+<td><div style="display:flex;flex-direction:column;gap:1px"><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"><div class="badge-stack">${skuBadge}</div></div></td>
 <td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}"><div class="badge-stack">${priceBadge}</div></div></td>
 <td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"><div class="badge-stack">${catBadge}</div></div></td>
 <td><input class="ce ce-num" type="number" min="0" step="1" data-vid="${esc(v.id)}" data-vf="inventoryQuantity" value="${esc(String(v.inventoryQuantity??0))}"></td>
@@ -1527,6 +1534,25 @@ function schedRowHTML(s){
   return `<div class="sched-row${isRevert?' sched-revert':''}"><div style="flex-shrink:0;margin-right:10px">${imgBlock}</div><div class="sched-info"><span class="sched-lbl">${esc(s.label)}</span><span class="sched-dt">${esc(dt)} · ${n} product${n!==1?'s':''}</span>${s.error?`<span class="sched-err">${esc(s.error)}</span>`:''}</div><span class="sched-status ${sCls}">${sLbl}</span><div class="sched-btns">${btns}</div></div>`;
 }
 
+function buildGroupedSchedHTML(list){
+  const mainItems=list.filter(s=>!s.linkedTo);
+  const revertsByParent={};
+  list.filter(s=>s.linkedTo).forEach(s=>{ revertsByParent[s.linkedTo]=s; });
+  const usedRevertIds=new Set();
+  const parts=[];
+  mainItems.forEach(s=>{
+    const revert=revertsByParent[s.id];
+    if(revert){
+      usedRevertIds.add(revert.id);
+      parts.push(`<div class="sched-group">${schedRowHTML(s)}<div class="sched-group-revert">${schedRowHTML(revert)}</div></div>`);
+    } else {
+      parts.push(schedRowHTML(s));
+    }
+  });
+  list.filter(s=>s.linkedTo&&!usedRevertIds.has(s.id)).forEach(s=>parts.push(schedRowHTML(s)));
+  return parts.join('');
+}
+
 function renderSchedTabs(all){
   const pending=all.filter(s=>['pending','running','failed'].includes(s.status));
   const done=all.filter(s=>['executed','cancelled'].includes(s.status));
@@ -1537,7 +1563,7 @@ function renderSchedTabs(all){
     <button class="sched-tab${_schedTab==='done'?' active':''}" data-sched-tab="done">Done${done.length?` <span class="sched-tab-count">${done.length}</span>`:''}</button>
   </div>`;
   const listHTML=list.length
-    ?list.map(schedRowHTML).join('')
+    ?buildGroupedSchedHTML(list)
     :`<p class="sched-empty">${_schedTab==='pending'?'No pending schedules.':'No completed schedules yet.'}</p>`;
   body.innerHTML=tabsHTML+`<div class="sched-list-inner">${listHTML}</div>`;
 }

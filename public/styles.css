@@ -289,8 +289,8 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .bulk-field{display:flex;flex-direction:column;gap:5px}
 .bulk-field label{font-size:9px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--t3);font-weight:600}
-.bulk-field input,.bulk-field select{background:var(--bg);border:1px solid var(--b2);border-radius:var(--r6);padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--tx);outline:none;width:100%;transition:border-color .15s,box-shadow .15s}
-.bulk-field input:focus,.bulk-field select:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
+.bulk-field input:not([type=checkbox]):not([type=radio]),.bulk-field select{background:var(--bg);border:1px solid var(--b2);border-radius:var(--r6);padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--tx);outline:none;width:100%;transition:border-color .15s,box-shadow .15s}
+.bulk-field input:not([type=checkbox]):not([type=radio]):focus,.bulk-field select:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
 .tag-with-action{display:grid;grid-template-columns:1fr auto;gap:7px}
 .diff-list{display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto}
 .diff-item{background:var(--bg);border:1px solid var(--b1);border-radius:var(--r8);padding:11px}
@@ -330,6 +330,9 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .sched-revert-lbl{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--t2);cursor:pointer;user-select:none}
 .sched-revert-lbl input[type=checkbox]{width:14px;height:14px;accent-color:var(--amber);cursor:pointer}
 .sched-revert{border-left:2px solid var(--amber-brd)!important;background:#fffcf5!important}
+.sched-group{display:flex;flex-direction:column;gap:3px}
+.sched-group-revert{padding-left:20px;position:relative}
+.sched-group-revert::before{content:'';position:absolute;left:8px;top:50%;width:10px;height:2px;background:var(--amber-brd)}
 .sched-preview{display:flex;flex-direction:column;gap:3px;max-height:160px;overflow-y:auto}
 .sched-prev-row{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--s2);border-radius:var(--r6);gap:8px}
 .sched-prod{font-size:12px;font-weight:500;color:var(--tx);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
