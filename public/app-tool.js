@@ -1146,7 +1146,7 @@ async function confirmSave(){
   const payloads=Object.values(S.changes); if(!payloads.length)return;
   trackEv('save_attempt', { n: payloads.length });
   const btn=$('m-save-confirm'); btn.disabled=true; btn.textContent='Saving…';
-  const cancelBtn=$('m-save-cancel'); if(cancelBtn){cancelBtn.disabled=true; cancelBtn.textContent='Saving…'; cancelBtn.removeAttribute('data-close');}
+  const cancelBtn=$('m-save-cancel'); if(cancelBtn){cancelBtn.disabled=true; cancelBtn.removeAttribute('data-close');}
   const bar=$('m-save-prog-bar'); if(bar){bar.style.width='0%';bar.style.background='#1a5c38';}
   const prog=$('m-save-prog'); if(prog)prog.style.display='none';
   setStatus('Saving…','saving');
