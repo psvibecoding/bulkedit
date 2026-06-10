@@ -4,8 +4,25 @@
    OAuth only · Metafield definitions · Collections
 ═══════════════════════════════════════════ */
 
-// Runs synchronously before DOMContentLoaded — mirrors the removed inline <head> script
-if (sessionStorage.getItem('be_shop') && sessionStorage.getItem('be_token'))
+// Credential persistence — localStorage with 7-day TTL
+const CRED_TTL = 7 * 24 * 60 * 60 * 1000;
+function saveCredentials(shop, token){
+  try{ localStorage.setItem('be_cred', JSON.stringify({shop, token, exp: Date.now()+CRED_TTL})); }catch{}
+}
+function loadCredentials(){
+  try{
+    const c = JSON.parse(localStorage.getItem('be_cred')||'null');
+    if(!c) return null;
+    if(Date.now() > c.exp){ localStorage.removeItem('be_cred'); return null; }
+    return c;
+  }catch{ return null; }
+}
+function clearCredentials(){
+  try{ localStorage.removeItem('be_cred'); }catch{}
+}
+
+// Runs synchronously before DOMContentLoaded
+if (loadCredentials())
   document.documentElement.setAttribute('data-restoring', '1');
 
 const $ = id => document.getElementById(id);
@@ -83,6 +100,36 @@ const DEMO_PRODUCTS = [
 ];
 
 /* ── ANALYTICS ── */
+// ── Feedback/share popup ──
+function getPushCount(){ return parseInt(localStorage.getItem('lederly_push_count')||'0',10); }
+function incPushCount(){ const n=getPushCount()+1; localStorage.setItem('lederly_push_count',n); return n; }
+function shouldShowShare(n){ return n===3 || n===6 || (n>6 && (n-6)%5===0); }
+
+function showSharePopup(){
+  const shareText = encodeURIComponent('I\'ve been using Lederly to bulk edit my Shopify products — saves me hours. Free to try:');
+  const shareUrl  = encodeURIComponent('https://lederly.com');
+  const links = [
+    { label:'WhatsApp',  color:'#25D366', icon:'W', href:`https://wa.me/?text=${shareText}%20${shareUrl}` },
+    { label:'Telegram',  color:'#2AABEE', icon:'T', href:`https://t.me/share/url?url=${shareUrl}&text=${shareText}` },
+    { label:'LinkedIn',  color:'#0A66C2', icon:'in', href:`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}` },
+    { label:'X',         color:'#000',    icon:'𝕏', href:`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}` },
+  ];
+  const container = document.getElementById('share-links');
+  if(container) container.innerHTML = links.map(l=>
+    `<a href="${l.href}" target="_blank" rel="noopener" title="${l.label}"
+        style="width:44px;height:44px;border-radius:10px;background:${l.color};color:#fff;
+               display:flex;align-items:center;justify-content:center;font-size:13px;
+               font-weight:700;text-decoration:none;font-family:system-ui">${l.icon}</a>`
+  ).join('');
+  openModal('m-share');
+}
+
+function trackPushAndMaybeShare(){
+  if(S.demo) return;
+  const n = incPushCount();
+  if(shouldShowShare(n)) setTimeout(showSharePopup, 1200);
+}
+
 function trackEv(event, meta){
   if(S.demo) return;
   try{
@@ -149,8 +196,7 @@ async function afterOAuth(shop, token, silent=false){
   showScreen('s-loading'); $('loading-msg').textContent='Connecting to your store…';
   try{
     const t = await api('/api/test');
-    sessionStorage.setItem('be_shop', shop);
-    sessionStorage.setItem('be_token', token);
+    saveCredentials(shop, token);
     $('store-name').textContent = t.shop.name;
     $('loading-msg').textContent='Loading products…';
     await Promise.all([ loadProducts(), loadMfDefs(), loadColls() ]);
@@ -166,8 +212,7 @@ async function afterOAuth(shop, token, silent=false){
       setTimeout(openScheduleModal, 400);
     }
   }catch(e){
-    sessionStorage.removeItem('be_shop');
-    sessionStorage.removeItem('be_token');
+    clearCredentials();
     showScreen('s-connect');
     if(!silent) toast(e.message);
     else{ $('f-shop').value=shop; toast('Session expired — please reconnect.'); }
@@ -293,15 +338,14 @@ async function refreshInBackground(){
       saveProductsCache(t.shop.name);
     }
   }catch{
-    sessionStorage.removeItem('be_shop'); sessionStorage.removeItem('be_token'); sessionStorage.removeItem('be_cache');
+    clearCredentials(); sessionStorage.removeItem('be_cache');
     showScreen('s-connect'); toast('Session expired — please reconnect.');
   }
 }
 
 function disconnect(){
   trackEv('disconnect');
-  sessionStorage.removeItem('be_shop');
-  sessionStorage.removeItem('be_token');
+  clearCredentials();
   sessionStorage.removeItem('be_cache');
   Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',collFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
   const lm=document.getElementById('load-more-wrap'); if(lm)lm.style.display='none';
@@ -1153,6 +1197,7 @@ async function confirmSave(){
       toast(`${savedPids.length} product${savedPids.length!==1?'s':''} saved.`);
       setStatus('All changes saved','saved');
       setTimeout(()=>setStatus('Ready','ready'),3000);
+      trackPushAndMaybeShare();
     }
   }catch(e){
     if(/limit|upgrade|plan|100 products/i.test(e.message)) showUpgradeModal(e.message);
@@ -1425,6 +1470,7 @@ async function confirmSchedule(){
     document.querySelectorAll('.dirty').forEach(el=>el.classList.remove('dirty'));
     const msg=revertAt?`Scheduled for ${scheduledFor.toLocaleString()} · reverts at ${revertAt.toLocaleString()}.`:`Scheduled for ${scheduledFor.toLocaleString()}.`;
     toast(msg);
+    trackPushAndMaybeShare();
   }catch(e){
     if(/limit|upgrade|plan|schedules/i.test(e.message)) showUpgradeModal(e.message);
     else toast(e.message);
@@ -1785,12 +1831,9 @@ function boot(){
         .catch(e=>{ showScreen('s-connect'); toast(e.message); });
       return;
     }
-    // Restore session from sessionStorage (survives reload, clears on tab close)
-    const savedShop=sessionStorage.getItem('be_shop');
-    const savedToken=sessionStorage.getItem('be_token');
-    if(savedShop&&savedToken){ afterOAuth(savedShop, savedToken, true); return; }
-    // Pre-fill shop domain if remembered
-    if(savedShop) $('f-shop').value=savedShop;
+    // Restore session from localStorage (persists 7 days across tab closes)
+    const cred=loadCredentials();
+    if(cred){ afterOAuth(cred.shop, cred.token, true); return; }
   })();
 }
 
