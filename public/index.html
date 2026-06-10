@@ -1003,16 +1003,7 @@
     },6600);
     setTimeout(run,9000);
   }
-  if('IntersectionObserver' in window){
-    var started=false;
-    var obs=new IntersectionObserver(function(entries){
-      if(!started&&entries[0].isIntersecting){started=true;run();}
-    },{threshold:0.3});
-    var demo=$id('am-demo');
-    if(demo)obs.observe(demo);
-  }else{
-    run();
-  }
+  setTimeout(run, 800);
 })();
 </script>
 </body>
