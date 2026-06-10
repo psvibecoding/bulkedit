@@ -26,38 +26,40 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
 .kpi-val{font-size:28px;font-weight:700;color:var(--ink);line-height:1;margin-bottom:3px;font-variant-numeric:tabular-nums}
 .kpi-lbl{font-size:11px;color:var(--ink3);font-family:var(--mono);letter-spacing:.03em}
 .kpi-sub{font-size:10px;color:var(--ink3);margin-top:3px;opacity:.7}
-.kpi-green .kpi-val{color:var(--green)}
-.kpi-blue  .kpi-val{color:#2563eb}
+.kpi-green  .kpi-val{color:var(--green)}
+.kpi-blue   .kpi-val{color:#2563eb}
 .kpi-purple .kpi-val{color:#7c3aed}
-/* Chart section */
+/* Sections */
 .section{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:16px}
 .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap}
 .section-head h2{font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin:0}
+/* Controls */
 .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .btn-group{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}
-.btn-group button{background:var(--white);border:none;border-right:1px solid var(--border);padding:5px 11px;font-size:11px;font-family:var(--mono);color:var(--ink3);cursor:pointer;transition:background .12s,color .12s}
+.btn-group button{background:var(--white);border:none;border-right:1px solid var(--border);padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--ink3);cursor:pointer;transition:background .12s,color .12s}
 .btn-group button:last-child{border-right:none}
 .btn-group button.active{background:var(--green);color:#fff}
 .btn-group button:hover:not(.active){background:var(--bg)}
+/* Date range picker */
+.date-range{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:7px;padding:4px 10px;background:var(--white)}
+.date-range input{border:none;outline:none;font-size:11px;font-family:var(--mono);color:var(--ink2);background:transparent;width:96px;cursor:pointer}
+.date-range span{font-size:11px;color:var(--ink3)}
+.date-range.active{border-color:var(--green)}
 /* Bar chart */
-.chart-wrap{overflow:hidden}
 .chart{display:flex;align-items:flex-end;gap:2px;height:90px}
-.bar-day{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;min-width:0;cursor:default}
-.bar-stack{display:flex;flex-direction:column-reverse;align-items:stretch;width:100%;border-radius:2px 2px 0 0;overflow:hidden;position:relative}
-.bar-seg{transition:opacity .15s}
+.bar-day{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;cursor:default}
+.bar-stack{display:flex;flex-direction:column-reverse;align-items:stretch;width:100%;border-radius:2px 2px 0 0;overflow:hidden}
 .bar-seg:hover{opacity:.75}
-.bar-label{font-size:8px;color:var(--ink3);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:clip;width:100%;text-align:center;margin-top:4px;writing-mode:vertical-lr;transform:rotate(180deg);height:22px;line-height:1}
+.bar-label{font-size:8px;color:var(--ink3);font-family:var(--mono);width:100%;text-align:center;margin-top:4px;writing-mode:vertical-lr;transform:rotate(180deg);height:22px;line-height:1;overflow:hidden}
 /* Line chart */
-.line-chart-wrap{position:relative;height:100px;margin-bottom:4px}
+.line-chart-wrap{height:120px}
 .line-chart-wrap svg{width:100%;height:100%;overflow:visible}
-/* Tooltip */
-.chart-tooltip{position:absolute;background:#0e0e0c;color:#fff;font-size:11px;font-family:var(--mono);padding:6px 10px;border-radius:6px;pointer-events:none;white-space:pre;display:none;z-index:10;line-height:1.5}
 /* Legend */
-.chart-legend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}
-.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3);cursor:pointer;user-select:none}
+.chart-legend{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3);cursor:pointer;user-select:none;transition:opacity .15s}
 .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 /* Funnel */
-.funnel{display:flex;flex-direction:column;gap:6px}
+.funnel{display:flex;flex-direction:column;gap:7px}
 .funnel-row{display:grid;grid-template-columns:170px 1fr 60px;align-items:center;gap:12px}
 .funnel-lbl{font-size:12px;color:var(--ink2);font-weight:500}
 .funnel-bar-wrap{height:8px;background:#f0f0ec;border-radius:4px;overflow:hidden}
@@ -68,15 +70,22 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;padding:7px 10px;border-bottom:1px solid var(--border)}
 td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-.td-event{font-family:var(--mono);font-size:12px;color:var(--ink)}
-.td-num{text-align:right;font-family:var(--mono);font-size:12px;color:var(--ink)}
+.td-event{font-family:var(--mono);font-size:12px}
+.td-num{text-align:right;font-family:var(--mono);font-size:12px}
 .td-d7{color:var(--green);font-weight:600}
+/* Summary */
+.summary{background:var(--green-bg);border:1px solid rgba(26,92,56,.15);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.summary-title{font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.summary-body{font-size:13px;color:var(--ink2);line-height:1.7}
+.summary-body strong{color:var(--ink);font-weight:600}
+.summary-body .neutral{color:var(--ink3)}
+.summary-body .good{color:#1a5c38;font-weight:600}
+.summary-body .warn{color:#d97706;font-weight:600}
+.summary-body .bad {color:#dc2626;font-weight:600}
 /* Utils */
-.badge{display:inline-block;background:var(--green-bg);color:var(--green);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:600;font-family:var(--mono)}
-.refresh-note{font-size:11px;color:var(--ink3);text-align:right;margin-top:12px;font-family:var(--mono)}
 .error{background:#fef2f2;border:1px solid #fecaca;border-radius:12px;padding:20px;color:#dc2626;font-size:14px}
 .loading{color:var(--ink3);font-size:14px;padding:40px;text-align:center}
-.pct{font-size:13px;font-weight:400;color:var(--ink3);margin-left:4px}
+.refresh-note{font-size:11px;color:var(--ink3);text-align:right;margin-top:12px;font-family:var(--mono)}
 </style>
 </head>
 <body>
@@ -105,23 +114,37 @@ const COLORS = {
 const KEY_EVENTS = ['page_view','cta_click','connect','save','bulk_action','schedule_create','demo_start'];
 
 function color(ev){ return COLORS[ev] || '#94a3b8'; }
-function fmt(n,dec){ return n==null?'—':dec!=null?Number(n).toFixed(dec):Number(n).toLocaleString(); }
-function pct(n){ return n==null?'—':n+'%'; }
+function fmt(n, dec){ if(n==null) return '—'; return dec!=null ? Number(n).toFixed(dec) : Number(n).toLocaleString(); }
+function pct(n){ return n==null ? '—' : n+'%'; }
 
-// State
-const state = { days: 14, chartType: 'bar', data: null, hiddenEvents: new Set() };
+const state = {
+  days: 14, chartType: 'bar', data: null,
+  hiddenEvents: new Set(),
+  customFrom: null, customTo: null,
+};
 
 async function load(){
   const url = `/api/admin/stats${SECRET ? '?secret='+encodeURIComponent(SECRET) : ''}`;
   const r = await fetch(url);
-  if (r.status === 401) throw new Error('Unauthorized — provide ?secret=PING_SECRET in URL');
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  if(r.status===401) throw new Error('Unauthorized — provide ?secret=PING_SECRET in URL');
+  if(!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }
 
-function getDates(days){
-  const dates = [];
-  for(let i=days-1;i>=0;i--){
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+function minDateStr(){
+  const d = new Date(); d.setDate(d.getDate()-89);
+  return d.toISOString().split('T')[0];
+}
+
+function getDates(){
+  if(state.customFrom && state.customTo){
+    const dates=[], cur=new Date(state.customFrom), end=new Date(state.customTo);
+    while(cur<=end){ dates.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate()+1); }
+    return dates;
+  }
+  const dates=[];
+  for(let i=state.days-1;i>=0;i--){
     const d=new Date(); d.setUTCDate(d.getUTCDate()-i);
     dates.push(d.toISOString().split('T')[0]);
   }
@@ -130,30 +153,213 @@ function getDates(days){
 
 /* ── KPIs ── */
 function renderKPIs(d){
-  const s = d.stores||{}, f = d.funnel||{}, dp = d.deep||{};
+  const s=d.stores||{}, f=d.funnel||{}, dp=d.deep||{};
   return `
-  <div class="section-label">Overview</div>
+  <div class="section-label">Overview · all time</div>
   <div class="kpis">
-    <div class="kpi kpi-green"><div class="kpi-val">${fmt(s.total)}</div><div class="kpi-lbl">Stores connected</div><div class="kpi-sub">all time</div></div>
+    <div class="kpi kpi-green"><div class="kpi-val">${fmt(s.total)}</div><div class="kpi-lbl">Stores connected</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(s.active7d)}</div><div class="kpi-lbl">Active stores</div><div class="kpi-sub">last 7 days</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(s.active30d)}</div><div class="kpi-lbl">Active stores</div><div class="kpi-sub">last 30 days</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(f.page_views_30d)}</div><div class="kpi-lbl">Page views</div><div class="kpi-sub">last 30 days</div></div>
     <div class="kpi"><div class="kpi-val">${fmt(f.cta_clicks_30d)}</div><div class="kpi-lbl">CTA clicks</div><div class="kpi-sub">last 30 days</div></div>
-    <div class="kpi"><div class="kpi-val">${d.uptime||'—'}</div><div class="kpi-lbl">Uptime</div><div class="kpi-sub">since last restart</div></div>
+    <div class="kpi"><div class="kpi-val">${d.uptime||'—'}</div><div class="kpi-lbl">Uptime</div></div>
   </div>
-  <div class="section-label">Product usage</div>
+  <div class="section-label">Product usage · all time</div>
   <div class="kpis">
-    <div class="kpi kpi-blue"><div class="kpi-val">${fmt(dp.variants_saved)}</div><div class="kpi-lbl">Variants saved</div><div class="kpi-sub">all time · total pushes</div></div>
-    <div class="kpi"><div class="kpi-val">${fmt(dp.products_loaded)}</div><div class="kpi-lbl">Products loaded</div><div class="kpi-sub">all time · sum of sessions</div></div>
-    <div class="kpi"><div class="kpi-val">${fmt(dp.total_saves)}</div><div class="kpi-lbl">Total saves</div><div class="kpi-sub">push operations</div></div>
-    <div class="kpi"><div class="kpi-val">${fmt(dp.total_bulk_actions)}</div><div class="kpi-lbl">Bulk actions</div><div class="kpi-sub">all time</div></div>
+    <div class="kpi kpi-blue"><div class="kpi-val">${fmt(dp.variants_saved)}</div><div class="kpi-lbl">Variants saved</div></div>
+    <div class="kpi"><div class="kpi-val">${fmt(dp.products_loaded)}</div><div class="kpi-lbl">Products loaded</div></div>
+    <div class="kpi"><div class="kpi-val">${fmt(dp.total_saves)}</div><div class="kpi-lbl">Save operations</div></div>
+    <div class="kpi"><div class="kpi-val">${fmt(dp.total_bulk_actions)}</div><div class="kpi-lbl">Bulk actions</div></div>
   </div>
-  <div class="section-label">Averages &amp; conversion</div>
+  <div class="section-label">Averages &amp; conversion · all time</div>
   <div class="kpis">
     <div class="kpi kpi-purple"><div class="kpi-val">${pct(dp.activation_rate)}</div><div class="kpi-lbl">Activation rate</div><div class="kpi-sub">connected → saved</div></div>
-    <div class="kpi"><div class="kpi-val">${fmt(dp.avg_saves_per_store,1)}</div><div class="kpi-lbl">Avg saves / store</div><div class="kpi-sub">among stores that saved</div></div>
-    <div class="kpi"><div class="kpi-val">${fmt(dp.avg_products_per_store)}</div><div class="kpi-lbl">Avg products / store</div><div class="kpi-sub">loaded per connected store</div></div>
-    <div class="kpi"><div class="kpi-val">${fmt(dp.avg_bulk_per_store,1)}</div><div class="kpi-lbl">Avg bulk / store</div><div class="kpi-sub">among stores that bulk-edited</div></div>
+    <div class="kpi"><div class="kpi-val">${fmt(dp.avg_saves_per_store,1)}</div><div class="kpi-lbl">Avg saves / store</div></div>
+    <div class="kpi"><div class="kpi-val">${fmt(dp.avg_products_per_store)}</div><div class="kpi-lbl">Avg products / store</div></div>
+    <div class="kpi"><div class="kpi-val">${fmt(dp.avg_bulk_per_store,1)}</div><div class="kpi-lbl">Avg bulk / store</div></div>
+  </div>`;
+}
+
+/* ── Chart section ── */
+function renderChartSection(daily){
+  const today = todayStr(), minDate = minDateStr();
+  const fromVal = state.customFrom || '', toVal = state.customTo || '';
+  return `<div class="section" id="chart-section">
+    <div class="section-head">
+      <h2>Activity over time</h2>
+      <div class="controls">
+        <div class="btn-group" id="tf-group">
+          <button onclick="setDays(1)"  class="${!state.customFrom&&state.days===1?'active':''}">1d</button>
+          <button onclick="setDays(7)"  class="${!state.customFrom&&state.days===7?'active':''}">7d</button>
+          <button onclick="setDays(14)" class="${!state.customFrom&&state.days===14?'active':''}">14d</button>
+          <button onclick="setDays(30)" class="${!state.customFrom&&state.days===30?'active':''}">30d</button>
+          <button onclick="setDays(60)" class="${!state.customFrom&&state.days===60?'active':''}">60d</button>
+          <button onclick="setDays(90)" class="${!state.customFrom&&state.days===90?'active':''}">90d</button>
+        </div>
+        <div class="date-range${state.customFrom?' active':''}" title="Custom date range">
+          <input type="date" id="dr-from" value="${fromVal}" min="${minDate}" max="${today}"
+            onchange="setCustomRange(this.value, document.getElementById('dr-to').value)"/>
+          <span>→</span>
+          <input type="date" id="dr-to" value="${toVal}" min="${minDate}" max="${today}"
+            onchange="setCustomRange(document.getElementById('dr-from').value, this.value)"/>
+        </div>
+        <div class="btn-group" id="ct-group">
+          <button onclick="setChartType('bar')"  class="${state.chartType==='bar'?'active':''}">Bar</button>
+          <button onclick="setChartType('line')" class="${state.chartType==='line'?'active':''}">Line</button>
+        </div>
+      </div>
+    </div>
+    <div id="chart-inner">${drawChart(daily)}</div>
+  </div>`;
+}
+
+function drawChart(daily){
+  return state.chartType==='line' ? drawLine(daily) : drawBars(daily);
+}
+
+function drawBars(daily){
+  const dates = getDates();
+  const active = KEY_EVENTS.filter(ev=>!state.hiddenEvents.has(ev));
+  const allVals = dates.flatMap(d=>active.map(ev=>daily[d]?.[ev]||0));
+  const maxVal = Math.max(...allVals,1);
+  const H=90;
+  const bars = dates.map(date=>{
+    const day=daily[date]||{};
+    const segs=active.filter(ev=>day[ev]).map(ev=>{
+      const h=Math.max(2,Math.round((day[ev]/maxVal)*H));
+      return `<div class="bar-seg" style="height:${h}px;background:${color(ev)}" title="${ev}: ${day[ev]}"></div>`;
+    }).join('');
+    return `<div class="bar-day">
+      <div class="bar-stack" style="height:${H}px">${segs||'<div style="height:2px;background:#f0f0ec;border-radius:2px;width:100%"></div>'}</div>
+      <div class="bar-label">${date.slice(5)}</div>
+    </div>`;
+  }).join('');
+  return `<div class="chart">${bars}</div>${renderLegend()}`;
+}
+
+function drawLine(daily){
+  const dates=getDates();
+  const active=KEY_EVENTS.filter(ev=>!state.hiddenEvents.has(ev));
+  const allVals=dates.flatMap(d=>active.map(ev=>daily[d]?.[ev]||0));
+  const maxVal=Math.max(...allVals,1);
+  const W=1000, H=100, n=dates.length;
+
+  const lines=active.map(ev=>{
+    const pts=dates.map((date,i)=>{
+      const x=n>1?Math.round(i/(n-1)*W):W/2;
+      const y=Math.round(H-((daily[date]?.[ev]||0)/maxVal)*(H-4));
+      return x+','+y;
+    }).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="${color(ev)}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }).join('');
+
+  const step=Math.max(1,Math.floor(n/6));
+  const labels=dates.filter((_,i)=>i===0||i===n-1||i%step===0).map(date=>{
+    const i=dates.indexOf(date);
+    const x=n>1?Math.round(i/(n-1)*W):W/2;
+    return `<text x="${x}" y="${H+18}" text-anchor="middle" font-size="12" fill="#9ca3af" font-family="monospace">${date.slice(5)}</text>`;
+  }).join('');
+
+  return `<div class="line-chart-wrap">
+    <svg viewBox="0 0 ${W} ${H+24}" preserveAspectRatio="none">${lines}${labels}</svg>
+  </div>${renderLegend()}`;
+}
+
+function renderLegend(){
+  return `<div class="chart-legend">
+    ${KEY_EVENTS.map(ev=>`
+    <div class="legend-item" onclick="toggleEvent('${ev}')" style="opacity:${state.hiddenEvents.has(ev)?'.3':'1'}">
+      <div class="legend-dot" style="background:${color(ev)}"></div>${ev.replace(/_/g,' ')}
+    </div>`).join('')}
+  </div>`;
+}
+
+/* ── Summary ── */
+function renderSummary(data){
+  const dates = getDates();
+  const daily = data.daily||{};
+  const dp    = data.deep||{};
+  const s     = data.stores||{};
+  const f     = data.funnel||{};
+
+  // Aggregate totals for the selected period
+  const totals={};
+  dates.forEach(date=>{
+    Object.entries(daily[date]||{}).forEach(([ev,n])=>{ totals[ev]=(totals[ev]||0)+n; });
+  });
+  const totalEvents=Object.values(totals).reduce((a,b)=>a+b,0);
+
+  if(totalEvents===0 && dates.length<=1){
+    return `<div class="summary"><div class="summary-title">✦ Period summary</div>
+      <div class="summary-body"><span class="neutral">No activity recorded in this period.</span></div></div>`;
+  }
+
+  const parts=[];
+
+  // Period label
+  const periodLabel = state.customFrom
+    ? `From ${state.customFrom} to ${state.customTo||todayStr()}`
+    : state.days===1 ? 'Today' : `Last ${state.days} days`;
+
+  // Activity volume
+  if(totalEvents>0){
+    const topEv=Object.entries(totals).sort((a,b)=>b[1]-a[1])[0];
+    parts.push(`<strong>${periodLabel}</strong>: <strong>${totalEvents.toLocaleString()}</strong> total events.`
+      + (topEv ? ` Most frequent: <strong>${topEv[0].replace(/_/g,' ')}</strong> (${topEv[1].toLocaleString()}).` : ''));
+  }
+
+  // Best day
+  if(dates.length>1){
+    const dayTotals=dates.map(date=>({date,n:Object.values(daily[date]||{}).reduce((a,b)=>a+b,0)}));
+    const best=dayTotals.sort((a,b)=>b.n-a.n)[0];
+    if(best&&best.n>0) parts.push(`Best day: <strong>${best.date}</strong> with ${best.n} events.`);
+  }
+
+  // Trend (compare first half vs second half)
+  if(dates.length>=4){
+    const half=Math.floor(dates.length/2);
+    const first=dates.slice(0,half).reduce((s,d)=>s+Object.values(daily[d]||{}).reduce((a,b)=>a+b,0),0);
+    const second=dates.slice(half).reduce((s,d)=>s+Object.values(daily[d]||{}).reduce((a,b)=>a+b,0),0);
+    if(first>0){
+      const change=Math.round((second-first)/first*100);
+      if(change>=10) parts.push(`Trend: <span class="good">↑ +${change}% vs first half.</span>`);
+      else if(change<=-10) parts.push(`Trend: <span class="warn">↓ ${change}% vs first half.</span>`);
+      else parts.push(`Trend: <span class="neutral">→ stable (${change>0?'+':''}${change}% vs first half).</span>`);
+    }
+  }
+
+  // Saves in period
+  if(totals.save){
+    const savesPerDay=(totals.save/dates.length).toFixed(1);
+    parts.push(`<strong>${totals.save}</strong> save${totals.save!==1?'s':''} in period (~${savesPerDay}/day).`);
+  }
+
+  // Activation rate (all-time)
+  if(dp.activation_rate!=null){
+    const rate=dp.activation_rate;
+    const cls=rate>=60?'good':rate>=30?'neutral':'warn';
+    const label=rate>=60?'strong':rate>=30?'moderate':'low';
+    parts.push(`All-time activation rate: <span class="${cls}">${rate}% (${label})</span>.`
+      +` ${s.total} stores connected, ${f.saved||0} pushed at least once.`);
+  }
+
+  // Bulk usage signal
+  if(totals.bulk_action && totals.connect){
+    const bulkRatio=Math.round(totals.bulk_action/totals.connect*100);
+    if(bulkRatio>=50) parts.push(`<span class="good">Bulk actions are widely used</span> — ${totals.bulk_action} bulk ops vs ${totals.connect} connect events in this period.`);
+  }
+
+  // Scheduling signal
+  if(f.scheduled>0){
+    const schedPct=Math.round(f.scheduled/f.connected*100);
+    parts.push(`${f.scheduled} store${f.scheduled!==1?'s':''} used scheduling (${schedPct}% of connected).`);
+  } else if(dp.total_saves>0){
+    parts.push(`<span class="neutral">No schedules created yet.</span> Scheduling is a Pro upsell opportunity.`);
+  }
+
+  return `<div class="summary">
+    <div class="summary-title">✦ Auto summary</div>
+    <div class="summary-body">${parts.map(p=>`<p style="margin-bottom:6px">${p}</p>`).join('')}</div>
   </div>`;
 }
 
@@ -171,8 +377,7 @@ function renderFunnel(f){
   const max=Math.max(...rows.map(r=>r.n||0),1);
   return `<div class="section">
     <div class="section-head"><h2>Conversion funnel</h2><span style="font-size:11px;color:var(--ink3);font-family:var(--mono)">all time</span></div>
-    <div class="funnel">
-      ${rows.map(r=>`
+    <div class="funnel">${rows.map(r=>`
       <div class="funnel-row">
         <div class="funnel-lbl">${r.lbl}</div>
         <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.round((r.n||0)/max*100)}%"></div></div>
@@ -182,104 +387,16 @@ function renderFunnel(f){
   </div>`;
 }
 
-/* ── Chart ── */
-function renderChartSection(daily){
-  return `<div class="section" id="chart-section">
-    <div class="section-head">
-      <h2>Activity over time</h2>
-      <div class="controls">
-        <div class="btn-group" id="tf-group">
-          <button onclick="setDays(7)"  class="${state.days===7?'active':''}">7d</button>
-          <button onclick="setDays(14)" class="${state.days===14?'active':''}">14d</button>
-          <button onclick="setDays(30)" class="${state.days===30?'active':''}">30d</button>
-          <button onclick="setDays(60)" class="${state.days===60?'active':''}">60d</button>
-          <button onclick="setDays(90)" class="${state.days===90?'active':''}">90d</button>
-        </div>
-        <div class="btn-group" id="ct-group">
-          <button onclick="setChartType('bar')"  class="${state.chartType==='bar'?'active':''}">Bar</button>
-          <button onclick="setChartType('line')" class="${state.chartType==='line'?'active':''}">Line</button>
-        </div>
-      </div>
-    </div>
-    <div class="chart-wrap" id="chart-inner">${drawChart(daily)}</div>
-  </div>`;
-}
-
-function drawChart(daily){
-  return state.chartType === 'line' ? drawLine(daily) : drawBars(daily);
-}
-
-function drawBars(daily){
-  const dates = getDates(state.days);
-  const activeEvents = KEY_EVENTS.filter(ev => !state.hiddenEvents.has(ev));
-  const allVals = dates.flatMap(d => activeEvents.map(ev => daily[d]?.[ev]||0));
-  const maxVal = Math.max(...allVals, 1);
-  const H = 90;
-
-  const bars = dates.map(date => {
-    const day = daily[date]||{};
-    const segs = activeEvents.filter(ev=>day[ev]).map(ev=>{
-      const h = Math.max(2, Math.round((day[ev]/maxVal)*H));
-      return `<div class="bar-seg" style="height:${h}px;background:${color(ev)}" title="${ev}: ${day[ev]}"></div>`;
-    }).join('');
-    const lbl = date.slice(5);
-    return `<div class="bar-day"><div class="bar-stack" style="height:${H}px">${segs||'<div style="height:2px;background:#f0f0ec;border-radius:2px"></div>'}</div><div class="bar-label">${lbl}</div></div>`;
-  }).join('');
-
-  return `<div class="chart">${bars}</div>${renderLegend()}`;
-}
-
-function drawLine(daily){
-  const dates = getDates(state.days);
-  const activeEvents = KEY_EVENTS.filter(ev => !state.hiddenEvents.has(ev));
-  const allVals = dates.flatMap(d => activeEvents.map(ev => daily[d]?.[ev]||0));
-  const maxVal = Math.max(...allVals, 1);
-  const W = 1000, H = 100;
-  const n = dates.length;
-
-  const lines = activeEvents.map(ev => {
-    const pts = dates.map((date,i) => {
-      const x = n > 1 ? Math.round(i/(n-1)*W) : W/2;
-      const y = Math.round(H - ((daily[date]?.[ev]||0)/maxVal)*H);
-      return `${x},${y}`;
-    }).join(' ');
-    return `<polyline points="${pts}" fill="none" stroke="${color(ev)}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>`;
-  }).join('');
-
-  // X-axis labels (show ~6 evenly spaced)
-  const step = Math.max(1, Math.floor(n/6));
-  const labels = dates.filter((_,i) => i===0||i===n-1||i%step===0).map(date => {
-    const i = dates.indexOf(date);
-    const x = n>1?Math.round(i/(n-1)*W):W/2;
-    return `<text x="${x}" y="${H+16}" text-anchor="middle" font-size="11" fill="#9ca3af" font-family="monospace">${date.slice(5)}</text>`;
-  }).join('');
-
-  return `<div class="line-chart-wrap">
-    <svg viewBox="0 0 ${W} ${H+24}" preserveAspectRatio="none">${lines}${labels}</svg>
-  </div>${renderLegend()}`;
-}
-
-function renderLegend(){
-  return `<div class="chart-legend">
-    ${KEY_EVENTS.map(ev=>`
-    <div class="legend-item" onclick="toggleEvent('${ev}')" style="opacity:${state.hiddenEvents.has(ev)?'.35':'1'}">
-      <div class="legend-dot" style="background:${color(ev)}"></div>${ev.replace(/_/g,' ')}
-    </div>`).join('')}
-  </div>`;
-}
-
 /* ── Events table ── */
 function renderEvents(events){
   if(!events||!Object.keys(events).length) return '';
-  const rows = Object.entries(events)
-    .sort((a,b)=>b[1].total-a[1].total)
-    .map(([ev,c])=>`
-      <tr>
-        <td class="td-event"><span style="display:inline-block;background:${color(ev)};width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:middle"></span>${ev}</td>
-        <td class="td-num">${fmt(c.total)}</td>
-        <td class="td-num td-d7">${fmt(c.d7)}</td>
-        <td class="td-num">${fmt(c.d30)}</td>
-      </tr>`).join('');
+  const rows=Object.entries(events).sort((a,b)=>b[1].total-a[1].total).map(([ev,c])=>`
+    <tr>
+      <td class="td-event"><span style="display:inline-block;background:${color(ev)};width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:middle"></span>${ev}</td>
+      <td class="td-num">${fmt(c.total)}</td>
+      <td class="td-num td-d7">${fmt(c.d7)}</td>
+      <td class="td-num">${fmt(c.d30)}</td>
+    </tr>`).join('');
   return `<div class="section">
     <div class="section-head"><h2>Events breakdown</h2></div>
     <table>
@@ -291,52 +408,56 @@ function renderEvents(events){
 
 /* ── Controls ── */
 function setDays(d){
-  state.days = d;
+  state.days=d; state.customFrom=null; state.customTo=null;
   redrawChart();
 }
-function setChartType(t){
-  state.chartType = t;
+function setCustomRange(from, to){
+  if(!from||!to||from>to) return;
+  state.customFrom=from; state.customTo=to;
   redrawChart();
 }
+function setChartType(t){ state.chartType=t; redrawChart(); }
 function toggleEvent(ev){
-  if(state.hiddenEvents.has(ev)) state.hiddenEvents.delete(ev);
-  else state.hiddenEvents.add(ev);
+  if(state.hiddenEvents.has(ev)) state.hiddenEvents.delete(ev); else state.hiddenEvents.add(ev);
   redrawChart();
 }
 function redrawChart(){
   if(!state.data) return;
-  // Update chart
-  const ci = document.getElementById('chart-inner');
-  if(ci) ci.innerHTML = drawChart(state.data.daily);
-  // Update active buttons
-  document.querySelectorAll('#tf-group button').forEach((b,i)=>{
-    b.className = [7,14,30,60,90][i]===state.days?'active':'';
-  });
-  document.querySelectorAll('#ct-group button').forEach((b,i)=>{
-    b.className = ['bar','line'][i]===state.chartType?'active':'';
-  });
+  const ci=document.getElementById('chart-inner');
+  if(ci) ci.innerHTML=drawChart(state.data.daily);
+  // Sync button states
+  const tf=document.querySelectorAll('#tf-group button');
+  [1,7,14,30,60,90].forEach((d,i)=>{ if(tf[i]) tf[i].className=(!state.customFrom&&state.days===d)?'active':''; });
+  const ct=document.querySelectorAll('#ct-group button');
+  ['bar','line'].forEach((t,i)=>{ if(ct[i]) ct[i].className=state.chartType===t?'active':''; });
+  const dr=document.querySelector('.date-range');
+  if(dr) dr.className='date-range'+(state.customFrom?' active':'');
+  // Re-render summary
+  const sum=document.getElementById('summary-wrap');
+  if(sum) sum.innerHTML=renderSummary(state.data);
 }
 
 /* ── Main render ── */
 async function render(){
-  const main = document.getElementById('main');
+  const main=document.getElementById('main');
   try {
-    const d = await load();
-    state.data = d;
-    document.getElementById('hdr-ts').textContent = 'Updated ' + new Date().toLocaleTimeString();
-    main.innerHTML =
-      renderKPIs(d) +
-      renderChartSection(d.daily) +
-      renderFunnel(d.funnel) +
-      renderEvents(d.events) +
+    const d=await load();
+    state.data=d;
+    document.getElementById('hdr-ts').textContent='Updated '+new Date().toLocaleTimeString();
+    main.innerHTML=
+      renderKPIs(d)+
+      `<div id="summary-wrap">${renderSummary(d)}</div>`+
+      renderChartSection(d.daily)+
+      renderFunnel(d.funnel)+
+      renderEvents(d.events)+
       `<p class="refresh-note">Mode: ${d.mode||'?'} · Auto-refresh every 60s</p>`;
-  } catch(e) {
-    main.innerHTML = `<div class="error">⚠ ${e.message}</div>`;
+  } catch(e){
+    main.innerHTML=`<div class="error">⚠ ${e.message}</div>`;
   }
 }
 
 render();
-setInterval(render, 60000);
+setInterval(render,60000);
 </script>
 </body>
 </html>
