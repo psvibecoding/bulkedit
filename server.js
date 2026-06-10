@@ -977,9 +977,11 @@ app.post('/api/waitlist', waitlistLimiter, async (req, res) => {
         to: email,
         subject: "You're on the Lederly waitlist 🌿",
         html: `<div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#0e0e0c">
-<div style="display:flex;align-items:center;gap:10px;margin-bottom:32px">
-  <div style="width:36px;height:36px;background:#1a5c38;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px">L</div>
-  <span style="font-size:13px;font-weight:600;color:#6b7280;letter-spacing:2px;text-transform:uppercase">Lederly</span>
+<div style="margin-bottom:32px">
+  <table cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="width:36px;height:36px;background:#1a5c38;border-radius:8px;text-align:center;line-height:36px;color:#fff;font-weight:700;font-size:20px;font-family:Arial,sans-serif">L</td>
+    <td style="padding-left:10px;font-size:13px;font-weight:600;color:#6b7280;letter-spacing:2px;text-transform:uppercase;font-family:Arial,sans-serif">LEDERLY</td>
+  </tr></table>
 </div>
 <h1 style="font-size:26px;font-weight:700;margin:0 0 12px">You're on the list.</h1>
 <p style="color:#6b7280;line-height:1.6;margin:0 0 20px">Thanks for signing up! We'll let you know as soon as a paid plan opens up.</p>
