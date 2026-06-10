@@ -412,4 +412,11 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .driver-popover.lederly-tour .driver-popover-footer{flex-wrap:wrap}
 
 .hidden{display:none!important}
+
+/* ─── Custom schedule badge tooltip ─── */
+.stip{position:fixed;z-index:9999;background:#1c1c1e;color:#fff;border-radius:10px;padding:10px 14px;font-size:11px;font-family:var(--mono);line-height:1;box-shadow:0 8px 24px rgba(0,0,0,.28),0 2px 6px rgba(0,0,0,.18);pointer-events:none;min-width:210px;border:1px solid rgba(255,255,255,.08)}
+.stip-row{display:flex;align-items:baseline;gap:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.stip-row:last-child{border-bottom:none}
+.stip-key{color:#888;font-size:9px;text-transform:uppercase;letter-spacing:.1em;min-width:68px;flex-shrink:0}
+.stip-val{color:#f0f0f0;font-weight:500;font-size:11px}
 @media(max-width:700px){.topbar{height:auto;padding:10px 16px;flex-wrap:wrap}.topbar-l,.topbar-r{width:100%}.search-box{max-width:100%}}

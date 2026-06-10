@@ -471,24 +471,24 @@ function rowHTML(p,v){
   const mainScheds=schedList.filter(b=>!b.isRevert);
   const revertScheds=schedList.filter(b=>b.isRevert);
   const tip=(b,action)=>{const dt=new Date(b.scheduledFor).toLocaleString(undefined,{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});return`Action: ${action}\nSchedule: ${b.label}\nScheduled: ${dt}`;};
-  const rb=revertScheds.length>0?`<div class="sched-val-badge-amber" title="${esc(tip(revertScheds[0],'Auto-revert'))}">⏰ ↩ auto-revert</div>`:'';
-  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge" title="${esc(tip(b,'Change price'))}">⏰ → ${Number(b.vf.price).toFixed(2)}</div>`).join('')+revertScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge-amber" title="${esc(tip(b,'Revert price'))}">⏰ ↩ ${Number(b.vf.price).toFixed(2)}</div>`).join('');
-  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge" title="${esc(tip(b,'Change compare at'))}">⏰ → ${esc(val)}</div>`;}).join('')+revertScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge-amber" title="${esc(tip(b,'Revert compare at'))}">⏰ ↩ ${esc(val)}</div>`;}).join('');
-  const statusBadge=mainScheds.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge" title="${esc(tip(b,'Change status'))}">${esc(b.pf.status)} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.status)?rb:'');
-  const vendorBadge=mainScheds.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge" title="${esc(tip(b,'Change vendor'))}">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.vendor!==undefined)?rb:'');
+  const rb=revertScheds.length>0?`<div class="sched-val-badge-amber" data-stip="${esc(tip(revertScheds[0],'Auto-revert'))}">⏰ ↩ auto-revert</div>`:'';
+  const priceBadge=mainScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Change price'))}">⏰ → ${Number(b.vf.price).toFixed(2)}</div>`).join('')+revertScheds.filter(b=>b.vf.price!==undefined).map(b=>`<div class="sched-val-badge-amber" data-stip="${esc(tip(b,'Revert price'))}">⏰ ↩ ${Number(b.vf.price).toFixed(2)}</div>`).join('');
+  const catBadge=mainScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge" data-stip="${esc(tip(b,'Change compare at'))}">⏰ → ${esc(val)}</div>`;}).join('')+revertScheds.filter(b=>b.vf.compareAtPrice!==undefined).map(b=>{const val=b.vf.compareAtPrice?Number(b.vf.compareAtPrice).toFixed(2):'removed';return`<div class="sched-val-badge-amber" data-stip="${esc(tip(b,'Revert compare at'))}">⏰ ↩ ${esc(val)}</div>`;}).join('');
+  const statusBadge=mainScheds.filter(b=>b.pf.status).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Change status'))}">${esc(b.pf.status)} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.status)?rb:'');
+  const vendorBadge=mainScheds.filter(b=>b.pf.vendor!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Change vendor'))}">${esc(b.pf.vendor||'(none)')} scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.vendor!==undefined)?rb:'');
   const tagsBadge=mainScheds.filter(b=>b.pf.tags!==undefined).map(b=>{
     const cur=p.tags||[];
     const nxt=Array.isArray(b.pf.tags)?b.pf.tags:String(b.pf.tags).split(',').map(t=>t.trim()).filter(Boolean);
     const added=nxt.filter(t=>!cur.includes(t));
     const removed=cur.filter(t=>!nxt.includes(t));
     const parts=[];
-    if(added.length) parts.push(`<div class="sched-val-badge" title="${esc(tip(b,'Edit tags'))}">+ ${esc(added.join(', '))} scheduled</div>`);
-    if(removed.length) parts.push(`<div class="sched-val-badge-red" title="${esc(tip(b,'Edit tags'))}">- ${esc(removed.join(', '))} scheduled</div>`);
+    if(added.length) parts.push(`<div class="sched-val-badge" data-stip="${esc(tip(b,'Edit tags'))}">+ ${esc(added.join(', '))} scheduled</div>`);
+    if(removed.length) parts.push(`<div class="sched-val-badge-red" data-stip="${esc(tip(b,'Edit tags'))}">- ${esc(removed.join(', '))} scheduled</div>`);
     return parts.join('');
   }).join('')+(revertScheds.some(b=>b.pf.tags!==undefined)?rb:'');
-  const descBadge=mainScheds.filter(b=>b.pf.bodyHtml!==undefined).map(b=>`<div class="sched-val-badge" title="${esc(tip(b,'Edit description'))}">description scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.bodyHtml!==undefined)?rb:'');
-  const seoBadge=mainScheds.filter(b=>b.pf.seo!==undefined).map(b=>`<div class="sched-val-badge" title="${esc(tip(b,'Edit SEO'))}">SEO scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.seo!==undefined)?rb:'');
-  const skuBadge=mainScheds.filter(b=>b.vf.sku!==undefined).map(b=>`<div class="sched-val-badge" title="${esc(tip(b,'Change SKU'))}">→ ${esc(b.vf.sku||'(empty)')}</div>`).join('');
+  const descBadge=mainScheds.filter(b=>b.pf.bodyHtml!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Edit description'))}">description scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.bodyHtml!==undefined)?rb:'');
+  const seoBadge=mainScheds.filter(b=>b.pf.seo!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Edit SEO'))}">SEO scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.seo!==undefined)?rb:'');
+  const skuBadge=mainScheds.filter(b=>b.vf.sku!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Change SKU'))}">→ ${esc(b.vf.sku||'(empty)')}</div>`).join('');
   const seoMissing=!p.seo?.title&&!p.seo?.description;
   const seoIndicator=seoMissing?`<span class="seo-missing" title="No SEO title/description set">SEO</span>`:'';
   const bodyStripped=(p.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
@@ -1837,6 +1837,35 @@ function boot(){
     const id=e.target.closest('[data-close]')?.dataset.close;
     if(id)closeModal(id);
     if(e.target.classList.contains('overlay'))closeModal(e.target.id);
+  });
+
+  // Custom schedule badge tooltip
+  const stipEl=document.getElementById('stip');
+  let stipTimer=null;
+  document.addEventListener('mouseover',e=>{
+    const el=e.target.closest('[data-stip]');
+    if(!el||!stipEl)return;
+    clearTimeout(stipTimer);
+    stipTimer=setTimeout(()=>{
+      const lines=el.dataset.stip.split('\n');
+      stipEl.innerHTML=lines.map(l=>{
+        const idx=l.indexOf(': ');
+        if(idx<0)return`<div class="stip-row"><span class="stip-val">${esc(l)}</span></div>`;
+        return`<div class="stip-row"><span class="stip-key">${esc(l.slice(0,idx))}</span><span class="stip-val">${esc(l.slice(idx+2))}</span></div>`;
+      }).join('');
+      const r=el.getBoundingClientRect();
+      stipEl.style.display='block';
+      const tw=stipEl.offsetWidth, th=stipEl.offsetHeight;
+      let left=r.left, top=r.bottom+6;
+      if(left+tw>window.innerWidth-8)left=window.innerWidth-tw-8;
+      if(top+th>window.innerHeight-8)top=r.top-th-6;
+      stipEl.style.left=left+'px'; stipEl.style.top=top+'px';
+    },120);
+  });
+  document.addEventListener('mouseout',e=>{
+    if(!e.target.closest('[data-stip]'))return;
+    clearTimeout(stipTimer);
+    if(stipEl)stipEl.style.display='none';
   });
 
   // Keyboard
