@@ -137,6 +137,29 @@ async function updateScheduleById(sched) {
   if (idx >= 0) { schedules[idx] = sched; await writeSchedules(schedules); }
 }
 
+async function insertSchedule(sched) {
+  if (dbPool) {
+    try {
+      await dbPool.query('INSERT INTO schedules (id, data) VALUES ($1, $2)', [sched.id, sched]);
+      return true;
+    } catch (e) { console.error('[db] insertSchedule:', e.message); return false; }
+  }
+  const schedules = await readSchedules();
+  schedules.push(sched);
+  return writeSchedules(schedules);
+}
+
+async function deleteScheduleById(id) {
+  if (dbPool) {
+    try {
+      await dbPool.query('DELETE FROM schedules WHERE id=$1', [id]);
+      return true;
+    } catch (e) { console.error('[db] deleteScheduleById:', e.message); return false; }
+  }
+  const schedules = await readSchedules();
+  return writeSchedules(schedules.filter(s => s.id !== id));
+}
+
 async function isFirstConnect(shop) {
   if (!dbPool) return false;
   try {
@@ -1468,9 +1491,7 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
       executedAt: null,
       error: null,
     };
-    const schedules = await readSchedules();
-    schedules.push(sched);
-    if (!await writeSchedules(schedules)) throw new Error('Could not save schedule. Check DATABASE_URL or mount a Volume and set SCHED_FILE=/data/schedules.json');
+    if (!await insertSchedule(sched)) throw new Error('Could not save schedule. Check DATABASE_URL or mount a Volume and set SCHED_FILE=/data/schedules.json');
     track('schedule_create', shop, { products: (changes||[]).length });
     const { encToken: _, ...safe } = sched;
     res.json({ ok: true, schedule: safe });
@@ -1520,7 +1541,7 @@ app.post('/api/schedule/update', apiLimiter, async (req, res) => {
     if (clientTz && typeof clientTz === 'string') {
       try { Intl.DateTimeFormat(undefined, { timeZone: clientTz }); sched.timezone = clientTz; } catch {}
     }
-    await writeSchedules(schedules);
+    await updateScheduleById(sched);
     const { encToken: _, ...safe } = sched;
     res.json({ ok: true, schedule: safe });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
@@ -1535,8 +1556,7 @@ app.post('/api/schedule/delete', apiLimiter, async (req, res) => {
     const idx = schedules.findIndex(s => s.id === id && s.shop === shop);
     if (idx === -1) throw new Error('Schedule not found');
     if (!['failed', 'cancelled'].includes(schedules[idx].status)) throw new Error('Only failed or cancelled schedules can be deleted');
-    schedules.splice(idx, 1);
-    await writeSchedules(schedules);
+    await deleteScheduleById(id);
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -1552,7 +1572,7 @@ app.post('/api/schedule/cancel', apiLimiter, async (req, res) => {
     if (!['pending', 'failed'].includes(sched.status)) throw new Error('Cannot cancel this schedule');
     sched.status = 'cancelled';
     sched.encToken = null;
-    await writeSchedules(schedules);
+    await updateScheduleById(sched);
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -1769,7 +1789,7 @@ app.use((req, res) => {
 });
 app.use((err, req, res, _n) => res.status(err.status || 500).json({ ok: false, error: safeErr(err), requestId: req.requestId }));
 
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
   console.log(`Lederly on http://localhost:${PORT}`);
   console.log(`OAuth: ${SHOPIFY_CLIENT_ID ? 'OK' : 'NOT configured'}`);
   console.log(`Storage: ${dbPool ? 'PostgreSQL' : `file (${SCHED_FILE})`}`);
@@ -1802,3 +1822,17 @@ function alertError(label, err) {
 
 process.on('uncaughtException',  (err)    => alertError('uncaughtException', err));
 process.on('unhandledRejection', (reason) => alertError('unhandledRejection', reason));
+
+process.on('SIGTERM', async () => {
+  console.log('[shutdown] SIGTERM received — closing gracefully');
+  // Stop accepting new connections
+  server.close(async () => {
+    if (dbPool) {
+      await dbPool.end().catch(e => console.error('[shutdown] pool end:', e.message));
+    }
+    console.log('[shutdown] clean exit');
+    process.exit(0);
+  });
+  // Force exit after 10s if something hangs
+  setTimeout(() => { console.error('[shutdown] forced exit after timeout'); process.exit(1); }, 10000).unref();
+});
