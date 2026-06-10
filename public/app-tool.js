@@ -5,7 +5,7 @@
 ═══════════════════════════════════════════ */
 
 // Credential persistence — localStorage with 7-day TTL
-const CRED_TTL = 7 * 24 * 60 * 60 * 1000;
+const CRED_TTL = 30 * 24 * 60 * 60 * 1000;
 function saveCredentials(shop, token){
   try{ localStorage.setItem('be_cred', JSON.stringify({shop, token, exp: Date.now()+CRED_TTL})); }catch{}
 }
