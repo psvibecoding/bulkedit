@@ -1537,7 +1537,7 @@ function schedRowHTML(s){
     </div>`;
   }
   const dt=new Date(s.scheduledFor).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
-  const n=s.changes.length;
+  const n=s.changesCount??s.changes.length; // done schedules have changesCount instead of full array
   const overdue=s.status==='pending'&&new Date(s.scheduledFor)<new Date();
   const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
   const sLbl={pending:overdue?'Overdue':'Pending',executed:'Done',failed:'Failed',running:'Running',cancelled:'Cancelled'}[s.status]||s.status;

@@ -900,16 +900,43 @@ async function executeSchedule(sched, schedules) {
     const changes = sched.changes;
     const prodErrors = [];
 
-    // Process in parallel batches of 5 — per-product error tracking
-    for (let i = 0; i < changes.length; i += 5) {
-      await Promise.all(changes.slice(i, i + 5).map(async c => {
+    // Phase 1: batch ALL metafields from every product into a few large calls.
+    // metafieldsSet accepts up to 250 items with mixed ownerIds — this turns
+    // N per-product calls into 2-3 total calls, the biggest speedup for mixed updates.
+    const allMf = [];
+    for (const c of changes) {
+      try {
+        const perProd = safeMetafields((c.metafields || []).map(({ _idx, ...rest }) => rest));
+        allMf.push(...perProd);
+      } catch (e) {
+        prodErrors.push(`metafields ${c.productId}: ${safeErr(e)}`);
+      }
+    }
+    if (allMf.length) {
+      const MF_CHUNK = 200;
+      for (let i = 0; i < allMf.length; i += MF_CHUNK) {
         try {
-          const mf = (c.metafields || []).map(({ _idx, ...rest }) => rest);
+          const d = await gql(session, `
+            mutation MetafieldsSet($metafields:[MetafieldsSetInput!]!) {
+              metafieldsSet(metafields:$metafields) { metafields { id } userErrors { field message code } }
+            }`, { metafields: allMf.slice(i, i + MF_CHUNK) });
+          const errs = d.metafieldsSet.userErrors;
+          if (errs.length) prodErrors.push(errs.map(e => e.message).join(', '));
+        } catch (e) {
+          prodErrors.push(safeErr(e));
+        }
+      }
+    }
+
+    // Phase 2: product-level + variant updates, 10-concurrent, metafields already handled
+    for (let i = 0; i < changes.length; i += 10) {
+      await Promise.all(changes.slice(i, i + 10).map(async c => {
+        try {
           await execSaveProduct(session, {
             productId:  c.productId,
             product:    c.product   || {},
             variants:   Object.values(c.variants || {}),
-            metafields: mf,
+            metafields: [], // sent in Phase 1
           });
         } catch (e) {
           prodErrors.push(safeErr(e));
@@ -1578,7 +1605,15 @@ app.post('/api/schedule/list', apiLimiter, async (req, res) => {
     const schedules = await readSchedules();
     const mine = schedules
       .filter(s => s.shop === shop)
-      .map(({ encToken: _, ...rest }) => rest)
+      .map(({ encToken: _, ...rest }) => {
+        // For done schedules strip the full changes array — the client only needs
+        // count + first image. Pending schedules keep full data for badge rendering.
+        if (['executed', 'cancelled'].includes(rest.status)) {
+          const firstProductImage = (rest.changes || []).reduce((acc, c) => acc || c.productImage || '', '');
+          return { ...rest, changesCount: (rest.changes || []).length, changes: firstProductImage ? [{ productImage: firstProductImage }] : [] };
+        }
+        return rest;
+      })
       .sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor));
     const persistWarning = !process.env.DATABASE_URL && !process.env.SCHED_FILE;
     const plan = await getStorePlan(shop);
