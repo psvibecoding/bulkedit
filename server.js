@@ -821,7 +821,11 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 
 async function sendNotification(sched, success, linkedRevert = null) {
   if (!RESEND_API_KEY || !sched.notifyEmail) return;
-  const subject = success ? `✅ Schedule executed: ${sched.label}` : `❌ Schedule failed: ${sched.label}`;
+  const isRevert = !!sched.linkedTo;
+  const baseLabel = isRevert ? sched.label.replace(/^↩\s*/, '') : sched.label;
+  const subject = success
+    ? (isRevert ? `↩ Auto-revert applied: ${baseLabel}` : `✅ Schedule executed: ${sched.label}`)
+    : (isRevert ? `❌ Auto-revert failed: ${baseLabel}` : `❌ Schedule failed: ${sched.label}`);
   const attachments = [];
   if ((sched.changes || []).length > 0) {
     const csv = buildChangesCSV(sched.changes);
