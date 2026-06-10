@@ -1477,7 +1477,7 @@ async function confirmSchedule(){
           label:(label?`↩ ${label}`:'↩ Revert'),
           changes:revertWithMeta,
           linkedTo:r.schedule.id,
-          notifyEmail,
+          notifyEmail:r.schedule.notifyEmail||notifyEmail, // use resolved email from parent
         });
         S.schedules=[r2.schedule,...S.schedules];
       }
@@ -1539,8 +1539,13 @@ function schedRowHTML(s){
   const dt=new Date(s.scheduledFor).toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
   const n=s.changesCount??s.changes.length; // done schedules have changesCount instead of full array
   const overdue=s.status==='pending'&&new Date(s.scheduledFor)<new Date();
-  const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
-  const sLbl={pending:overdue?'Overdue':'Pending',executed:'Done',failed:'Failed',running:'Running',cancelled:'Cancelled'}[s.status]||s.status;
+  // Detect partial/full failure from the error string "N/M products failed"
+  const em=s.error&&s.error.match(/^(\d+)\/(\d+)/);
+  const errN=em?parseInt(em[1]):0, errM=em?parseInt(em[2]):0;
+  const allFailed=errN>0&&errN>=errM;
+  const partFailed=errN>0&&errN<errM;
+  const sCls={pending:overdue?'sched-overdue':'sched-pending',executed:allFailed?'sched-fail':partFailed?'sched-partial':'sched-done',failed:'sched-fail',running:'sched-running',cancelled:'sched-cancelled'}[s.status]||'';
+  const sLbl={pending:overdue?'Overdue':'Pending',executed:allFailed?'Failed':partFailed?'Partial':'Done',failed:'Failed',running:'Running',cancelled:'Cancelled'}[s.status]||s.status;
   const btns=s.status==='pending'
     ?`<button class="btn-ghost xs" data-sched-run="${s.id}">Run now</button><button class="btn-ghost xs" data-sched-edit="${s.id}">Edit</button><button class="btn-ghost xs" data-sched-cancel="${s.id}">Cancel</button>`
     :s.status==='failed'

@@ -921,7 +921,8 @@ async function executeSchedule(sched, schedules) {
               metafieldsSet(metafields:$metafields) { metafields { id } userErrors { field message code } }
             }`, { metafields: allMf.slice(i, i + MF_CHUNK) });
           const errs = d.metafieldsSet.userErrors;
-          if (errs.length) prodErrors.push(errs.map(e => e.message).join(', '));
+          // Push one entry per failing metafield so the N/M count is meaningful
+          if (errs.length) errs.forEach(e => prodErrors.push(e.message));
         } catch (e) {
           prodErrors.push(safeErr(e));
         }
@@ -948,7 +949,8 @@ async function executeSchedule(sched, schedules) {
     sched.executedAt = new Date().toISOString();
     sched.encToken   = null;
     if (prodErrors.length) {
-      sched.error = `${prodErrors.length}/${changes.length} products failed: ${prodErrors.slice(0, 3).join('; ')}`;
+      const uniqueMsgs = [...new Set(prodErrors)].slice(0, 3);
+      sched.error = `${prodErrors.length}/${changes.length} products failed: ${uniqueMsgs.join('; ')}`;
     }
     track(prodErrors.length === 0 ? 'schedule_run' : 'schedule_partial', sched.shop, {
       products: changes.length, errors: prodErrors.length, isRevert: !!sched.linkedTo
