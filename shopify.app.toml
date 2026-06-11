@@ -1,7 +1,7 @@
 # Shopify app configuration — deploy with: shopify app deploy
 # Docs: https://shopify.dev/docs/apps/build/cli-for-apps/app-configuration
 
-client_id = "2c699152382909860e0c7b727ce7f291"
+client_id = "62b1c32ccdc2f7eca9570369f766c130"
 name = "Lederly"
 application_url = "https://lederly.com"
 embedded = false
@@ -14,7 +14,7 @@ scopes = "read_products,write_products,read_inventory,write_inventory,read_locat
 redirect_urls = ["https://lederly.com/auth/callback"]
 
 [webhooks]
-api_version = "2026-01"
+api_version = "2025-10"
 
 # Mandatory privacy/compliance webhooks (GDPR)
 # Server handles these at /webhooks/* with HMAC verification — topic is read
