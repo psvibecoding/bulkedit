@@ -529,6 +529,24 @@ function renderFunnel(f){
 }
 
 /* ── Events table ── */
+function renderTraffic(d){
+  const refs = d.traffic_refs || [];
+  if(!refs.length) return '';
+  const total = refs.reduce((s,r)=>s+r.n, 0);
+  const bars = refs.map(r=>{
+    const pct = Math.round(r.n/total*100);
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="width:160px;font-size:13px;color:var(--ink2);font-weight:500;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.ref}">${r.ref}</div>
+      <div style="flex:1;background:var(--border);border-radius:4px;height:8px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:#2563eb;border-radius:4px"></div>
+      </div>
+      <div style="font-size:13px;color:var(--ink3);width:60px;text-align:right;font-variant-numeric:tabular-nums">${r.n} · ${pct}%</div>
+    </div>`;
+  }).join('');
+  return `<div class="section-label">Traffic sources · page_view · all time (${total} total)</div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px 20px">${bars}</div>`;
+}
+
 function renderAcquisition(d){
   const sources = d.beta_sources || [];
   if(!sources.length) return '';
@@ -656,6 +674,7 @@ async function render(){
       `<div id="summary-wrap">${renderSummary(d)}</div>`+
       renderChartSection(d.daily)+
       renderFunnel(d.funnel)+
+      renderTraffic(d)+
       renderAcquisition(d)+
       renderStores(stores)+
       renderEvents(d.events)+

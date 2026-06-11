@@ -1835,7 +1835,7 @@ app.get('/api/admin/stats', async (req, res) => {
     const excl = excludeShops.length ? `AND shop != ALL($1::text[])` : '';
     const ep   = excludeShops.length ? [excludeShops] : [];
 
-    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR, sourcesR] = await Promise.all([
+    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR, sourcesR, refsR] = await Promise.all([
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL ${excl}`, ep),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '7 days' ${excl}`, ep),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '30 days' ${excl}`, ep),
@@ -1876,6 +1876,7 @@ app.get('/api/admin/stats', async (req, res) => {
         FROM analytics_events WHERE 1=1 ${excl}`, ep),
       dbPool.query(`SELECT COUNT(*) as n FROM waitlist`).catch(() => ({ rows: [{ n: 0 }] })),
       dbPool.query(`SELECT meta->>'source' as source, COUNT(*) as n FROM analytics_events WHERE event='beta_source' AND meta->>'source' IS NOT NULL ${excl} GROUP BY 1 ORDER BY 2 DESC`, ep).catch(() => ({ rows: [] })),
+      dbPool.query(`SELECT COALESCE(meta->>'ref','direct') as ref, COUNT(*) as n FROM analytics_events WHERE event='page_view' GROUP BY 1 ORDER BY 2 DESC LIMIT 20`).catch(() => ({ rows: [] })),
     ]);
 
     const events = {};
@@ -1924,6 +1925,7 @@ app.get('/api/admin/stats', async (req, res) => {
       },
       events, daily,
       beta_sources: (sourcesR?.rows || []).map(r => ({ source: r.source, n: +r.n })),
+      traffic_refs: (refsR?.rows || []).map(r => ({ ref: r.ref, n: +r.n })),
     });
   } catch (e) {
     res.status(500).json({ ok: false, error: IS_PROD ? 'Stats error' : e.message });
