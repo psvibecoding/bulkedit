@@ -3,7 +3,7 @@
 
 client_id = "62b1c32ccdc2f7eca9570369f766c130"
 name = "Lederly"
-application_url = "https://lederly.com"
+application_url = "https://lederly.com/auth/start"
 embedded = false
 
 [access_scopes]
