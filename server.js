@@ -375,7 +375,8 @@ const trackLimiter    = rateLimit({ windowMs: 60000,   max: 60, keyFn: req => re
 
 const TRACK_ALLOWED = new Set([
   'page_view','cta_click','pricing_view','demo_start',
-  'tour_complete','tour_skip','bulk_action','export_csv','csv_import','disconnect'
+  'tour_complete','tour_skip','bulk_action','export_csv','csv_import','disconnect',
+  'beta_source',
 ]);
 
 // ── HELPERS ───────────────────────────────────────────────
@@ -1816,9 +1817,10 @@ app.post('/api/track', trackLimiter, (req, res) => {
   const event = String(req.body?.event || '').trim();
   if (!TRACK_ALLOWED.has(event)) return res.status(400).json({ ok: false });
   const meta = {};
-  if (req.body?.type) meta.type  = String(req.body.type).slice(0, 50);
-  if (req.body?.ref)  meta.ref   = String(req.body.ref).slice(0, 150);
-  if (req.body?.path) meta.path  = String(req.body.path).slice(0, 200);
+  if (req.body?.type)   meta.type   = String(req.body.type).slice(0, 50);
+  if (req.body?.ref)    meta.ref    = String(req.body.ref).slice(0, 150);
+  if (req.body?.path)   meta.path   = String(req.body.path).slice(0, 200);
+  if (req.body?.source) meta.source = String(req.body.source).slice(0, 100);
   let shop = null;
   try { shop = cleanShop(req.headers['x-shopify-shop']); } catch {}
   track(event, shop, meta);
