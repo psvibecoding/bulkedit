@@ -579,6 +579,7 @@ function flagEmoji(cc){
 function renderStores(stores){
   if(!stores.length) return `<div class="section"><div class="section-head"><h2>Stores</h2></div><p style="font-size:12px;color:var(--ink3);padding:8px 0">No stores yet — country data captured on next connect.</p></div>`;
   const emailsCsv = stores.filter(s=>s.email).map(s=>`${s.name||s.shop},${s.email}`).join('\n');
+  state.emailsCsv = emailsCsv;
   const rows=stores.map(s=>`<tr>
     <td style="font-family:var(--mono);font-size:11px;color:var(--ink3)">${s.shop}</td>
     <td style="font-size:12px;font-weight:500">${s.name!==s.shop?s.name:''}</td>
@@ -601,16 +602,15 @@ function renderStores(stores){
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
-  </div>
-  <script>
-  function downloadEmailsCsv(){
-    const csv="Name,Email\\n${emailsCsv.replace(/\\/g,'\\\\').replace(/`/g,'\\`')}";
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-    a.download='lederly-beta-emails-${new Date().toISOString().slice(0,10)}.csv';
-    a.click();
-  }
-  <\/script>`;
+  </div>`;
+}
+
+function downloadEmailsCsv(){
+  const csv = 'Name,Email\n' + (state.emailsCsv || '');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `lederly-beta-emails-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
 }
 
 /* ── Controls ── */
