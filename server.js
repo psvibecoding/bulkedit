@@ -66,6 +66,12 @@ if (process.env.DATABASE_URL) {
   dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_ts    ON analytics_events(ts)`).catch(() => {});
   dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_event ON analytics_events(event)`).catch(() => {});
   dbPool.query(`CREATE INDEX IF NOT EXISTS idx_ae_shop  ON analytics_events(shop) WHERE shop IS NOT NULL`).catch(() => {});
+  dbPool.query(`CREATE TABLE IF NOT EXISTS oauth_states (
+    state TEXT PRIMARY KEY,
+    shop TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
+  )`).catch(e => console.error('[db] oauth_states init error:', e.message));
+  dbPool.query(`DELETE FROM oauth_states WHERE expires_at < NOW()`).catch(() => {});
   dbPool.query(`CREATE TABLE IF NOT EXISTS store_info (
     shop TEXT PRIMARY KEY,
     name TEXT,
@@ -223,9 +229,35 @@ async function sendWelcomeEmail(shop, storeName, storeEmail) {
   await sendEmail({ to: storeEmail, subject: `Welcome to Lederly — ${storeName} is connected`, html }).catch(() => {});
 }
 
-// In-memory OAuth state (stateless — no DB)
+// OAuth state — persisted to DB when available, in-memory fallback
 const oauthStates = new Map();
 setInterval(() => { const n = Date.now(); for (const [k,v] of oauthStates) if (n > v.exp) oauthStates.delete(k); }, 60000).unref();
+
+async function oauthStateSet(state, shop) {
+  if (dbPool) {
+    await dbPool.query(
+      `INSERT INTO oauth_states (state, shop, expires_at) VALUES ($1, $2, NOW() + INTERVAL '10 minutes') ON CONFLICT (state) DO NOTHING`,
+      [state, shop]
+    );
+  } else {
+    oauthStates.set(state, { shop, exp: Date.now() + 600000 });
+  }
+}
+
+async function oauthStateGet(state) {
+  if (dbPool) {
+    const r = await dbPool.query(
+      `DELETE FROM oauth_states WHERE state=$1 AND expires_at > NOW() RETURNING shop`,
+      [state]
+    );
+    return r.rows[0]?.shop || null;
+  } else {
+    const s = oauthStates.get(state);
+    if (!s || Date.now() > s.exp) return null;
+    oauthStates.delete(state);
+    return s.shop;
+  }
+}
 
 // One-time token store — token never travels in URL, only a short-lived opaque code does
 const tokenStore = new Map();
@@ -1199,7 +1231,7 @@ app.get('/auth/start', authLimiter, (req, res) => {
   if (req.query.shop) {
     let shop;
     try { shop = cleanShop(String(req.query.shop)); } catch { return res.status(400).send('Invalid shop.'); }
-    oauthStates.set(state, { shop, exp: Date.now() + 300000 });
+    await oauthStateSet(state, shop);
     return res.redirect(`https://${shop}/admin/oauth/authorize?client_id=${SHOPIFY_CLIENT_ID}&scope=${SHOPIFY_SCOPES}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`);
   }
 
@@ -1212,9 +1244,8 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
   if (!SHOPIFY_CLIENT_ID || !SHOPIFY_CLIENT_SECRET) return res.status(500).send('OAuth not configured.');
   const { code, state, shop: rawShop, hmac } = req.query;
 
-  const stored = oauthStates.get(String(state));
-  if (!stored || Date.now() > stored.exp) return res.status(403).send('Invalid or expired state.');
-  oauthStates.delete(String(state));
+  const storedShop = await oauthStateGet(String(state));
+  if (!storedShop) return res.status(403).send('Invalid or expired state.');
 
   let shop;
   try { shop = cleanShop(String(rawShop || '')); } catch { return res.status(400).send('Invalid shop.'); }
