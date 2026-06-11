@@ -668,11 +668,13 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
         const added   = aTags.filter(t => !bTags.includes(t));
         const addedPill = t =>
           `<span style="display:inline-block;background:#dcfce7;color:#15803d;border:1px solid #86efac;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap;margin:1px 2px 1px 0">${t}</span>`;
-        const plainTag = (t, extra='') =>
-          `<span style="font-size:13px;color:#6b7280;margin:0 4px 0 0;${extra}">${t}</span>`;
+        const removedPill = t =>
+          `<span style="display:inline-block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap;margin:1px 2px 1px 0;text-decoration:line-through">${t}</span>`;
+        const plainTag = t =>
+          `<span style="font-size:13px;color:#6b7280;margin:0 4px 0 0">${t}</span>`;
         const parts = [
           ...kept.map(t    => plainTag(t)),
-          ...removed.map(t => plainTag(t, 'text-decoration:line-through')),
+          ...removed.map(t => removedPill(t)),
           ...added.map(t   => addedPill(t)),
         ];
         afterHtml = parts.join('') || '—';
