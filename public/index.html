@@ -60,8 +60,7 @@
       --dark:#0a0a08;--dark2:#141410;--dark3:#1c1c16;
       --border:#e4e4de;--border2:#d0d0c8;
       --green:#1a5c38;--green-lt:#1f7044;--green-bg:rgba(26,92,56,.06);--green-brd:rgba(26,92,56,.15);
-      --reddit-orange:#ff4500;
-      --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+--serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
     }
     html{scroll-behavior:smooth}
     body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -234,16 +233,10 @@
     .reddit-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:13px;transition:border-color .15s,box-shadow .2s}
     .reddit-card:hover{border-color:var(--border2);box-shadow:0 6px 24px rgba(0,0,0,.07)}
     .rc-header{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-    .rc-sub{font-size:11px;font-weight:700;color:var(--reddit-orange);font-family:var(--mono)}
-    .rc-dot{color:var(--ink4);font-size:10px}
-    .rc-user{font-size:11px;color:var(--ink4);font-family:var(--mono)}
-    .rc-time{font-size:11px;color:var(--ink4);font-family:var(--mono);margin-left:auto}
-    .rc-title{font-size:14px;font-weight:600;color:var(--ink);line-height:1.45}
-    .rc-body{font-size:13px;color:var(--ink3);line-height:1.62}
-    .rc-footer{display:flex;align-items:center;gap:12px;padding-top:4px}
-    .rc-votes{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--reddit-orange);font-family:var(--mono)}
-    .rc-arrow{font-size:13px;line-height:1}
-    .rc-comments{font-size:12px;color:var(--ink4);font-family:var(--mono)}
+    .rc-quote{font-size:40px;line-height:1;color:var(--border2);font-family:Georgia,serif;margin-bottom:6px;display:block}
+    .rc-title{font-size:14px;font-weight:600;color:var(--ink);line-height:1.45;margin-bottom:10px}
+    .rc-body{font-size:13px;color:var(--ink3);line-height:1.62;flex:1}
+    .rc-attr{font-size:11px;color:var(--ink4);font-family:var(--mono);margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
     .pain-note{text-align:center;font-size:12px;color:var(--ink3);margin-bottom:20px;opacity:.7}
     .pain-bridge{text-align:center;font-family:var(--serif);font-size:23px;font-style:italic;color:var(--ink2);padding-top:28px;border-top:1px solid var(--border)}
     .pain-bridge strong{font-style:normal;color:var(--green)}
@@ -402,10 +395,9 @@
         <span class="badge-dot"></span>
         Beta · Free to try
       </div>
-      <h1>Bulk edit your Shopify catalog.<br>Schedule the sale.<br><em>Prices revert themselves.</em></h1>
+      <h1>Your Shopify catalog.<br>One table. Any field.<br><em>Edit instantly. Schedule for later.</em></h1>
       <p class="hero-sub">
-        Click any cell to edit prices, tags, metafields or status — across hundreds of products at once. Schedule changes to go live at midnight and revert automatically when the sale ends.
-        <strong>No CSV. No exports. No spreadsheets.</strong>
+        Edit prices, tags, metafields and status across your entire catalog at once. Schedule changes to go live automatically — and when the sale ends, <strong>prices revert to the original values on their own.</strong> No CSV. No exports. No forgotten discounts.
       </p>
       <div class="hero-cta-wrap">
         <a href="/app" class="btn-hero">
@@ -654,37 +646,28 @@
 
     <div class="reddit-grid">
       <div class="reddit-card reveal">
-        <div class="rc-header">
-          <span class="rc-sub">Shopify community</span>
-          <span class="rc-dot">·</span>
-          <span class="rc-time">r/shopify</span>
-        </div>
-        <p class="rc-title">"Is there any way to edit 500 product prices at once without exporting a CSV?"</p>
+        <span class="rc-quote">"</span>
+        <p class="rc-title">Is there any way to edit 500 product prices at once without exporting a CSV?</p>
         <p class="rc-body">I need to apply a 15% discount to my whole catalog for a weekend promo. In Shopify I have to export, edit in Excel, reimport — and pray the format is right. There has to be a faster way.</p>
+        <p class="rc-attr">r/shopify · Shopify community</p>
       </div>
 
       <div class="reddit-card reveal reveal-d1">
-        <div class="rc-header">
-          <span class="rc-sub">Shopify community</span>
-          <span class="rc-dot">·</span>
-          <span class="rc-time">r/ecommerce</span>
-        </div>
-        <p class="rc-title">"3 hours to change prices on 200 Shopify products — there has to be a better way"</p>
+        <span class="rc-quote">"</span>
+        <p class="rc-title">3 hours to change prices on 200 Shopify products — there has to be a better way</p>
         <p class="rc-body">Downloaded CSV, reformatted in Excel, fixed encoding errors, re-imported, found new errors, fixed again. This workflow is insane for something I need to do every sale event.</p>
+        <p class="rc-attr">r/ecommerce · Shopify community</p>
       </div>
 
       <div class="reddit-card reveal reveal-d2">
-        <div class="rc-header">
-          <span class="rc-sub">Shopify community</span>
-          <span class="rc-dot">·</span>
-          <span class="rc-time">r/shopify</span>
-        </div>
-        <p class="rc-title">"Forgot to revert my sale prices after BFCM. Sold at discount for 3 days before I noticed."</p>
+        <span class="rc-quote">"</span>
+        <p class="rc-title">Forgot to revert my sale prices after BFCM. Sold at discount for 3 days before I noticed.</p>
         <p class="rc-body">Lost a lot of margin on ~180 orders before I caught it. Is there any tool that can auto-revert prices after a sale? Seems basic but I can't find anything that does it properly.</p>
+        <p class="rc-attr">r/shopify · Shopify community</p>
       </div>
     </div>
 
-    <p class="pain-note reveal">Pain points paraphrased from real discussions in Shopify and e-commerce communities.</p>
+    <p class="pain-note reveal">Paraphrased from real discussions in r/shopify and r/ecommerce — pain we've seen repeated hundreds of times.</p>
     <p class="pain-bridge reveal">We read every thread. Then we built <strong>Lederly</strong>.</p>
   </div>
 </section>
