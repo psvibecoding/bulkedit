@@ -28,7 +28,10 @@
       <div class="connect-card">
         <div class="field">
           <label for="f-shop">Store domain</label>
-          <input id="f-shop" type="text" autocomplete="off" placeholder="your-store.myshopify.com"/>
+          <div class="shop-input-wrap">
+            <input id="f-shop" type="text" autocomplete="off" spellcheck="false" placeholder="your-store"/>
+            <span class="shop-suffix">.myshopify.com</span>
+          </div>
         </div>
         <button class="btn-cta" id="btn-connect">Connect with Shopify →</button>
         <p class="connect-note">🔒 Session only · Token stays in your browser · OAuth secured</p>
@@ -446,6 +449,6 @@
 <div id="toast" class="toast"></div>
 <div id="stip" class="stip" style="display:none"></div>
 <script src="/driver.iife.js"></script>
-<script src="/app-tool.js?v=79"></script>
+<script src="/app-tool.js?v=80"></script>
 </body>
 </html>

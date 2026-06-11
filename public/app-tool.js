@@ -170,8 +170,9 @@ async function api(path,body={},signal=null){
 
 /* ── CONNECT ── */
 function startOAuth(){
-  const raw = $('f-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
-  if(!raw||!raw.includes('.myshopify.com')) return toast('Enter your store domain — e.g. your-store.myshopify.com');
+  let raw = $('f-shop').value.trim().replace(/^https?:\/\//,'').replace(/\/.*$/,'').toLowerCase();
+  if(!raw) return toast('Enter your store name — e.g. your-store');
+  if(!raw.includes('.myshopify.com')) raw = raw.replace(/\.myshopify\.com.*$/,'') + '.myshopify.com';
   if(new URLSearchParams(location.search).get('openSchedules')==='1') sessionStorage.setItem('openSchedules','1');
   window.location.href = `/auth/start?shop=${encodeURIComponent(raw)}`;
 }

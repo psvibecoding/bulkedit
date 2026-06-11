@@ -58,6 +58,11 @@ html[data-restoring] #s-loading{display:flex!important}
 .field input{background:var(--bg);border:1px solid var(--b2);border-radius:var(--r6);padding:11px 12px;font-family:var(--mono);font-size:13px;color:var(--tx);outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
 .field input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
 .field input::placeholder{color:var(--t4)}
+.shop-input-wrap{display:flex;align-items:center;background:var(--bg);border:1px solid var(--b2);border-radius:var(--r6);padding:0 12px;transition:border-color .15s,box-shadow .15s;gap:0}
+.shop-input-wrap:focus-within{border-color:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
+.shop-input-wrap input{background:transparent;border:none;outline:none;padding:11px 0;font-family:var(--mono);font-size:13px;color:var(--tx);flex:1;min-width:0;box-shadow:none!important}
+.shop-input-wrap input::placeholder{color:var(--t4)}
+.shop-suffix{font-family:var(--mono);font-size:13px;color:var(--t3);white-space:nowrap;flex-shrink:0;user-select:none}
 .connect-note{font-size:11px;color:var(--t4);text-align:center;line-height:1.5}
 .connect-demo-sep{text-align:center;font-size:11px;color:var(--t4);font-family:var(--mono);position:relative}
 .connect-demo-sep::before,.connect-demo-sep::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--b1)}
