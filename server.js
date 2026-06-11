@@ -1262,7 +1262,7 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
   try {
     const tr = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code })
+      body: JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code, expiring: 1 })
     });
     const td = await tr.json();
     console.log('[token_exchange] keys:', Object.keys(td).join(','), 'has_expiry:', !!td.expires_in);
