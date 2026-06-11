@@ -1222,7 +1222,7 @@ app.get('/app', (req, res) => {
 
 // Handle OAuth callback redirect to /app
 // Step 1 — if shop provided, redirect directly; otherwise redirect to Shopify account picker
-app.get('/auth/start', authLimiter, (req, res) => {
+app.get('/auth/start', authLimiter, async (req, res) => {
   if (!SHOPIFY_CLIENT_ID) return res.status(500).send('OAuth not configured.');
   const state = crypto.randomBytes(16).toString('hex');
   const redirectUri = `${APP_URL}/auth/callback`;
