@@ -468,6 +468,24 @@ function renderFunnel(f){
 }
 
 /* ── Events table ── */
+function renderAcquisition(d){
+  const sources = d.beta_sources || [];
+  if(!sources.length) return '';
+  const total = sources.reduce((s,r)=>s+r.n, 0);
+  const bars = sources.map(r=>{
+    const pct = Math.round(r.n/total*100);
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="width:140px;font-size:13px;color:var(--ink2);font-weight:500;flex-shrink:0">${r.source||'(blank)'}</div>
+      <div style="flex:1;background:var(--border);border-radius:4px;height:8px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:var(--green);border-radius:4px"></div>
+      </div>
+      <div style="font-size:13px;color:var(--ink3);width:60px;text-align:right;font-variant-numeric:tabular-nums">${r.n} · ${pct}%</div>
+    </div>`;
+  }).join('');
+  return `<div class="section-label">Acquisition source · all time (${total} responses)</div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:18px 20px">${bars}</div>`;
+}
+
 function renderEvents(events){
   if(!events||!Object.keys(events).length) return '';
   const rows=Object.entries(events).sort((a,b)=>b[1].total-a[1].total).map(([ev,c])=>`
@@ -577,6 +595,7 @@ async function render(){
       `<div id="summary-wrap">${renderSummary(d)}</div>`+
       renderChartSection(d.daily)+
       renderFunnel(d.funnel)+
+      renderAcquisition(d)+
       renderStores(stores)+
       renderEvents(d.events)+
       `<p class="refresh-note">Mode: ${d.mode||'?'} · Auto-refresh every 60s</p>`;

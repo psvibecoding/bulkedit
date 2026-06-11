@@ -666,12 +666,14 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
         const kept    = aTags.filter(t =>  bTags.includes(t));
         const removed = bTags.filter(t => !aTags.includes(t));
         const added   = aTags.filter(t => !bTags.includes(t));
+        const pill = (t, bg, color, border, extra='') =>
+          `<span style="display:inline-block;background:${bg};color:${color};border:1px solid ${border};border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap;margin:1px 2px 1px 0;${extra}">${t}</span>`;
         const parts = [
-          ...kept.map(t    => `<span style="color:#1a5c38;font-weight:600">${t}</span>`),
-          ...removed.map(t => `<span style="color:#dc2626;text-decoration:line-through">${t}</span>`),
-          ...added.map(t   => `<span style="color:#1a5c38;font-weight:700">+${t}</span>`),
+          ...kept.map(t    => pill(t,    '#f0fdf4', '#166534', '#bbf7d0')),
+          ...removed.map(t => pill(t,    '#fef2f2', '#dc2626', '#fecaca', 'text-decoration:line-through')),
+          ...added.map(t   => pill('+'+t,'#dcfce7', '#15803d', '#86efac')),
         ];
-        afterHtml = parts.join('<span style="color:#9ca3af">, </span>') || '—';
+        afterHtml = parts.join('') || '—';
       } else {
         const color = afterColor(field, c.before?.[field], newVal);
         afterHtml = `<span style="color:${color};font-weight:600">${fmtField(field, newVal)}</span>`;
@@ -711,13 +713,24 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
       }
     });
 
-    // Metafields (no before/after available, just a summary)
-    const mfCount = (c.metafields || []).length;
-    if (mfCount) rows.push(`
-      <tr>
-        <td style="padding:5px 12px 5px 0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Metafields</td>
-        <td colspan="3" style="padding:5px 0;font-size:13px;color:#6b7280">${mfCount} field${mfCount !== 1 ? 's' : ''} updated</td>
-      </tr>`);
+    // Metafields — individual chips per changed field
+    const mfList = (c.metafields || []).filter(m => m.namespace && m.key);
+    if (mfList.length) {
+      const chips = mfList.map(m => {
+        const label = `${m.namespace}.${m.key}`;
+        const isEmpty = m.value === '' || m.value === null || m.value === undefined;
+        return isEmpty
+          ? `<span style="display:inline-block;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap;margin:1px 2px 1px 0;text-decoration:line-through">${label}</span>`
+          : `<span style="display:inline-block;background:#dcfce7;color:#15803d;border:1px solid #86efac;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap;margin:1px 2px 1px 0">${label}</span>`;
+      }).join('');
+      rows.push(`
+        <tr>
+          <td style="padding:5px 12px 5px 0;width:28%;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;font-weight:600;vertical-align:top">Metafields</td>
+          <td style="padding:5px 12px 5px 0;width:31%;font-size:13px;color:#9ca3af;text-decoration:line-through;vertical-align:top">—</td>
+          <td style="padding:5px 10px 5px 0;width:6%;font-size:13px;color:#9ca3af;vertical-align:top">→</td>
+          <td style="padding:5px 0;width:35%;vertical-align:top">${chips}</td>
+        </tr>`);
+    }
 
     const innerTable = rows.length
       ? `<table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-top:8px">${rows.join('')}</table>`
@@ -1814,7 +1827,7 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 
   try {
-    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR] = await Promise.all([
+    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR, sourcesR] = await Promise.all([
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL`),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '7 days'`),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '30 days'`),
@@ -1854,6 +1867,7 @@ app.get('/api/admin/stats', async (req, res) => {
           COUNT(*) FILTER (WHERE event='app_open')                                                 AS app_opens
         FROM analytics_events`),
       dbPool.query(`SELECT COUNT(*) as n FROM waitlist`).catch(() => ({ rows: [{ n: 0 }] })),
+      dbPool.query(`SELECT meta->>'source' as source, COUNT(*) as n FROM analytics_events WHERE event='beta_source' AND meta->>'source' IS NOT NULL GROUP BY 1 ORDER BY 2 DESC`).catch(() => ({ rows: [] })),
     ]);
 
     const events = {};
@@ -1901,6 +1915,7 @@ app.get('/api/admin/stats', async (req, res) => {
         avg_bulk_per_store:    +dR.stores_bulk > 0 ? +(+dR.total_bulk_actions / +dR.stores_bulk).toFixed(1) : 0,
       },
       events, daily,
+      beta_sources: (sourcesR?.rows || []).map(r => ({ source: r.source, n: +r.n })),
     });
   } catch (e) {
     res.status(500).json({ ok: false, error: IS_PROD ? 'Stats error' : e.message });

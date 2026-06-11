@@ -209,7 +209,7 @@ async function afterOAuth(shop, token, silent=false){
     loadSchedules();
     if(!silent) toast('Connected — all info loaded. Session only, no data stored.');
     if(!silent) setTimeout(maybeShowWelcome, 800);
-    maybeStartTour();
+    if(localStorage.getItem('be_welcome_done')) maybeStartTour();
     const shouldOpenSchedules = new URLSearchParams(location.search).get('openSchedules')==='1' || sessionStorage.getItem('openSchedules')==='1';
     if(shouldOpenSchedules){
       history.replaceState(null,'',location.pathname);
@@ -1970,6 +1970,7 @@ function boot(){
     if(source) trackEv('beta_source',{source});
     localStorage.setItem('be_welcome_done','1');
     closeModal('m-welcome');
+    setTimeout(maybeStartTour, 400);
   });
 
   // Generic close buttons
