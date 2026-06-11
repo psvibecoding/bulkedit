@@ -1234,6 +1234,7 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
       body: JSON.stringify({ client_id: SHOPIFY_CLIENT_ID, client_secret: SHOPIFY_CLIENT_SECRET, code })
     });
     const td = await tr.json();
+    console.log('[token_exchange] keys:', Object.keys(td).join(','), 'has_expiry:', !!td.expires_in);
     if (!td.access_token) throw new Error('No token');
     track('connect', shop);
     fetch('https://ntfy.sh/lederly-new-store', {
