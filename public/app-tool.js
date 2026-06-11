@@ -2465,10 +2465,13 @@ function maybeShowWelcome(){
 
 function maybeStartTour(){
   if(localStorage.getItem('lederly_tour_v1')) return;
-  // Wait until table has rendered at least one row (or 6s max) before starting tour
+  // If no products, start tour after a short delay anyway (no point waiting for rows that won't appear)
+  const hasProducts = S.products && S.products.length > 0;
+  if(!hasProducts){ setTimeout(startTour, 800); return; }
+  // Wait until table has rendered at least one row (or 3s max) before starting tour
   let attempts = 0;
   const check = () => {
-    if(document.querySelector('#tbody tr') || attempts++ > 20){ startTour(); return; }
+    if(document.querySelector('#tbody tr') || attempts++ > 10){ startTour(); return; }
     setTimeout(check, 300);
   };
   setTimeout(check, 800);

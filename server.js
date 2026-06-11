@@ -1234,9 +1234,14 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
     track('connect', shop);
     fetch('https://ntfy.sh/lederly-new-store', {
       method: 'POST',
-      headers: { 'Title': '🛍 New store connected', 'Priority': 'high', 'Tags': 'white_check_mark' },
+      headers: {
+        'Content-Type': 'text/plain',
+        'Title': 'New store connected',
+        'Priority': 'high',
+        'Tags': 'white_check_mark',
+      },
       body: shop,
-    }).catch(() => {});
+    }).then(r => console.log('[ntfy] status', r.status)).catch(e => console.error('[ntfy] error', e.message));
     // Register app/uninstalled webhook — fire-and-forget, duplicate registration is a harmless userError
     gql({ shop, token: td.access_token }, `
       mutation WebhookCreate($url: URL!) {
