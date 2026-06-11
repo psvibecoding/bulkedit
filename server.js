@@ -666,12 +666,14 @@ function buildEmailHtml(sched, success, linkedRevert = null) {
         const kept    = aTags.filter(t =>  bTags.includes(t));
         const removed = bTags.filter(t => !aTags.includes(t));
         const added   = aTags.filter(t => !bTags.includes(t));
-        const pill = (t, bg, color, border, extra='') =>
-          `<span style="display:inline-block;background:${bg};color:${color};border:1px solid ${border};border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap;margin:1px 2px 1px 0;${extra}">${t}</span>`;
+        const addedPill = t =>
+          `<span style="display:inline-block;background:#dcfce7;color:#15803d;border:1px solid #86efac;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;white-space:nowrap;margin:1px 2px 1px 0">${t}</span>`;
+        const plainTag = (t, extra='') =>
+          `<span style="font-size:13px;color:#6b7280;margin:0 4px 0 0;${extra}">${t}</span>`;
         const parts = [
-          ...kept.map(t    => pill(t,    '#f0fdf4', '#166534', '#bbf7d0')),
-          ...removed.map(t => pill(t,    '#fef2f2', '#dc2626', '#fecaca', 'text-decoration:line-through')),
-          ...added.map(t   => pill('+'+t,'#dcfce7', '#15803d', '#86efac')),
+          ...kept.map(t    => plainTag(t)),
+          ...removed.map(t => plainTag(t, 'text-decoration:line-through')),
+          ...added.map(t   => addedPill(t)),
         ];
         afterHtml = parts.join('') || '—';
       } else {
