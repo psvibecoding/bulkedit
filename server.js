@@ -479,11 +479,14 @@ async function gql({ shop, token }, query, variables = {}, _retry = 0) {
     const text = await r.text();
     let json; try { json = JSON.parse(text); } catch { json = { raw: text }; }
     // GraphQL THROTTLED — backoff and retry
-    if (json.errors?.some(e => e.extensions?.code === 'THROTTLED') && _retry < 4) {
+    if (Array.isArray(json.errors) && json.errors.some(e => e.extensions?.code === 'THROTTLED') && _retry < 4) {
       await new Promise(res => setTimeout(res, (1 + _retry) * 1000));
       return gql({ shop, token }, query, variables, _retry + 1);
     }
-    if (!r.ok || json.errors) throw new Error((json.errors?.[0]?.message || json.raw || `API ${r.status}`).slice(0, 300));
+    if (!r.ok || json.errors) {
+      const errMsg = Array.isArray(json.errors) ? json.errors[0]?.message : (typeof json.errors === 'string' ? json.errors : null);
+      throw new Error((errMsg || json.raw || `API ${r.status}`).slice(0, 300));
+    }
     return json.data;
   } finally { clearTimeout(t); }
 }
