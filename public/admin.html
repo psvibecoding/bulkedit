@@ -116,6 +116,15 @@ tr:last-child td{border-bottom:none}
   <div class="logo"><div class="logo-mark">L</div>Lederly Admin</div>
   <div class="hdr-right" id="hdr-ts">Loading…</div>
 </header>
+<div style="background:#0d3d25;padding:8px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+  <span style="font-size:11px;color:rgba(255,255,255,.45);font-family:var(--mono);white-space:nowrap">Exclude shops:</span>
+  <input id="exclude-input" placeholder="mystore.myshopify.com, store2.myshopify.com"
+    style="flex:1;min-width:220px;max-width:480px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:5px 10px;font-size:12px;font-family:var(--mono);color:#fff;outline:none"
+    oninput="saveExclude(this.value)"/>
+  <button onclick="resetAnalytics()" style="margin-left:auto;background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.35);color:#fca5a5;border-radius:6px;padding:5px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;white-space:nowrap">
+    Reset analytics
+  </button>
+</div>
 <main id="main"><div class="loading">Loading stats…</div></main>
 
 <script>
@@ -152,12 +161,29 @@ const state = {
   customFrom: null, customTo: null,
 };
 
+function getExclude(){ return localStorage.getItem('admin_exclude') || ''; }
+function saveExclude(v){ localStorage.setItem('admin_exclude', v); }
+
 async function load(){
-  const url = `/api/admin/stats${SECRET ? '?secret='+encodeURIComponent(SECRET) : ''}`;
+  const params = new URLSearchParams();
+  if(SECRET) params.set('secret', SECRET);
+  const excl = getExclude().trim();
+  if(excl) params.set('exclude', excl);
+  const url = `/api/admin/stats?${params}`;
   const r = await fetch(url);
   if(r.status===401) throw new Error('Unauthorized — provide ?secret=PING_SECRET in URL');
   if(!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
+}
+
+async function resetAnalytics(){
+  if(!confirm('Reset ALL analytics events? This cannot be undone.')) return;
+  const params = new URLSearchParams();
+  if(SECRET) params.set('secret', SECRET);
+  const r = await fetch(`/api/admin/reset-analytics?${params}`, { method: 'DELETE' });
+  const d = await r.json();
+  if(d.ok) { alert(`Deleted ${d.deleted} events. Refreshing…`); render(); }
+  else alert('Error: ' + d.error);
 }
 
 function todayStr(){ return new Date().toISOString().split('T')[0]; }
@@ -604,6 +630,7 @@ async function render(){
   }
 }
 
+document.getElementById('exclude-input').value = getExclude();
 render();
 setInterval(render,60000);
 </script>

@@ -1831,20 +1831,24 @@ app.get('/api/admin/stats', async (req, res) => {
   }
 
   try {
+    const excludeShops = (req.query.exclude || '').split(',').map(s => s.trim()).filter(Boolean);
+    const excl = excludeShops.length ? `AND shop != ALL($1::text[])` : '';
+    const ep   = excludeShops.length ? [excludeShops] : [];
+
     const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR, sourcesR] = await Promise.all([
-      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL`),
-      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '7 days'`),
-      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '30 days'`),
+      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL ${excl}`, ep),
+      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '7 days' ${excl}`, ep),
+      dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '30 days' ${excl}`, ep),
       dbPool.query(`
         SELECT event,
           COUNT(*) as total,
           COUNT(*) FILTER (WHERE ts >= NOW()-INTERVAL '7 days')  as d7,
           COUNT(*) FILTER (WHERE ts >= NOW()-INTERVAL '30 days') as d30
-        FROM analytics_events GROUP BY event ORDER BY total DESC`),
+        FROM analytics_events WHERE 1=1 ${excl} GROUP BY event ORDER BY total DESC`, ep),
       dbPool.query(`
         SELECT to_char(ts AT TIME ZONE 'UTC','YYYY-MM-DD') as date, event, COUNT(*) as n
-        FROM analytics_events WHERE ts >= NOW()-INTERVAL '90 days'
-        GROUP BY 1,2 ORDER BY 1`),
+        FROM analytics_events WHERE ts >= NOW()-INTERVAL '90 days' ${excl}
+        GROUP BY 1,2 ORDER BY 1`, ep),
       dbPool.query(`
         SELECT
           COUNT(DISTINCT CASE WHEN event='connect'         THEN shop END) as connected,
@@ -1854,7 +1858,7 @@ app.get('/api/admin/stats', async (req, res) => {
           (SELECT COUNT(*) FROM analytics_events WHERE event='page_view' AND ts >= NOW()-INTERVAL '30 days') as pv_30d,
           (SELECT COUNT(*) FROM analytics_events WHERE event='page_view' AND ts >= NOW()-INTERVAL '7 days')  as pv_7d,
           (SELECT COUNT(*) FROM analytics_events WHERE event='cta_click' AND ts >= NOW()-INTERVAL '30 days') as cta_30d
-        FROM analytics_events WHERE shop IS NOT NULL`),
+        FROM analytics_events WHERE shop IS NOT NULL ${excl}`, ep),
       dbPool.query(`
         SELECT
           COALESCE(SUM((meta->>'v')::int) FILTER (WHERE event='save'), 0)                          AS variants_saved,
@@ -1869,9 +1873,9 @@ app.get('/api/admin/stats', async (req, res) => {
           COUNT(*) FILTER (WHERE event='schedule_partial')                                         AS schedule_runs_partial,
           COUNT(*) FILTER (WHERE event='schedule_fail')                                            AS schedule_runs_fail,
           COUNT(*) FILTER (WHERE event='app_open')                                                 AS app_opens
-        FROM analytics_events`),
+        FROM analytics_events WHERE 1=1 ${excl}`, ep),
       dbPool.query(`SELECT COUNT(*) as n FROM waitlist`).catch(() => ({ rows: [{ n: 0 }] })),
-      dbPool.query(`SELECT meta->>'source' as source, COUNT(*) as n FROM analytics_events WHERE event='beta_source' AND meta->>'source' IS NOT NULL GROUP BY 1 ORDER BY 2 DESC`).catch(() => ({ rows: [] })),
+      dbPool.query(`SELECT meta->>'source' as source, COUNT(*) as n FROM analytics_events WHERE event='beta_source' AND meta->>'source' IS NOT NULL ${excl} GROUP BY 1 ORDER BY 2 DESC`, ep).catch(() => ({ rows: [] })),
     ]);
 
     const events = {};
@@ -1923,6 +1927,18 @@ app.get('/api/admin/stats', async (req, res) => {
     });
   } catch (e) {
     res.status(500).json({ ok: false, error: IS_PROD ? 'Stats error' : e.message });
+  }
+});
+
+app.delete('/api/admin/reset-analytics', async (req, res) => {
+  const secret = req.headers['x-ping-secret'] || req.query.secret;
+  if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  if (!dbPool) return res.json({ ok: false, error: 'No DB' });
+  try {
+    const r = await dbPool.query('DELETE FROM analytics_events');
+    res.json({ ok: true, deleted: r.rowCount });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: IS_PROD ? 'Reset error' : e.message });
   }
 });
 
