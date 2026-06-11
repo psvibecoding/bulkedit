@@ -209,7 +209,7 @@ async function afterOAuth(shop, token, silent=false){
     loadSchedules();
     if(!silent) toast('Connected — all info loaded. Session only, no data stored.');
     if(!silent) setTimeout(maybeShowWelcome, 800);
-    if(localStorage.getItem('be_welcome_done')) maybeStartTour();
+    if(localStorage.getItem('be_welcome_done_'+S.shop)) maybeStartTour();
     const shouldOpenSchedules = new URLSearchParams(location.search).get('openSchedules')==='1' || sessionStorage.getItem('openSchedules')==='1';
     if(shouldOpenSchedules){
       history.replaceState(null,'',location.pathname);
@@ -1968,7 +1968,7 @@ function boot(){
   $('btn-welcome-done').addEventListener('click', ()=>{
     const source=$('welcome-source').value;
     if(source) trackEv('beta_source',{source});
-    localStorage.setItem('be_welcome_done','1');
+    localStorage.setItem('be_welcome_done_'+S.shop,'1');
     closeModal('m-welcome');
     setTimeout(maybeStartTour, 400);
   });
@@ -2361,7 +2361,7 @@ function startTour(){
     popoverClass: 'lederly-tour',
     onDestroyStarted: () => {
       const wasComplete = d.isLastStep();
-      localStorage.setItem('lederly_tour_v1','1');
+      localStorage.setItem('lederly_tour_v1_'+S.shop,'1');
       d.destroy();
       trackEv(wasComplete ? 'tour_complete' : 'tour_skip');
     },
@@ -2459,12 +2459,12 @@ function startTour(){
 
 function maybeShowWelcome(){
   if(S.demo) return;
-  if(localStorage.getItem('be_welcome_done')) return;
+  if(localStorage.getItem('be_welcome_done_'+S.shop)) return;
   openModal('m-welcome');
 }
 
 function maybeStartTour(){
-  if(localStorage.getItem('lederly_tour_v1')) return;
+  if(localStorage.getItem('lederly_tour_v1_'+S.shop)) return;
   // If no products, start tour after a short delay anyway (no point waiting for rows that won't appear)
   const hasProducts = S.products && S.products.length > 0;
   if(!hasProducts){ setTimeout(startTour, 800); return; }
