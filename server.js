@@ -1297,7 +1297,7 @@ app.post('/api/test', apiLimiter, async (req, res) => {
     isFirstConnect(s.shop).then(isNew => {
       if (isNew) sendWelcomeEmail(s.shop, d.shop.name, d.shop.email).catch(() => {});
     }).catch(() => {});
-  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+  } catch (e) { console.error('[api/test]', e.message); res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
 app.post('/api/products', apiLimiter, async (req, res) => {
