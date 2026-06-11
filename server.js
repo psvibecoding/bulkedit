@@ -1232,6 +1232,11 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
     const td = await tr.json();
     if (!td.access_token) throw new Error('No token');
     track('connect', shop);
+    fetch('https://ntfy.sh/lederly-new-store', {
+      method: 'POST',
+      headers: { 'Title': '🛍 New store connected', 'Priority': 'high', 'Tags': 'white_check_mark' },
+      body: shop,
+    }).catch(() => {});
     // Register app/uninstalled webhook — fire-and-forget, duplicate registration is a harmless userError
     gql({ shop, token: td.access_token }, `
       mutation WebhookCreate($url: URL!) {
