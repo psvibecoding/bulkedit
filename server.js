@@ -1268,16 +1268,6 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
     console.log('[token_exchange] keys:', Object.keys(td).join(','), 'has_expiry:', !!td.expires_in);
     if (!td.access_token) throw new Error('No token');
     track('connect', shop);
-    fetch('https://ntfy.sh/lederly-new-store', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-        'Title': 'New store connected',
-        'Priority': 'high',
-        'Tags': 'white_check_mark',
-      },
-      body: shop,
-    }).then(r => console.log('[ntfy] status', r.status)).catch(e => console.error('[ntfy] error', e.message));
     // Register app/uninstalled webhook — fire-and-forget, duplicate registration is a harmless userError
     gql({ shop, token: td.access_token }, `
       mutation WebhookCreate($url: URL!) {
@@ -1327,7 +1317,19 @@ app.post('/api/test', apiLimiter, async (req, res) => {
     }
     // Welcome email — fire-and-forget, only on first connect per shop
     isFirstConnect(s.shop).then(isNew => {
-      if (isNew) sendWelcomeEmail(s.shop, d.shop.name, d.shop.email).catch(() => {});
+      if (isNew) {
+        sendWelcomeEmail(s.shop, d.shop.name, d.shop.email).catch(() => {});
+        fetch('https://ntfy.sh/lederly-new-store', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain',
+            'Title': 'New store connected',
+            'Priority': 'high',
+            'Tags': 'white_check_mark',
+          },
+          body: s.shop,
+        }).then(r => console.log('[ntfy] status', r.status)).catch(e => console.error('[ntfy] error', e.message));
+      }
     }).catch(() => {});
   } catch (e) { console.error('[api/test]', e.message); res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
