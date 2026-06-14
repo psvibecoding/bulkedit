@@ -1340,7 +1340,8 @@ function updatePlanBadge(){
   const planLabel=plan==='pro'?'Pro':plan==='starter'?'Starter':plan==='beta'?'Beta':'Free';
   const parts=[];
   if(plan==='free') parts.push(`${S.pushesUsed}/100 products this month`);
-  if(S.schedLimit!==null) parts.push(`${S.schedUsed}/${S.schedLimit} schedules`);
+  if(S.schedLimit===0) parts.push('no scheduling');
+  else if(S.schedLimit!==null) parts.push(`${S.schedUsed}/${S.schedLimit} schedules`);
   else parts.push('schedules unlimited');
   el.textContent=`${planLabel} · ${parts.join(' · ')}`;
   el.dataset.plan=plan;
@@ -1903,7 +1904,10 @@ function boot(){
   });
 
   // Schedule
-  $('btn-schedule').addEventListener('click', openScheduleModal);
+  $('btn-schedule').addEventListener('click', ()=>{
+    if(S.schedLimit===0) return showUpgradeModal('Scheduling is available from the Starter plan (€9.99/mo).', 'Upgrade to schedule');
+    openScheduleModal();
+  });
   $('m-sched-confirm').addEventListener('click', confirmSchedule);
   $('m-sched-revert-toggle').addEventListener('change', e=>{
     const on=e.target.checked;
@@ -2478,8 +2482,8 @@ function maybeStartTour(){
   setTimeout(check, 800);
 }
 
-function showUpgradeModal(reason){
-  $('m-upgrade-title').textContent = 'Plan limit reached';
+function showUpgradeModal(reason, title){
+  $('m-upgrade-title').textContent = title || 'Plan limit reached';
   $('m-upgrade-sub').textContent = reason || 'Upgrade your plan to unlock this feature.';
   openModal('m-upgrade');
 }
