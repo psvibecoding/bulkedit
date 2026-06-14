@@ -42,7 +42,7 @@ let S = {
   selectedVids: new Set(),
   bulkType: null,
   schedules:[],
-  plan:'free', schedLimit:5, schedUsed:0, pushesUsed:0,
+  plan:'free', schedLimit:5, schedUsed:0, pushesUsed:0, periodEnd:null,
   pageInfo:{ hasNextPage:false, endCursor:null },
   exportFields:['handle','title','status','vendor','tags','variant','sku','price','compareAtPrice'],
 };
@@ -1342,7 +1342,10 @@ function updatePlanBadge(){
   if(fbBtn) fbBtn.textContent=['starter','pro'].includes(plan)?'Support':'Feedback';
   const planLabel=plan==='pro'?'Pro':plan==='starter'?'Growth':plan==='beta'?'Beta':'Free';
   const parts=[];
-  if(plan==='free') parts.push(`${S.pushesUsed}/100 products this month`);
+  if(plan==='free'){
+    const resetLabel=S.periodEnd?`resets ${new Date(S.periodEnd).toLocaleDateString('en',{month:'short',day:'numeric'})}`:'this month';
+    parts.push(`${S.pushesUsed}/100 products · ${resetLabel}`);
+  }
   if(S.schedLimit===0) parts.push('no scheduling');
   else if(S.schedLimit!==null) parts.push(`${S.schedUsed}/${S.schedLimit} schedules`);
   else parts.push('schedules unlimited');
@@ -1367,6 +1370,7 @@ async function loadSchedules(){
     S.schedLimit=r.schedLimit??5;
     S.schedUsed=r.schedUsed??0;
     S.pushesUsed=r.pushesUsed??0;
+    S.periodEnd=r.periodEnd||null;
   }catch{ S.schedules=[]; }
   updateSchedBadge();
   updatePlanBadge();

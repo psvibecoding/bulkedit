@@ -96,15 +96,31 @@ async function getStorePlan(shop) {
   } catch { return 'beta'; }
 }
 
-function currentMonth() {
-  const n = new Date();
-  return `${n.getUTCFullYear()}-${String(n.getUTCMonth()+1).padStart(2,'0')}`;
+// Returns { key: 'YYYY-MM-DD', start: Date, end: Date } for the current 30-day billing period.
+// Period starts from store_plans.updated_at and rolls every 30 days.
+async function currentPeriod(shop) {
+  const THIRTY = 30 * 24 * 60 * 60 * 1000;
+  let since = 0;
+  if (dbPool) {
+    try {
+      const r = await dbPool.query('SELECT updated_at FROM store_plans WHERE shop=$1', [shop]);
+      if (r.rows[0]?.updated_at) since = new Date(r.rows[0].updated_at).getTime();
+    } catch {}
+  }
+  const now = Date.now();
+  if (!since || since > now) since = now - THIRTY;
+  const n = Math.floor((now - since) / THIRTY);
+  const start = new Date(since + n * THIRTY);
+  const end = new Date(since + (n + 1) * THIRTY);
+  const key = start.toISOString().split('T')[0]; // YYYY-MM-DD — distinct from old YYYY-MM keys
+  return { key, start, end };
 }
 
 async function getPushesThisMonth(shop) {
   if (!dbPool) return 0;
   try {
-    const r = await dbPool.query('SELECT pushes FROM store_usage WHERE shop=$1 AND month=$2', [shop, currentMonth()]);
+    const { key } = await currentPeriod(shop);
+    const r = await dbPool.query('SELECT pushes FROM store_usage WHERE shop=$1 AND month=$2', [shop, key]);
     return r.rows[0]?.pushes || 0;
   } catch { return 0; }
 }
@@ -112,32 +128,29 @@ async function getPushesThisMonth(shop) {
 async function incrementPushes(shop) {
   if (!dbPool) return;
   try {
+    const { key } = await currentPeriod(shop);
     await dbPool.query(
       `INSERT INTO store_usage (shop, month, pushes) VALUES ($1, $2, 1)
        ON CONFLICT (shop, month) DO UPDATE SET pushes = store_usage.pushes + 1`,
-      [shop, currentMonth()]
+      [shop, key]
     );
   } catch {}
 }
 
 async function countSchedsThisMonth(shop) {
+  const { start } = await currentPeriod(shop);
   if (dbPool) {
     try {
-      const monthStart = new Date(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1).toISOString();
       const r = await dbPool.query(
         `SELECT COUNT(*) FROM schedules WHERE data->>'shop'=$1 AND data->>'linkedTo' IS NULL AND data->>'createdAt'>=$2`,
-        [shop, monthStart]
+        [shop, start.toISOString()]
       );
       return parseInt(r.rows[0].count, 10);
-    } catch { /* fall through to file */ }
+    } catch {}
   }
   const schedules = await readSchedules();
-  const now = new Date();
   return schedules.filter(s =>
-    s.shop === shop &&
-    !s.linkedTo &&
-    new Date(s.createdAt).getUTCFullYear() === now.getUTCFullYear() &&
-    new Date(s.createdAt).getUTCMonth() === now.getUTCMonth()
+    s.shop === shop && !s.linkedTo && new Date(s.createdAt) >= start
   ).length;
 }
 
@@ -1763,9 +1776,10 @@ app.post('/api/schedule/list', apiLimiter, async (req, res) => {
     const persistWarning = !process.env.DATABASE_URL && !process.env.SCHED_FILE;
     const plan = await getStorePlan(shop);
     const schedLimit = PLAN_SCHED_LIMIT[plan] ?? 5;
+    const { end: periodEnd } = await currentPeriod(shop);
     const schedUsed = await countSchedsThisMonth(shop);
     const pushesUsed = (plan === 'free') ? await getPushesThisMonth(shop) : null;
-    res.json({ ok: true, schedules: mine, persistWarning, plan, schedLimit: isFinite(schedLimit) ? schedLimit : null, schedUsed, pushesUsed });
+    res.json({ ok: true, schedules: mine, persistWarning, plan, schedLimit: isFinite(schedLimit) ? schedLimit : null, schedUsed, pushesUsed, periodEnd: periodEnd.toISOString() });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
