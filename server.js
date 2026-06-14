@@ -1954,8 +1954,8 @@ app.get('/api/admin/stats', async (req, res) => {
       daily[r.date][r.event] = +r.n;
     }
 
-    const f  = funnelR.rows[0];
-    const dR = deepR.rows[0];
+    const f  = funnelR.rows[0] || {};
+    const dR = deepR.rows[0]  || {};
     const storesConnected = +totalR.rows[0].n;
     const storesSaved     = +dR.stores_saved;
     const totalSaves      = +dR.total_saves;
