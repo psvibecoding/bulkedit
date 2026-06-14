@@ -46,9 +46,9 @@ html[data-restoring] #s-loading{display:flex!important}
 #s-connect{min-height:100vh;align-items:center;justify-content:center;padding:48px 24px;background:var(--bg);flex-direction:column;gap:0}
 .connect-wrap{width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;gap:32px}
 .connect-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--tx)}
-.logo-mark{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:var(--topbar);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;border-radius:8px;flex-shrink:0;box-shadow:0 2px 8px rgba(13,29,16,.35),inset 0 1px 0 rgba(255,255,255,.1)}
+.logo-mark{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#1a5c38;color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;border-radius:8px;flex-shrink:0;box-shadow:0 2px 8px rgba(13,29,16,.35),inset 0 1px 0 rgba(255,255,255,.15)}
 .logo-mark.sm{width:26px;height:26px;font-size:9px;border-radius:6px}
-.logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--t3)}
+.logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.7)}
 .connect-headline{text-align:center}
 .connect-headline h1{font-size:26px;font-weight:500;letter-spacing:-.5px;margin-bottom:8px}
 .connect-headline p{font-size:13px;color:var(--t3);line-height:1.65}
