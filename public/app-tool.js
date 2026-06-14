@@ -1886,6 +1886,15 @@ function boot(){
   $('btn-dl-json').addEventListener('click', ()=>{ dlText(buildJSON(),`shopify-export-${Date.now()}.json`); toast('JSON downloaded.'); });
   $('btn-copy-csv').addEventListener('click',()=>{ navigator.clipboard?.writeText(buildCSV()).then(()=>toast('CSV copied.')).catch(()=>toast('Clipboard not available.')); });
 
+  // Upgrade request
+  $('btn-upgrade-request').addEventListener('click', ()=>{
+    closeModal('m-upgrade');
+    const plan = S.plan==='free'?'Starter':'Pro';
+    $('fb-message').value=`I'd like to upgrade to the ${plan} plan.`;
+    $('fb-email').value='';
+    openModal('m-feedback');
+  });
+
   // Feedback
   $('btn-feedback').addEventListener('click', ()=>{
     $('fb-message').value=''; $('fb-email').value='';
