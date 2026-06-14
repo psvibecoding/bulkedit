@@ -308,7 +308,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc:  ["'self'"],
+      scriptSrc:  ["'self'", "'unsafe-inline'"],
       styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc:    ["'self'", "https://fonts.gstatic.com"],
       imgSrc:     ["'self'", "data:", "https:"],
@@ -1903,7 +1903,7 @@ app.get('/api/admin/stats', async (req, res) => {
     const excl_shop = excludeShops.length ? `AND shop != ALL($1::text[])` : '';
     const ep        = excludeShops.length ? [excludeShops] : [];
 
-    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR, sourcesR, refsR] = await Promise.all([
+    const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, sourcesR, refsR] = await Promise.all([
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL ${excl}`, ep),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '7 days' ${excl}`, ep),
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE shop IS NOT NULL AND ts >= NOW()-INTERVAL '30 days' ${excl}`, ep),
@@ -1941,7 +1941,6 @@ app.get('/api/admin/stats', async (req, res) => {
           COUNT(*) FILTER (WHERE event='schedule_fail')                                            AS schedule_runs_fail,
           COUNT(*) FILTER (WHERE event='app_open')                                                 AS app_opens
         FROM analytics_events WHERE 1=1 ${excl}`, ep),
-      dbPool.query(`SELECT COUNT(*) as n FROM waitlist`).catch(() => ({ rows: [{ n: 0 }] })),
       dbPool.query(`SELECT meta->>'source' as source, COUNT(*) as n FROM analytics_events WHERE event='beta_source' AND meta->>'source' IS NOT NULL ${excl} GROUP BY 1 ORDER BY 2 DESC`, ep).catch(() => ({ rows: [] })),
       dbPool.query(`SELECT COALESCE(meta->>'ref','direct') as ref, COUNT(*) as n FROM analytics_events WHERE event='page_view' GROUP BY 1 ORDER BY 2 DESC LIMIT 20`).catch(() => ({ rows: [] })),
     ]);
@@ -1964,7 +1963,6 @@ app.get('/api/admin/stats', async (req, res) => {
 
     res.json({
       ok: true, mode: 'postgres', uptime,
-      waitlist_count: +(waitlistR?.rows?.[0]?.n || 0),
       stores: { total: storesConnected, active7d: +active7R.rows[0].n, active30d: +active30R.rows[0].n },
       funnel: {
         page_views_30d: +f.pv_30d, page_views_7d: +f.pv_7d,
