@@ -1243,6 +1243,7 @@ async function confirmSave(){
       delete S.changes[pid];
     });
 
+    if(S.plan==='free'&&savedPids.length>0){ S.pushesUsed+=savedPids.length; updatePlanBadge(); }
     renderTable(); updateSaveBtn(); updateUndoUI();
 
     // Silently reload from Shopify so the table reflects actual saved values
