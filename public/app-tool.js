@@ -1146,6 +1146,28 @@ function openSaveModal(){
     });
     return `<div class="diff-item"><div class="diff-item-head">${imgEl}<span class="diff-title">${esc(p.title)}</span></div><div class="diff-rows">${diffs.length?diffs.join(''):'<span style="font-size:11px;color:var(--t3)">Variant / metafield changes</span>'}</div></div>`;
   }).join('');
+  // Low-price warning — detect any price set below 1
+  const lowPrices=[];
+  for(const c of payloads){
+    const p=getProd(c.productId); if(!p)continue;
+    Object.entries(c.variants||{}).forEach(([vid,v])=>{
+      if(v.price!==undefined&&Number(v.price)<1){
+        const vTitle=p.variants.nodes.find(x=>x.id===vid)?.title||'';
+        const isDefault=!vTitle||vTitle==='Default Title';
+        lowPrices.push(`${esc(p.title)}${isDefault?'':` — ${esc(vTitle)}`}: <strong>${Number(v.price).toFixed(2)}</strong>`);
+      }
+    });
+  }
+  if(lowPrices.length){
+    const affected=lowPrices.length===1?'1 product has a':''+lowPrices.length+' products have a';
+    const rows=lowPrices.map(r=>`<div style="margin-top:4px;font-size:12px;color:#92400e">· ${r}</div>`).join('');
+    const banner=`<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:2px">⚠ Price below 1.00 — is this correct?</div>
+      <div style="font-size:12px;color:#92400e">${affected} price under 1.00 — double-check before saving.</div>
+      ${rows}
+    </div>`;
+    list.innerHTML=banner+list.innerHTML;
+  }
   // Reset cancel button to its initial state each time modal opens
   const cb=$('m-save-cancel');
   if(cb){cb.disabled=false;cb.textContent='Cancel';cb.setAttribute('data-close','m-save');}
