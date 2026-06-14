@@ -354,12 +354,12 @@
 <div id="m-feedback" class="overlay hidden">
   <div class="modal" style="max-width:420px">
     <div class="modal-head">
-      <div><h2>Share feedback</h2><p class="modal-sub">What's working? What's missing?</p></div>
+      <div><h2 id="fb-title">Share feedback</h2><p id="fb-sub" class="modal-sub">What's working? What's missing?</p></div>
       <button class="close-btn" data-close="m-feedback">✕</button>
     </div>
     <div class="modal-body" style="display:flex;flex-direction:column;gap:12px">
       <div class="bulk-field">
-        <label>Your feedback <span style="color:var(--red)">*</span></label>
+        <label id="fb-label">Your feedback <span style="color:var(--red)">*</span></label>
         <textarea id="fb-message" class="sched-input" rows="4" placeholder="Tell us what you think, what's broken, or what you'd love to see…" style="resize:vertical;min-height:90px"></textarea>
       </div>
       <div class="bulk-field">

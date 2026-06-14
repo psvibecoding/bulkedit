@@ -1337,6 +1337,8 @@ function updateSchedBadge(){
 function updatePlanBadge(){
   const el=$('plan-badge'); if(!el)return;
   const plan=S.plan||'free';
+  const fbBtn=$('btn-feedback');
+  if(fbBtn) fbBtn.textContent=['starter','pro'].includes(plan)?'Support':'Feedback';
   const planLabel=plan==='pro'?'Pro':plan==='starter'?'Growth':plan==='beta'?'Beta':'Free';
   const parts=[];
   if(plan==='free') parts.push(`${S.pushesUsed}/100 products this month`);
@@ -1895,8 +1897,14 @@ function boot(){
     openModal('m-feedback');
   });
 
-  // Feedback
+  // Feedback / Support
   $('btn-feedback').addEventListener('click', ()=>{
+    const isSupport = ['starter','pro'].includes(S.plan);
+    $('fb-title').textContent   = isSupport ? 'Contact support'          : 'Share feedback';
+    $('fb-sub').textContent     = isSupport ? 'Describe your issue and we\'ll get back to you.' : 'What\'s working? What\'s missing?';
+    $('fb-label').innerHTML     = isSupport ? 'Your message <span style="color:var(--red)">*</span>' : 'Your feedback <span style="color:var(--red)">*</span>';
+    $('fb-message').placeholder = isSupport ? 'Describe the issue or what you need help with…'  : 'Tell us what you think, what\'s broken, or what you\'d love to see…';
+    $('fb-submit').textContent  = isSupport ? 'Send message →' : 'Send feedback →';
     $('fb-message').value=''; $('fb-email').value='';
     openModal('m-feedback');
   });
