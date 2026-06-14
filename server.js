@@ -205,7 +205,7 @@ async function sendWelcomeEmail(shop, storeName, storeEmail) {
     <div style="background:#1a5c38;height:5px"></div>
     <div style="padding:36px 40px 32px;text-align:center;border-bottom:1px solid #f3f3f1">
       <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#0e0e0c;letter-spacing:-.02em">Welcome to Lederly</h1>
-      <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6">${storeName} is connected. You're on the <strong style="color:#1a5c38">Beta plan</strong> — full access, no credit card required.</p>
+      <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6">${storeName} is connected. Everything is <strong style="color:#1a5c38">free during early access</strong> — full features, no credit card required.</p>
     </div>
     <div style="padding:28px 40px">
       <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.7">Here's what you can do right now:</p>
@@ -1188,8 +1188,8 @@ app.post('/api/waitlist', waitlistLimiter, async (req, res) => {
 </div>
 <h1 style="font-size:26px;font-weight:700;margin:0 0 12px">You're on the list.</h1>
 <p style="color:#6b7280;line-height:1.6;margin:0 0 20px">Thanks for signing up! We'll let you know as soon as a paid plan opens up.</p>
-<p style="color:#6b7280;line-height:1.6;margin:0 0 28px">In the meantime, <strong style="color:#0e0e0c">the beta is live right now</strong> — all Pro features unlocked for free, no account needed.</p>
-<a href="https://lederly.com/app" style="display:inline-block;background:#1a5c38;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:10px">Try the free beta →</a>
+<p style="color:#6b7280;line-height:1.6;margin:0 0 28px">In the meantime, <strong style="color:#0e0e0c">Lederly is free right now</strong> — full access, no credit card needed.</p>
+<a href="https://lederly.com/app" style="display:inline-block;background:#1a5c38;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 24px;border-radius:10px">Try Lederly free →</a>
 <p style="font-size:12px;color:#9ca3af;margin-top:32px;border-top:1px solid #e5e3de;padding-top:20px">You're receiving this because you signed up at lederly.com. No further emails unless you reply to this one.</p>
 </div>`
       }).catch(() => {});
@@ -1696,13 +1696,13 @@ app.post('/api/schedule/create', apiLimiter, async (req, res) => {
     const limit = PLAN_SCHED_LIMIT[plan] ?? 5;
     if (isFinite(limit)) {
       const used = await countSchedsThisMonth(shop);
-      const msg = plan === 'beta'
-        ? `You've used all ${limit} beta schedules this month. Join the waitlist at lederly.com for early access to paid plans.`
-        : `You've used all ${limit} schedules for this month. Upgrade to Pro for unlimited scheduling.`;
+      const msg = plan === 'starter'
+        ? `You've used all ${limit} schedules this month. Upgrade to Pro for unlimited scheduling.`
+        : `You've reached the schedule limit for this month (${limit}). Upgrade your plan to continue.`;
       if (used >= limit) throw Object.assign(new Error(msg), { code: 'PLAN_LIMIT' });
     }
     const { scheduledFor, label, changes, linkedTo, notifyEmail: providedEmail, timezone: clientTz } = req.body || {};
-    if (linkedTo && !PLAN_PRO_FEATURES.has(plan)) throw Object.assign(new Error('Auto-revert is a Pro feature. Upgrade to use it.'), { code: 'PLAN_LIMIT' });
+    if (linkedTo && !PLAN_PRO_FEATURES.has(plan)) throw Object.assign(new Error('Auto-revert is a Pro feature. Upgrade to Pro to use it.'), { code: 'PLAN_LIMIT' });
     if (!scheduledFor) throw new Error('Missing scheduledFor');
     const dt = new Date(scheduledFor);
     if (isNaN(dt.getTime())) throw new Error('Invalid scheduledFor');
