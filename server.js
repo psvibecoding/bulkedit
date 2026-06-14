@@ -1899,8 +1899,9 @@ app.get('/api/admin/stats', async (req, res) => {
   try {
     const excludeShops = (req.query.exclude || '').split(',').map(s => s.trim()).filter(Boolean);
     // Keep null-shop events (page_view, cta_click etc.) even when excluding shops
-    const excl = excludeShops.length ? `AND (shop IS NULL OR shop != ALL($1::text[]))` : '';
-    const ep   = excludeShops.length ? [excludeShops] : [];
+    const excl      = excludeShops.length ? `AND (shop IS NULL OR shop != ALL($1::text[]))` : '';
+    const excl_shop = excludeShops.length ? `AND shop != ALL($1::text[])` : '';
+    const ep        = excludeShops.length ? [excludeShops] : [];
 
     const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR, sourcesR, refsR] = await Promise.all([
       dbPool.query(`SELECT COUNT(DISTINCT shop) as n FROM analytics_events WHERE event='connect' AND shop IS NOT NULL ${excl}`, ep),
@@ -1918,14 +1919,13 @@ app.get('/api/admin/stats', async (req, res) => {
         GROUP BY 1,2 ORDER BY 1`, ep),
       dbPool.query(`
         SELECT
-          COUNT(DISTINCT CASE WHEN event='connect'         THEN shop END) as connected,
-          COUNT(DISTINCT CASE WHEN event='save'            THEN shop END) as saved,
-          COUNT(DISTINCT CASE WHEN event='schedule_create' THEN shop END) as scheduled,
-          COUNT(DISTINCT CASE WHEN event='demo_start'      THEN shop END) as demoed,
+          (SELECT COUNT(DISTINCT shop) FROM analytics_events WHERE event='connect'         AND shop IS NOT NULL ${excl_shop}) as connected,
+          (SELECT COUNT(DISTINCT shop) FROM analytics_events WHERE event='save'            AND shop IS NOT NULL ${excl_shop}) as saved,
+          (SELECT COUNT(DISTINCT shop) FROM analytics_events WHERE event='schedule_create' AND shop IS NOT NULL ${excl_shop}) as scheduled,
+          (SELECT COUNT(DISTINCT shop) FROM analytics_events WHERE event='demo_start'      AND shop IS NOT NULL ${excl_shop}) as demoed,
           (SELECT COUNT(*) FROM analytics_events WHERE event='page_view' AND ts >= NOW()-INTERVAL '30 days') as pv_30d,
           (SELECT COUNT(*) FROM analytics_events WHERE event='page_view' AND ts >= NOW()-INTERVAL '7 days')  as pv_7d,
-          (SELECT COUNT(*) FROM analytics_events WHERE event='cta_click' AND ts >= NOW()-INTERVAL '30 days') as cta_30d
-        FROM analytics_events WHERE shop IS NOT NULL ${excl}`, ep),
+          (SELECT COUNT(*) FROM analytics_events WHERE event='cta_click' AND ts >= NOW()-INTERVAL '30 days') as cta_30d`, ep),
       dbPool.query(`
         SELECT
           COALESCE(SUM((meta->>'v')::int) FILTER (WHERE event='save'), 0)                          AS variants_saved,
