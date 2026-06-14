@@ -1112,6 +1112,10 @@ async function confirmColl(){
 /* ── REVIEW & SAVE ── */
 function openSaveModal(){
   const payloads=Object.values(S.changes); if(!payloads.length)return toast('No changes to save.');
+  if(S.plan==='free'&&S.pushesUsed>=100){
+    showUpgradeModal('You\'ve reached your 100 product monthly limit. Upgrade to Growth for unlimited saves.','Monthly limit reached');
+    return;
+  }
   $('m-save-sub').textContent=`${payloads.length} product${payloads.length!==1?'s':''} with pending changes`;
   const list=$('m-save-diff');
   list.innerHTML=payloads.map(c=>{
@@ -1252,7 +1256,17 @@ async function confirmSave(){
     const allFailed=[...failed,...(invFailed.length?[{pid:'inv',title:'Inventory',err:invFailed.join(', ')}]:[])];
 
     if(allFailed.length){
-      // Show errors inside modal, keep it open for retry
+      const isPlanLimit=allFailed.every(f=>/free plan limit|100 products/i.test(f.err||''));
+      if(isPlanLimit){
+        closeModal('m-save');
+        const msg=savedPids.length>0
+          ?`You saved ${savedPids.length} product${savedPids.length!==1?'s':''} but hit your 100 product monthly limit. Upgrade to Growth for unlimited saves.`
+          :'You\'ve reached your 100 product monthly limit. Upgrade to Growth for unlimited saves.';
+        showUpgradeModal(msg,'Monthly limit reached');
+        if(savedPids.length>0){ S.pushesUsed+=savedPids.length; updatePlanBadge(); }
+        return;
+      }
+      // Show real errors inside modal, keep it open for retry
       const errHTML=allFailed.map(f=>`<div class="diff-row"><span class="diff-field" style="color:var(--red)">✕ ${esc(f.title)}</span><span class="diff-new" style="color:var(--red);font-family:var(--mono);font-size:11px">${esc(f.err)}</span></div>`).join('');
       const banner=`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;margin-bottom:14px"><div style="font-size:12px;font-weight:600;color:#dc2626;margin-bottom:8px">⚠ ${allFailed.length} failed · ${savedPids.length} saved</div>${errHTML}</div>`;
       const list=$('m-save-diff'); if(list)list.innerHTML=banner+list.innerHTML;
