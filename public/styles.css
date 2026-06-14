@@ -272,6 +272,7 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .status-txt.dirty{color:var(--amber)}
 .status-txt.ok{color:var(--green)}
 .plan-badge{font-family:var(--mono);font-size:10px;color:var(--t4);letter-spacing:.03em;cursor:default}
+.plan-badge[data-warning="1"]{color:var(--amber)}
 .plan-badge[data-at-limit="1"]{color:var(--amber);font-weight:600}
 .status-hint{color:var(--t4);font-family:var(--mono);font-size:10px}
 .col-rz{position:absolute;right:-2px;top:0;bottom:0;width:4px;cursor:col-resize;z-index:1;background:transparent;border-radius:2px}
@@ -326,8 +327,14 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .btn-sched-confirm-action{background:var(--amber)!important;border-color:var(--amber)!important;color:#fff!important}
 .btn-sched-confirm-action:hover{opacity:.88}
 .revert-pro-badge{display:inline-flex;align-items:center;font-size:8px;font-family:var(--mono);font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:3px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;margin-left:6px;vertical-align:middle}
-.revert-pro-hint{display:block;font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:6px;padding:8px 10px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.15);border-radius:6px}
+.revert-pro-hint{display:block;font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:6px;padding:8px 10px;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.15);border-radius:6px;cursor:pointer;transition:background .15s}
+.revert-pro-hint:hover{background:rgba(124,58,237,.1)}
 .revert-pro-hint strong{color:#7c3aed}
+.sched-usage{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--b1);font-size:11px;font-family:var(--mono);color:var(--t3)}
+.sched-usage-bar{flex:1;height:4px;background:var(--s3);border-radius:2px;overflow:hidden}
+.sched-usage-fill{height:100%;border-radius:2px;transition:width .3s}
+.sched-limit-warn{margin:0 0 12px;padding:9px 12px;background:var(--amber-bg);border:1px solid var(--amber-brd);border-radius:8px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px}
+.sched-limit-warn button{margin-left:auto;font-size:11px;font-weight:600;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:var(--font);padding:0;text-decoration:underline}
 #sched-revert-field input[type=checkbox]:disabled{opacity:.4;cursor:not-allowed}
 .sched-input{background:var(--bg);border:1px solid var(--b2);border-radius:var(--r6);padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--tx);outline:none;width:100%;transition:all .15s}
 .sched-input:focus{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-bg)}

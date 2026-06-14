@@ -1347,8 +1347,13 @@ function updatePlanBadge(){
   else parts.push('schedules unlimited');
   el.textContent=`${planLabel} · ${parts.join(' · ')}`;
   el.dataset.plan=plan;
-  const atLimit=(plan==='free'&&S.pushesUsed>=100)||(S.schedLimit!==null&&S.schedUsed>=S.schedLimit);
+  const atLimit=(plan==='free'&&S.pushesUsed>=100)||(S.schedLimit!==null&&S.schedLimit>0&&S.schedUsed>=S.schedLimit);
+  const warning=!atLimit&&(
+    (plan==='free'&&S.pushesUsed>=80)||
+    (S.schedLimit!==null&&S.schedLimit>0&&S.schedUsed>=S.schedLimit-1)
+  );
   el.dataset.atLimit=atLimit?'1':'0';
+  el.dataset.warning=warning?'1':'0';
 }
 
 async function loadSchedules(){
@@ -1390,6 +1395,15 @@ function openScheduleModal(){
     $('m-sched-revert-toggle').disabled=!hasRevert;
     $('revert-pro-badge').classList.toggle('hidden',hasRevert);
     $('revert-pro-hint').classList.toggle('hidden',hasRevert);
+    // Last-schedule warning for Growth
+    const limitWarn=$('sched-limit-warn');
+    if(limitWarn){
+      const remaining=S.schedLimit!==null&&S.schedLimit>0?S.schedLimit-S.schedUsed:null;
+      if(remaining===1){
+        $('sched-limit-warn-text').textContent='⚠ Last schedule available this month.';
+        limitWarn.style.display='flex';
+      } else { limitWarn.style.display='none'; }
+    }
     const d=new Date(); d.setHours(d.getHours()+1,0,0,0);
     $('m-sched-dt').value=new Date(d-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
     $('m-sched-preview').innerHTML=Object.values(S.changes).map(c=>{
@@ -1645,6 +1659,17 @@ function renderSchedTabs(all){
     <button class="sched-tab${_schedTab==='pending'?' active':''}" data-sched-tab="pending">Pending${pending.length?` <span class="sched-tab-count">${pending.length}</span>`:''}</button>
     <button class="sched-tab${_schedTab==='done'?' active':''}" data-sched-tab="done">Done${doneCount?` <span class="sched-tab-count">${doneCount}</span>`:''}</button>
   </div>`;
+  // Usage meter for Growth plan
+  const usageEl=$('sched-usage');
+  if(usageEl&&S.plan==='starter'&&S.schedLimit!==null&&S.schedLimit>0){
+    const used=S.schedUsed; const total=S.schedLimit; const pct=Math.min(used/total*100,100);
+    const color=pct>=100?'#ef4444':pct>=80?'var(--amber)':'var(--green)';
+    $('sched-usage-label').textContent=`${used} / ${total} schedules used this month`;
+    $('sched-usage-fill').style.cssText=`width:${pct}%;background:${color}`;
+    const upBtn=$('sched-usage-upgrade');
+    if(upBtn) upBtn.style.display=pct>=80?'':'none';
+    usageEl.style.display='flex';
+  } else if(usageEl){ usageEl.style.display='none'; }
   const listHTML=list.length
     ?buildGroupedSchedHTML(list)
     :`<p class="sched-empty">${_schedTab==='pending'?'No pending schedules.':'No completed schedules yet.'}</p>`;
@@ -1887,6 +1912,12 @@ function boot(){
   $('btn-dl-csv').addEventListener('click',  ()=>{ dlText(buildCSV(),`shopify-export-${Date.now()}.csv`); toast('CSV downloaded.'); });
   $('btn-dl-json').addEventListener('click', ()=>{ dlText(buildJSON(),`shopify-export-${Date.now()}.json`); toast('JSON downloaded.'); });
   $('btn-copy-csv').addEventListener('click',()=>{ navigator.clipboard?.writeText(buildCSV()).then(()=>toast('CSV copied.')).catch(()=>toast('Clipboard not available.')); });
+
+  // Usage meter upgrade button
+  const usageUpgradeBtn=$('sched-usage-upgrade');
+  if(usageUpgradeBtn) usageUpgradeBtn.addEventListener('click',()=>{
+    showUpgradeModal('Upgrade to Pro for unlimited schedules and auto-revert.','Unlock unlimited schedules');
+  });
 
   // Upgrade request
   $('btn-upgrade-request').addEventListener('click', ()=>{

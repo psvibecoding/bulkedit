@@ -251,8 +251,19 @@
       ⚠️ <strong>Schedules may not persist across deploys.</strong> Set the <code>SCHED_FILE</code> environment variable to a mounted volume path (e.g. <code>/data/schedules.json</code>) in your Railway settings.
     </div>
 
+    <!-- Usage meter (Growth plan) -->
+    <div id="sched-usage" class="sched-usage" style="display:none">
+      <span id="sched-usage-label"></span>
+      <div class="sched-usage-bar"><div id="sched-usage-fill" class="sched-usage-fill"></div></div>
+      <button id="sched-usage-upgrade" style="display:none;font-size:10px;font-weight:600;color:#7c3aed;background:none;border:none;cursor:pointer;font-family:var(--mono);white-space:nowrap">Upgrade →</button>
+    </div>
+
     <!-- CREATE VIEW -->
     <div id="m-sched-create" class="modal-body">
+      <div id="sched-limit-warn" class="sched-limit-warn" style="display:none">
+        <span id="sched-limit-warn-text"></span>
+        <button onclick="showUpgradeModal('Upgrade to Pro for unlimited schedules and auto-revert.','Unlock unlimited schedules')">Upgrade →</button>
+      </div>
       <div class="bulk-field">
         <label>Label <span style="color:var(--red);font-weight:400">*</span></label>
         <input id="m-sched-label" type="text" class="sched-input" placeholder="e.g. Black Friday sale" required/>
@@ -273,7 +284,7 @@
         </label>
         <input id="m-sched-revert-dt" type="datetime-local" class="sched-input" style="display:none"/>
         <span id="m-sched-revert-hint" style="font-size:11px;color:var(--t4);font-family:var(--mono);display:none">Prices go back to original values at this time</span>
-        <span id="revert-pro-hint" class="revert-pro-hint hidden">Auto-revert is available on the <strong>Pro plan</strong> (€19.99/mo).</span>
+        <span id="revert-pro-hint" class="revert-pro-hint hidden" onclick="showUpgradeModal('Auto-revert is available on the Pro plan (€19.99/mo). Set changes to revert automatically when the sale ends.','Upgrade to Pro')">Auto-revert is available on the <strong>Pro plan</strong> (€19.99/mo). <strong style="color:#7c3aed">Upgrade →</strong></span>
       </div>
       <div class="bulk-field">
         <label>Changes preview</label>
