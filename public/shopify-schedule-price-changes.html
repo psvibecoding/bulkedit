@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>How to Schedule Price Changes on Shopify (Go Live Automatically) | Lederly</title>
+  <meta name="description" content="Schedule Shopify price changes to go live at an exact date and time — no manual pushing at midnight. Works for flash sales, BFCM, seasonal pricing, and limited drops."/>
+  <link rel="canonical" href="https://lederly.com/shopify-schedule-price-changes"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+  <meta property="og:type" content="article"/>
+  <meta property="og:title" content="How to Schedule Price Changes on Shopify (Go Live Automatically)"/>
+  <meta property="og:description" content="Schedule Shopify price changes to go live at an exact date and time — no manual pushing at midnight."/>
+  <meta property="og:url" content="https://lederly.com/shopify-schedule-price-changes"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Schedule Price Changes on Shopify (Go Live Automatically)",
+    "description": "Schedule Shopify price changes to go live at an exact date and time. Works for flash sales, BFCM, and seasonal pricing.",
+    "author": { "@type": "Organization", "name": "Lederly" },
+    "publisher": { "@type": "Organization", "name": "Lederly", "url": "https://lederly.com" },
+    "mainEntityOfPage": "https://lederly.com/shopify-schedule-price-changes"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f9f9f7;--white:#fff;--ink:#0e0e0c;--ink2:#3c3c38;--ink3:#7c7c74;--ink4:#b4b4ac;
+      --border:#e4e4de;--green:#1a5c38;--green-lt:#1f7044;
+      --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+    nav{position:sticky;top:0;z-index:50;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(249,249,247,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none}
+    .nav-cta:hover{background:var(--green-lt)}
+    article{max-width:720px;margin:0 auto;padding:64px 24px 100px}
+    .art-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:16px}
+    h1{font-family:var(--serif);font-size:42px;line-height:1.15;color:var(--ink);margin-bottom:20px;letter-spacing:-.02em}
+    .art-sub{font-size:18px;color:var(--ink3);margin-bottom:48px;line-height:1.5}
+    h2{font-family:var(--serif);font-size:26px;color:var(--ink);margin:48px 0 16px;letter-spacing:-.01em}
+    h3{font-size:16px;font-weight:600;color:var(--ink);margin:28px 0 10px}
+    p{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px}
+    ul,ol{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px;padding-left:24px}
+    li{margin-bottom:6px}
+    .callout{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:20px 24px;margin:32px 0}
+    .callout p{margin:0;color:var(--ink2)}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;font-size:11px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);border-bottom:2px solid var(--border)}
+    td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--ink2);vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    .yes{color:var(--green);font-weight:600}
+    .no{color:var(--ink4)}
+    .cta-block{background:var(--green);border-radius:16px;padding:40px;text-align:center;margin:56px 0 0}
+    .cta-block h2{color:#fff;margin:0 0 10px;font-size:28px}
+    .cta-block p{color:rgba(255,255,255,.75);margin:0 0 24px}
+    .cta-btn{display:inline-block;background:#fff;color:var(--green);text-decoration:none;font-weight:700;font-size:15px;padding:13px 28px;border-radius:10px}
+    footer{padding:28px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg)}
+    footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+    @media(max-width:640px){nav{padding:0 20px}article{padding:40px 20px 80px}h1{font-size:30px}footer{padding:20px;flex-direction:column}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <a href="/app" class="nav-cta">Try now →</a>
+</nav>
+
+<article>
+  <p class="art-tag">Guide · Shopify Scheduling</p>
+  <h1>How to Schedule Price Changes on Shopify (Go Live Automatically)</h1>
+  <p class="art-sub">Shopify doesn't let you schedule price changes natively. Your Black Friday prices go live when you remember to log in — not at midnight when the sale actually starts. Here's how to fix that.</p>
+
+  <h2>Why Shopify doesn't have native price scheduling</h2>
+  <p>Shopify has a "publish date" feature for new products and a discount code scheduler — but neither lets you change the actual price of existing products at a specific time. The product price field has no scheduling mechanism built in.</p>
+  <p>This means every time-sensitive price change — a flash sale, a BFCM launch, a seasonal markdown — requires you to be online at the exact right moment and manually push the change. For a midnight launch in a different timezone, that means setting an alarm.</p>
+  <p>For stores running frequent promotions, this is operationally unsustainable.</p>
+
+  <h2>What scheduled price changes look like in practice</h2>
+  <p>The workflow is: stage your changes now, set a go-live time, walk away. The changes execute at exactly the time you specified — whether you're awake or not.</p>
+
+  <h3>Step by step</h3>
+  <ol>
+    <li>Load your Shopify catalog in Lederly — products appear instantly in a table</li>
+    <li>Make your price changes inline — click any price cell and type the new value, or apply a bulk rule across a selection</li>
+    <li>Review the diff — every old price → new price shown before anything is staged</li>
+    <li>Click <strong>Schedule</strong> instead of pushing immediately</li>
+    <li>Set the go-live date and time (with timezone)</li>
+    <li>Optionally set an auto-revert time — prices restore to original values automatically</li>
+    <li>Confirm — you'll get an email when the schedule executes</li>
+  </ol>
+
+  <h2>Use cases where scheduling matters</h2>
+
+  <h3>Black Friday / Cyber Monday</h3>
+  <p>BFCM sales often need to go live at midnight or at a specific time coordinated with email campaigns and ads. If your email says "sale starts at 9pm EST" and you're manually pushing prices at 9:12pm, you've already broken the promise to your customers.</p>
+  <p>Scheduling the change in advance means the sale starts exactly when your marketing says it does.</p>
+
+  <h3>Flash sales</h3>
+  <p>24-hour or 48-hour sales that need a hard end time. Without scheduling, someone has to manually revert prices at the exact end time — which almost never happens on schedule. With auto-revert, the end is as precise as the start.</p>
+
+  <h3>Seasonal markdowns</h3>
+  <p>End-of-season clearance that goes live on a specific date. New collection pricing that replaces old pricing automatically. Any change with a known effective date.</p>
+
+  <h3>Limited product drops</h3>
+  <p>Schedule a product to go ACTIVE at drop time and back to DRAFT if the window closes — without touching the admin manually.</p>
+
+  <h2>Shopify scheduling options compared</h2>
+  <table>
+    <thead>
+      <tr><th>Method</th><th>Price scheduling</th><th>Auto-revert</th><th>Bulk changes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Shopify native</td><td class="no">✗ Not available</td><td class="no">✗</td><td class="no">Limited</td></tr>
+      <tr><td>Shopify discount codes</td><td class="no">✗ Not a price change</td><td class="no">✗</td><td class="no">—</td></tr>
+      <tr><td>CSV import (scheduled manually)</td><td class="no">✗ Manual only</td><td class="no">✗</td><td class="yes">✓</td></tr>
+      <tr><td>Lederly</td><td class="yes">✓ Exact date + time</td><td class="yes">✓ Automatic</td><td class="yes">✓ Inline</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What about Shopify discount codes instead?</h2>
+  <p>Discount codes are not the same as price changes. A discount code requires the customer to know the code and enter it at checkout — it's opt-in. A scheduled price change applies to the listed price on the product page, which affects conversion rates, Google Shopping feeds, and any customer who doesn't know they need a code.</p>
+  <p>For sale pricing that should be visible to all customers without friction, changing the actual product price is the right approach — and that's what scheduling handles.</p>
+
+  <div class="callout">
+    <p>Scheduling is available on Growth and Pro plans. Auto-revert requires Pro. Both are free during the current early access period.</p>
+  </div>
+
+  <h2>Getting notified when a schedule runs</h2>
+  <p>Every scheduled change sends an email confirmation when it executes: which products were updated, what changed, and whether any product encountered an error. You don't need to log in to verify the sale went live — the email tells you.</p>
+  <p>For auto-revert, you get a second email when the revert executes at the end of the promo.</p>
+
+  <h2>Related guides</h2>
+  <ul>
+    <li><a href="/bulk-edit-shopify-prices" style="color:var(--green)">How to bulk edit Shopify prices without CSV →</a></li>
+    <li><a href="/shopify-auto-revert-prices" style="color:var(--green)">How to auto-revert Shopify prices after a sale →</a></li>
+  </ul>
+
+  <div class="cta-block">
+    <h2>Schedule your next sale in minutes</h2>
+    <p>Set prices, pick a time, walk away. Free to try — no credit card required.</p>
+    <a href="/app" class="cta-btn">Try Lederly free →</a>
+  </div>
+</article>
+
+<footer>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a></p>
+</footer>
+</body>
+</html>

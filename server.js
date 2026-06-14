@@ -1141,6 +1141,9 @@ function maybeRunSchedules() {
 
 app.get('/privacy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacy.html')));
 app.get('/terms',   (req, res) => res.sendFile(path.join(__dirname, 'public', 'terms.html')));
+app.get('/bulk-edit-shopify-prices',       (req, res) => res.sendFile(path.join(__dirname, 'public', 'bulk-edit-shopify-prices.html')));
+app.get('/shopify-schedule-price-changes', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-schedule-price-changes.html')));
+app.get('/shopify-auto-revert-prices',     (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-auto-revert-prices.html')));
 
 app.post('/api/feedback', feedbackLimiter, async (req, res) => {
   try {

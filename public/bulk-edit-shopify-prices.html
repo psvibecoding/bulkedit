@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>How to Bulk Edit Shopify Product Prices (Without CSV Export) | Lederly</title>
+  <meta name="description" content="Learn how to bulk edit prices on hundreds of Shopify products in minutes — without exporting a CSV, without Excel, without reimporting. Instant inline editing."/>
+  <link rel="canonical" href="https://lederly.com/bulk-edit-shopify-prices"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+  <meta property="og:type" content="article"/>
+  <meta property="og:title" content="How to Bulk Edit Shopify Product Prices (Without CSV Export)"/>
+  <meta property="og:description" content="Change prices on hundreds of Shopify products in minutes — no CSV, no Excel, no reimport."/>
+  <meta property="og:url" content="https://lederly.com/bulk-edit-shopify-prices"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Bulk Edit Shopify Product Prices (Without CSV Export)",
+    "description": "Learn how to bulk edit prices on hundreds of Shopify products in minutes without exporting a CSV.",
+    "author": { "@type": "Organization", "name": "Lederly" },
+    "publisher": { "@type": "Organization", "name": "Lederly", "url": "https://lederly.com" },
+    "mainEntityOfPage": "https://lederly.com/bulk-edit-shopify-prices"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f9f9f7;--white:#fff;--ink:#0e0e0c;--ink2:#3c3c38;--ink3:#7c7c74;--ink4:#b4b4ac;
+      --border:#e4e4de;--green:#1a5c38;--green-lt:#1f7044;
+      --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+    nav{position:sticky;top:0;z-index:50;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(249,249,247,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none}
+    .nav-cta:hover{background:var(--green-lt)}
+    article{max-width:720px;margin:0 auto;padding:64px 24px 100px}
+    .art-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:16px}
+    h1{font-family:var(--serif);font-size:42px;line-height:1.15;color:var(--ink);margin-bottom:20px;letter-spacing:-.02em}
+    .art-sub{font-size:18px;color:var(--ink3);margin-bottom:48px;line-height:1.5}
+    h2{font-family:var(--serif);font-size:26px;color:var(--ink);margin:48px 0 16px;letter-spacing:-.01em}
+    h3{font-size:16px;font-weight:600;color:var(--ink);margin:28px 0 10px}
+    p{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px}
+    ul,ol{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px;padding-left:24px}
+    li{margin-bottom:6px}
+    .callout{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:20px 24px;margin:32px 0}
+    .callout p{margin:0;color:var(--ink2)}
+    .cta-block{background:var(--green);border-radius:16px;padding:40px;text-align:center;margin:56px 0 0}
+    .cta-block h2{color:#fff;margin:0 0 10px;font-size:28px}
+    .cta-block p{color:rgba(255,255,255,.75);margin:0 0 24px}
+    .cta-btn{display:inline-block;background:#fff;color:var(--green);text-decoration:none;font-weight:700;font-size:15px;padding:13px 28px;border-radius:10px}
+    footer{padding:28px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg)}
+    footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+    @media(max-width:640px){nav{padding:0 20px}article{padding:40px 20px 80px}h1{font-size:30px}footer{padding:20px;flex-direction:column}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <a href="/app" class="nav-cta">Try now →</a>
+</nav>
+
+<article>
+  <p class="art-tag">Guide · Shopify Bulk Editing</p>
+  <h1>How to Bulk Edit Shopify Product Prices (Without CSV Export)</h1>
+  <p class="art-sub">Changing prices on 200 products shouldn't take 3 hours and an Excel file. Here's a faster way that doesn't involve exporting, editing, and reimporting anything.</p>
+
+  <h2>The problem with Shopify's native bulk editor</h2>
+  <p>Shopify's built-in bulk editor lets you select multiple products and make changes — but it's limited. You can't filter products easily, you can't apply percentage rules across a selection, and you certainly can't preview what you're about to change before committing.</p>
+  <p>The alternative most merchants resort to is the CSV export workflow: export your catalog, open it in Excel or Google Sheets, apply formulas, fix the formatting, and reimport. If anything goes wrong during the import — a wrong column header, a missing variant SKU — Shopify either silently ignores the row or throws a generic error.</p>
+  <p>For a one-off change on 10 products, it's manageable. For 500 products during a flash sale, it's a risk.</p>
+
+  <div class="callout">
+    <p>"I need to apply a 15% discount to my whole catalog for a weekend promo. In Shopify I have to export, edit in Excel, reimport — and pray the format is right." — common complaint from Shopify merchants</p>
+  </div>
+
+  <h2>What inline bulk editing looks like</h2>
+  <p>A proper bulk editor loads your entire product catalog in a table — title, price, compare-at price, SKU, tags, vendor, status — all in one view. You click a cell and edit it directly. No exports. No imports. No format to get right.</p>
+
+  <h3>Editing a single product</h3>
+  <p>Click the price cell, type the new value, move on. The change is staged — nothing is sent to Shopify until you explicitly push it. This means you can edit 50 products and then review all the changes before anything goes live.</p>
+
+  <h3>Bulk price rules across multiple products</h3>
+  <p>Select multiple rows, open the bulk price action, and apply a rule: set a fixed price, apply a percentage decrease, round to the nearest .99. Every selected product gets updated in your staging view instantly.</p>
+
+  <h3>Reviewing the diff before saving</h3>
+  <p>Before pushing to Shopify, you see exactly what's changing: old price → new price, for every product. If you made a mistake — set something to €0.50 instead of €5.00 — you catch it here, not after 200 orders have been placed.</p>
+
+  <h2>Step by step: bulk edit prices on Shopify without CSV</h2>
+  <ol>
+    <li>Connect your store with one-click OAuth — no credentials stored</li>
+    <li>Your catalog loads instantly in a spreadsheet-style table</li>
+    <li>Filter by collection, tag, vendor, or status to narrow your selection</li>
+    <li>Select the products you want to change</li>
+    <li>Apply a bulk price rule (fixed, percentage, or per-product)</li>
+    <li>Review the full diff — every change shown before it goes live</li>
+    <li>Push to Shopify in one click</li>
+  </ol>
+
+  <h2>When this approach is faster than CSV</h2>
+  <p>The CSV workflow makes sense if you're migrating a catalog or need to change fields that aren't exposed in a UI. For pricing, discounts, tags, status, and SEO — inline editing is always faster.</p>
+  <p>The math is simple: exporting takes 30 seconds, opening and editing in Excel takes 10-30 minutes depending on catalog size, reimporting takes another minute, and verifying the import worked correctly takes however long it takes to spot the errors. A 200-product price update done inline takes under 5 minutes.</p>
+
+  <h2>What about scheduling the price change?</h2>
+  <p>Inline editing handles the "right now" case. But if you need prices to go live at midnight before a flash sale, or revert automatically when the weekend promo ends, that requires scheduling — which is a different feature entirely. <a href="/shopify-schedule-price-changes" style="color:var(--green)">Learn how to schedule Shopify price changes →</a></p>
+
+  <div class="cta-block">
+    <h2>Edit your entire catalog in minutes</h2>
+    <p>Free plan available. No CSV. No setup. Connect your store and start editing.</p>
+    <a href="/app" class="cta-btn">Try Lederly free →</a>
+  </div>
+</article>
+
+<footer>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a></p>
+</footer>
+</body>
+</html>

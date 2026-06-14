@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>How to Auto-Revert Shopify Prices After a Sale (Set It and Forget It) | Lederly</title>
+  <meta name="description" content="Set your Shopify sale prices to revert automatically when the promo ends. No 3am alarms, no forgotten discounts still live on Monday. Here's how auto-revert works."/>
+  <link rel="canonical" href="https://lederly.com/shopify-auto-revert-prices"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+  <meta property="og:type" content="article"/>
+  <meta property="og:title" content="How to Auto-Revert Shopify Prices After a Sale"/>
+  <meta property="og:description" content="Set Shopify sale prices to revert automatically when the promo ends. No forgotten discounts, no 3am alarms."/>
+  <meta property="og:url" content="https://lederly.com/shopify-auto-revert-prices"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Auto-Revert Shopify Prices After a Sale (Set It and Forget It)",
+    "description": "Set your Shopify sale prices to revert automatically when the promo ends. No 3am alarms, no forgotten discounts.",
+    "author": { "@type": "Organization", "name": "Lederly" },
+    "publisher": { "@type": "Organization", "name": "Lederly", "url": "https://lederly.com" },
+    "mainEntityOfPage": "https://lederly.com/shopify-auto-revert-prices"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f9f9f7;--white:#fff;--ink:#0e0e0c;--ink2:#3c3c38;--ink3:#7c7c74;--ink4:#b4b4ac;
+      --border:#e4e4de;--green:#1a5c38;--green-lt:#1f7044;
+      --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+    nav{position:sticky;top:0;z-index:50;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(249,249,247,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none}
+    .nav-cta:hover{background:var(--green-lt)}
+    article{max-width:720px;margin:0 auto;padding:64px 24px 100px}
+    .art-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:16px}
+    h1{font-family:var(--serif);font-size:42px;line-height:1.15;color:var(--ink);margin-bottom:20px;letter-spacing:-.02em}
+    .art-sub{font-size:18px;color:var(--ink3);margin-bottom:48px;line-height:1.5}
+    h2{font-family:var(--serif);font-size:26px;color:var(--ink);margin:48px 0 16px;letter-spacing:-.01em}
+    h3{font-size:16px;font-weight:600;color:var(--ink);margin:28px 0 10px}
+    p{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px}
+    ul,ol{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px;padding-left:24px}
+    li{margin-bottom:6px}
+    .callout{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:20px 24px;margin:32px 0}
+    .callout p{margin:0;color:var(--ink2)}
+    .callout.warn{border-left-color:#d97706;background:#fffbeb}
+    .cta-block{background:var(--green);border-radius:16px;padding:40px;text-align:center;margin:56px 0 0}
+    .cta-block h2{color:#fff;margin:0 0 10px;font-size:28px}
+    .cta-block p{color:rgba(255,255,255,.75);margin:0 0 24px}
+    .cta-btn{display:inline-block;background:#fff;color:var(--green);text-decoration:none;font-weight:700;font-size:15px;padding:13px 28px;border-radius:10px}
+    footer{padding:28px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg)}
+    footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+    @media(max-width:640px){nav{padding:0 20px}article{padding:40px 20px 80px}h1{font-size:30px}footer{padding:20px;flex-direction:column}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <a href="/app" class="nav-cta">Try now →</a>
+</nav>
+
+<article>
+  <p class="art-tag">Guide · Shopify Pricing</p>
+  <h1>How to Auto-Revert Shopify Prices After a Sale (Set It and Forget It)</h1>
+  <p class="art-sub">Running a weekend sale means changing prices twice: once to go on sale, once to revert. Most merchants only remember the first part. Here's how to automate both.</p>
+
+  <h2>The problem: forgetting to revert sale prices</h2>
+  <p>You run a flash sale. You drop prices on 150 products Friday evening. The weekend goes well. Monday comes, you're busy with orders, emails, support — and the sale prices are still live. By Tuesday afternoon you've sold another 40 orders at the wrong price.</p>
+  <p>This isn't a rare edge case. It happens to merchants regularly, especially during high-traffic events like BFCM, summer sales, or seasonal promos where the original task of reverting prices gets buried under everything else that follows a successful weekend.</p>
+
+  <div class="callout warn">
+    <p>"Forgot to revert my sale prices after BFCM. Sold at discount for 3 days before I noticed. Lost a lot of margin on ~180 orders before I caught it." — Shopify merchant</p>
+  </div>
+
+  <h2>What auto-revert means</h2>
+  <p>Auto-revert means you set the sale price and the revert price at the same time, before the sale starts. The system schedules both changes: the discount goes live at the time you specify, and the original prices are restored automatically at the end time you set — with no action required from you.</p>
+  <p>The original prices are captured at the moment you create the schedule, so there's no risk of reverting to the wrong value.</p>
+
+  <h2>How to set up auto-revert on Shopify</h2>
+  <p>Shopify doesn't have native auto-revert. The platform lets you change prices manually or via CSV, but it has no built-in mechanism to schedule a price to revert to its previous value at a specific time.</p>
+  <p>The workflow using Lederly:</p>
+  <ol>
+    <li>Load your catalog and make the sale price changes (inline, no CSV)</li>
+    <li>Instead of pushing directly, click <strong>Schedule</strong></li>
+    <li>Set the go-live date and time (e.g. Friday 00:00)</li>
+    <li>Enable <strong>Auto-revert</strong> and set the end time (e.g. Sunday 23:59)</li>
+    <li>Confirm — both changes are now scheduled</li>
+  </ol>
+  <p>From that point, nothing else is needed. Your prices go on sale automatically and revert automatically. You get an email confirmation when each change executes.</p>
+
+  <h2>What gets reverted — and what doesn't</h2>
+  <p>Auto-revert captures the exact values at the time you create the schedule: price, compare-at price, or any other field you changed. When the revert executes, those original values are restored product by product.</p>
+  <p>If a product's price was manually changed between the sale start and the revert time, the revert will still restore to the value captured at schedule creation — not to whatever was set in between. This is intentional: you always know exactly what will be reverted.</p>
+
+  <h3>Which fields can be reverted?</h3>
+  <ul>
+    <li>Price and compare-at price (most common)</li>
+    <li>Product status (ACTIVE / DRAFT) — useful for limited drops</li>
+    <li>Tags — add a "sale" tag during the promo, remove it automatically</li>
+    <li>Vendor, title, and other product fields</li>
+  </ul>
+
+  <h2>Common use cases</h2>
+
+  <h3>Black Friday / Cyber Monday</h3>
+  <p>Schedule discounts across your entire catalog for the BFCM weekend. Set auto-revert for Monday midnight. No alarm. No Monday morning panic.</p>
+
+  <h3>Flash sales</h3>
+  <p>24-hour or 48-hour promotions that need to start and end precisely. Set both at the same time before the campaign launches.</p>
+
+  <h3>Seasonal pricing</h3>
+  <p>Summer pricing that reverts in September. Holiday bundles that go back to individual pricing in January. Any time-bounded change to your catalog.</p>
+
+  <h3>Limited product drops</h3>
+  <p>Schedule a product to go from DRAFT to ACTIVE at launch time, and back to DRAFT if the drop ends at a specific time — all without touching Shopify manually.</p>
+
+  <h2>What happens if the revert fails?</h2>
+  <p>Lederly sends an email notification for every scheduled change that executes. If a revert encounters an error on a specific product — for example, if the product was deleted between the schedule creation and execution — you're notified immediately with the details.</p>
+
+  <div class="callout">
+    <p>Auto-revert is a Pro plan feature. It's available free during the current early access period.</p>
+  </div>
+
+  <div class="cta-block">
+    <h2>Never forget to revert sale prices again</h2>
+    <p>Schedule your next promo and set the auto-revert in the same step. Free to try.</p>
+    <a href="/app" class="cta-btn">Try Lederly free →</a>
+  </div>
+</article>
+
+<footer>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a></p>
+</footer>
+</body>
+</html>
