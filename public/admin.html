@@ -145,7 +145,10 @@ tr:last-child td{border-bottom:none}
     <button onclick="applyExclude()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:6px;padding:5px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;white-space:nowrap">
       Apply
     </button>
-    <button onclick="resetAnalytics()" style="margin-left:auto;background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.35);color:#fca5a5;border-radius:6px;padding:5px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;white-space:nowrap">
+    <button onclick="purgeStores()" style="margin-left:auto;background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.35);color:#fca5a5;border-radius:6px;padding:5px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;white-space:nowrap">
+      Purge stores
+    </button>
+    <button onclick="resetAnalytics()" style="background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.35);color:#fca5a5;border-radius:6px;padding:5px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;white-space:nowrap">
       Reset analytics
     </button>
   </div>
@@ -261,6 +264,19 @@ async function load(){
   if(r.status===401) throw new Error('Unauthorized — provide ?secret=PING_SECRET in URL');
   if(!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
+}
+
+async function purgeStores(){
+  const keep = prompt('Keep which store? (default: lederly-beta-e7n6xz74.myshopify.com)', 'lederly-beta-e7n6xz74.myshopify.com');
+  if(!keep) return;
+  if(!confirm(`Delete ALL stores EXCEPT "${keep}"? This cannot be undone.`)) return;
+  const params = new URLSearchParams();
+  if(SECRET) params.set('secret', SECRET);
+  params.set('keep', keep);
+  const r = await fetch(`/api/admin/purge-stores?${params}`, { method: 'DELETE' });
+  const d = await r.json();
+  if(d.ok) { alert(`Done. Deleted: plans=${d.deleted.store_plans}, usage=${d.deleted.store_usage}, info=${d.deleted.store_info}, schedules=${d.deleted.schedules}, events=${d.deleted.analytics_events}`); render(); }
+  else alert('Error: ' + d.error);
 }
 
 async function resetAnalytics(){

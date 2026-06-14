@@ -1898,7 +1898,8 @@ app.get('/api/admin/stats', async (req, res) => {
 
   try {
     const excludeShops = (req.query.exclude || '').split(',').map(s => s.trim()).filter(Boolean);
-    const excl = excludeShops.length ? `AND shop != ALL($1::text[])` : '';
+    // Keep null-shop events (page_view, cta_click etc.) even when excluding shops
+    const excl = excludeShops.length ? `AND (shop IS NULL OR shop != ALL($1::text[]))` : '';
     const ep   = excludeShops.length ? [excludeShops] : [];
 
     const [totalR, active7R, active30R, eventsR, dailyR, funnelR, deepR, waitlistR, sourcesR, refsR] = await Promise.all([
@@ -2007,6 +2008,31 @@ app.delete('/api/admin/reset-analytics', async (req, res) => {
     res.json({ ok: true, deleted: r.rowCount });
   } catch (e) {
     res.status(500).json({ ok: false, error: IS_PROD ? 'Reset error' : e.message });
+  }
+});
+
+// Delete all stores except the ones listed in ?keep=shop1,shop2
+app.delete('/api/admin/purge-stores', async (req, res) => {
+  const secret = req.headers['x-ping-secret'] || req.query.secret;
+  if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  if (!dbPool) return res.json({ ok: false, error: 'No DB' });
+  const keep = (req.query.keep || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!keep.length) return res.status(400).json({ ok: false, error: 'Provide ?keep=shop1,shop2 — at least one shop to keep is required' });
+  try {
+    const [p, u, i, s, a] = await Promise.all([
+      dbPool.query(`DELETE FROM store_plans      WHERE shop != ALL($1::text[])`, [keep]),
+      dbPool.query(`DELETE FROM store_usage      WHERE shop != ALL($1::text[])`, [keep]),
+      dbPool.query(`DELETE FROM store_info       WHERE shop != ALL($1::text[])`, [keep]),
+      dbPool.query(`DELETE FROM schedules        WHERE data->>'shop' != ALL($1::text[])`, [keep]),
+      dbPool.query(`DELETE FROM analytics_events WHERE shop IS NOT NULL AND shop != ALL($1::text[])`, [keep]),
+    ]);
+    res.json({ ok: true, kept: keep, deleted: {
+      store_plans: p.rowCount, store_usage: u.rowCount,
+      store_info: i.rowCount, schedules: s.rowCount,
+      analytics_events: a.rowCount,
+    }});
+  } catch (e) {
+    res.status(500).json({ ok: false, error: IS_PROD ? 'Purge error' : e.message });
   }
 });
 
