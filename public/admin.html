@@ -606,7 +606,7 @@ function renderStores(stores){
     <td><select onchange="setPlan('${s.shop}',this)" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:${s.plan==='beta'||s.plan==='early_access'?'#dcfce7':s.plan==='pro'?'#ede9fe':s.plan==='starter'?'#eff6ff':'#f1f5f9'};color:${s.plan==='beta'||s.plan==='early_access'?'#166534':s.plan==='pro'?'#5b21b6':s.plan==='starter'?'#1d4ed8':'#475569'};cursor:pointer">
       <option value="beta" ${s.plan==='beta'?'selected':''}>beta</option>
       <option value="free" ${s.plan==='free'?'selected':''}>free</option>
-      <option value="starter" ${s.plan==='starter'?'selected':''}>starter</option>
+      <option value="starter" ${s.plan==='starter'?'selected':''}>growth</option>
       <option value="pro" ${s.plan==='pro'?'selected':''}>pro</option>
     </select></td>
     <td style="text-align:right;font-family:var(--mono);font-size:12px">${fmt(s.saves)}</td>

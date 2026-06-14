@@ -1446,7 +1446,7 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
     const plan = await getStorePlan(s.shop);
     if (plan === 'free') {
       const used = await getPushesThisMonth(s.shop);
-      if (used >= 100) throw Object.assign(new Error('Free plan limit reached: 100 products pushed this month. Upgrade to Starter for unlimited pushes.'), { code: 'PLAN_LIMIT' });
+      if (used >= 100) throw Object.assign(new Error('Free plan limit reached: 100 products pushed this month. Upgrade to Growth for unlimited pushes.'), { code: 'PLAN_LIMIT' });
     }
     const { productId, product, variants = [], metafields = [] } = req.body || {};
     const results = [];

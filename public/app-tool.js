@@ -1337,7 +1337,7 @@ function updateSchedBadge(){
 function updatePlanBadge(){
   const el=$('plan-badge'); if(!el)return;
   const plan=S.plan||'free';
-  const planLabel=plan==='pro'?'Pro':plan==='starter'?'Starter':plan==='beta'?'Beta':'Free';
+  const planLabel=plan==='pro'?'Pro':plan==='starter'?'Growth':plan==='beta'?'Beta':'Free';
   const parts=[];
   if(plan==='free') parts.push(`${S.pushesUsed}/100 products this month`);
   if(S.schedLimit===0) parts.push('no scheduling');
@@ -1889,7 +1889,7 @@ function boot(){
   // Upgrade request
   $('btn-upgrade-request').addEventListener('click', ()=>{
     closeModal('m-upgrade');
-    const plan = S.plan==='free'?'Starter':'Pro';
+    const plan = S.plan==='free'?'Growth':'Pro';
     $('fb-message').value=`I'd like to upgrade to the ${plan} plan.`;
     $('fb-email').value='';
     openModal('m-feedback');
@@ -1915,7 +1915,7 @@ function boot(){
 
   // Schedule
   $('btn-schedule').addEventListener('click', ()=>{
-    if(S.schedLimit===0) return showUpgradeModal('Scheduling is available from the Starter plan (€9.99/mo).', 'Upgrade to schedule');
+    if(S.schedLimit===0) return showUpgradeModal('Scheduling is available from the Growth plan (€9.99/mo).', 'Upgrade to schedule');
     openScheduleModal();
   });
   $('m-sched-confirm').addEventListener('click', confirmSchedule);
@@ -1971,7 +1971,7 @@ function boot(){
 
   // CSV Import
   $('btn-import-csv').addEventListener('click', ()=>{
-    if((S.plan==='free')&&!S.demo){ showUpgradeModal('CSV Import is available from the Starter plan (€9.99/mo).'); return; }
+    if((S.plan==='free')&&!S.demo){ showUpgradeModal('CSV Import is available from the Growth plan (€9.99/mo).'); return; }
     $('csv-file-input').click();
   });
   $('btn-csv-template').addEventListener('click', downloadCSVTemplate);
