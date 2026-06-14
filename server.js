@@ -2042,13 +2042,13 @@ app.get('/api/admin/stores', async (req, res) => {
   }
 });
 
+app.post('/api/admin/auth', express.json(), (req, res) => {
+  const { secret } = req.body || {};
+  if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false });
+  res.json({ ok: true });
+});
+
 app.get('/admin', (req, res) => {
-  const secret = req.query.secret;
-  if (PING_SECRET && secret !== PING_SECRET) {
-    return res.status(401).type('html').send(
-      '<!doctype html><html><body style="font-family:sans-serif;padding:40px"><h2>Unauthorized</h2><p>Provide <code>?secret=PING_SECRET</code></p></body></html>'
-    );
-  }
   res.removeHeader('Content-Security-Policy');
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });

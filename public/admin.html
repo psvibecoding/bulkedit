@@ -14,6 +14,14 @@
   --border:#e4e4de;--mono:'Geist Mono','Menlo',monospace;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:36px 40px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.login-box h1{font-size:18px;font-weight:700;margin-bottom:4px}
+.login-box p{font-size:13px;color:var(--ink3);margin-bottom:24px}
+.login-box input{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:14px;font-family:inherit;outline:none;margin-bottom:12px}
+.login-box input:focus{border-color:var(--green)}
+.login-box button{width:100%;background:var(--green);color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer}
+.login-box .login-err{font-size:12px;color:#dc2626;margin-top:8px;display:none}
 header{background:var(--green);color:#fff;padding:14px 28px;display:flex;align-items:center;justify-content:space-between}
 .logo{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
 .logo-mark{background:rgba(255,255,255,.2);border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
@@ -112,6 +120,15 @@ tr:last-child td{border-bottom:none}
 </style>
 </head>
 <body>
+<div id="login-screen">
+  <div class="login-box">
+    <h1>Lederly Admin</h1>
+    <p>Enter your password to continue.</p>
+    <input type="password" id="login-pwd" placeholder="Password" autocomplete="current-password"/>
+    <button id="login-btn">Continue →</button>
+    <div class="login-err" id="login-err">Wrong password.</div>
+  </div>
+</div>
 <header>
   <div class="logo"><div class="logo-mark">L</div>Lederly Admin</div>
   <div class="hdr-right" id="hdr-ts">Loading…</div>
@@ -134,7 +151,39 @@ tr:last-child td{border-bottom:none}
 <main id="main"><div class="loading">Loading stats…</div></main>
 
 <script>
-const SECRET = new URLSearchParams(location.search).get('secret') || '';
+let SECRET = sessionStorage.getItem('admin_secret') || '';
+
+async function tryLogin(pwd){
+  const r = await fetch('/api/admin/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:pwd})});
+  if(!r.ok) return false;
+  sessionStorage.setItem('admin_secret', pwd);
+  SECRET = pwd;
+  return true;
+}
+
+async function bootLogin(){
+  // If we have a stored secret, validate it silently
+  if(SECRET){
+    const r = await fetch('/api/admin/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:SECRET})}).catch(()=>({ok:false}));
+    if(r.ok){ document.getElementById('login-screen').style.display='none'; render(); return; }
+    sessionStorage.removeItem('admin_secret'); SECRET='';
+  }
+  // Show login form
+  const btn=document.getElementById('login-btn');
+  const pwd=document.getElementById('login-pwd');
+  const err=document.getElementById('login-err');
+  const attempt=async()=>{
+    btn.disabled=true; btn.textContent='Checking…'; err.style.display='none';
+    const ok=await tryLogin(pwd.value.trim());
+    if(ok){ document.getElementById('login-screen').style.display='none'; render(); }
+    else { err.style.display='block'; btn.disabled=false; btn.textContent='Continue →'; pwd.focus(); }
+  };
+  btn.addEventListener('click', attempt);
+  pwd.addEventListener('keydown', e=>{ if(e.key==='Enter') attempt(); });
+  pwd.focus();
+}
+
+bootLogin();
 
 const COLORS = {
   connect:          '#1a5c38',
@@ -704,8 +753,7 @@ async function render(){
 }
 
 renderExcludeChips();
-render();
-setInterval(render,60000);
+setInterval(()=>{ if(SECRET) render(); },60000);
 </script>
 </body>
 </html>
