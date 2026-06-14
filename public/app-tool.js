@@ -1636,11 +1636,12 @@ function renderSchedTabs(all){
     (s.status==='executed'&&awaitingRevert.has(s.id))
   );
   const done=all.filter(s=>['executed','cancelled'].includes(s.status)&&!awaitingRevert.has(s.id));
+  const doneCount=done.filter(s=>!s.linkedTo).length;
   const list=_schedTab==='pending'?pending:done;
   const body=$('m-sched-jobs'); if(!body)return;
   const tabsHTML=`<div class="sched-tabs">
     <button class="sched-tab${_schedTab==='pending'?' active':''}" data-sched-tab="pending">Pending${pending.length?` <span class="sched-tab-count">${pending.length}</span>`:''}</button>
-    <button class="sched-tab${_schedTab==='done'?' active':''}" data-sched-tab="done">Done${done.length?` <span class="sched-tab-count">${done.length}</span>`:''}</button>
+    <button class="sched-tab${_schedTab==='done'?' active':''}" data-sched-tab="done">Done${doneCount?` <span class="sched-tab-count">${doneCount}</span>`:''}</button>
   </div>`;
   const listHTML=list.length
     ?buildGroupedSchedHTML(list)
