@@ -212,7 +212,7 @@ async function sendWelcomeEmail(shop, storeName, storeEmail) {
       <table style="width:100%;border-collapse:collapse">
         <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top;width:28px">✏️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Inline editing</strong> — click any product cell to edit title, price, tags, or description directly</td></tr>
         <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">⚡</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Bulk actions</strong> — select multiple products and change prices, status, or tags at once</td></tr>
-        <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">⏱️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Scheduling</strong> — stage changes now, push them live at the perfect moment (up to 10/month on Beta)</td></tr>
+        <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">⏱️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Scheduling</strong> — stage changes now, push them live at the perfect moment (unlimited during early access)</td></tr>
         <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">↩️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Auto-revert</strong> — set changes to revert automatically when a sale ends</td></tr>
       </table>
       <div style="margin-top:28px;text-align:center">

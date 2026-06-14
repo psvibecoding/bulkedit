@@ -17,9 +17,9 @@
   <!-- Subtitle -->
   <text x="72" y="380" font-family="system-ui,Arial,sans-serif" font-size="18" fill="#6b7280">Edit, schedule and auto-revert — no CSVs, no exports.</text>
 
-  <!-- Free beta pill -->
-  <rect x="72" y="404" width="156" height="42" rx="21" fill="#1a5c38"/>
-  <text x="150" y="431" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-size="14" font-weight="600" fill="white">Free beta →</text>
+  <!-- Early access pill -->
+  <rect x="72" y="404" width="196" height="42" rx="21" fill="#1a5c38"/>
+  <text x="170" y="431" text-anchor="middle" font-family="system-ui,Arial,sans-serif" font-size="14" font-weight="600" fill="white">Free early access →</text>
 
   <!-- Trust line -->
   <text x="72" y="590" font-family="system-ui,Arial,sans-serif" font-size="15" fill="#b4b4ac">lederly.com · No account · OAuth secured</text>
@@ -45,9 +45,9 @@
   <text x="782" y="350" font-family="system-ui,Arial,sans-serif" font-size="12" fill="#6b7280">Edit any field across all variants at once</text>
   <text x="782" y="372" font-family="system-ui,Arial,sans-serif" font-size="11" fill="#9ca3af">The gap Shopify still doesn't fill</text>
 
-  <!-- Card 4: Beta highlight -->
+  <!-- Card 4: Early access highlight -->
   <rect x="760" y="408" width="380" height="104" rx="14" fill="#1a5c38"/>
-  <text x="782" y="440" font-family="system-ui,Arial,sans-serif" font-size="10" font-weight="600" fill="white" fill-opacity="0.45" letter-spacing="2">FREE BETA</text>
+  <text x="782" y="440" font-family="system-ui,Arial,sans-serif" font-size="10" font-weight="600" fill="white" fill-opacity="0.45" letter-spacing="2">EARLY ACCESS</text>
   <text x="782" y="464" font-family="system-ui,Arial,sans-serif" font-size="15" font-weight="700" fill="white">All features unlocked</text>
   <text x="782" y="486" font-family="system-ui,Arial,sans-serif" font-size="11" fill="white" fill-opacity="0.65">Scheduling · Auto-revert · Metafields · No account</text>
 </svg>
