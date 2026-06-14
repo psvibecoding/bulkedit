@@ -2018,23 +2018,22 @@ app.get('/api/admin/stores', async (req, res) => {
   try {
     const r = await dbPool.query(`
       SELECT
-        s.shop,
-        COALESCE(si.name, s.shop) AS name,
+        si.shop,
+        COALESCE(si.name, si.shop) AS name,
         si.email,
         COALESCE(si.country_code, '—') AS country_code,
         COALESCE(si.country, '—') AS country,
         COALESCE(sp.plan, 'free') AS plan,
         si.first_seen,
-        COALESCE(si.last_seen, MIN(ae.ts)) AS last_seen,
+        si.last_seen,
         COUNT(ae.id) FILTER (WHERE ae.event='connect') AS connects,
         COUNT(ae.id) FILTER (WHERE ae.event='save') AS saves,
         COUNT(ae.id) FILTER (WHERE ae.event='schedule_run') AS schedules_run
-      FROM (SELECT DISTINCT shop FROM analytics_events WHERE shop IS NOT NULL) s
-      LEFT JOIN store_info si ON si.shop = s.shop
-      LEFT JOIN store_plans sp ON sp.shop = s.shop
-      LEFT JOIN analytics_events ae ON ae.shop = s.shop
-      GROUP BY s.shop, si.name, si.email, si.country_code, si.country, sp.plan, si.first_seen, si.last_seen
-      ORDER BY last_seen DESC NULLS LAST
+      FROM store_info si
+      LEFT JOIN store_plans sp ON sp.shop = si.shop
+      LEFT JOIN analytics_events ae ON ae.shop = si.shop
+      GROUP BY si.shop, si.name, si.email, si.country_code, si.country, sp.plan, si.first_seen, si.last_seen
+      ORDER BY si.last_seen DESC NULLS LAST
       LIMIT 200
     `);
     res.json({ ok: true, stores: r.rows });
