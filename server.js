@@ -1993,6 +1993,24 @@ app.delete('/api/admin/reset-analytics', async (req, res) => {
   }
 });
 
+app.post('/api/admin/set-plan', async (req, res) => {
+  const secret = req.headers['x-ping-secret'] || req.query.secret;
+  if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  const { shop, plan } = req.body || {};
+  if (!shop || !['free', 'starter', 'pro', 'beta'].includes(plan)) return res.status(400).json({ ok: false, error: 'Invalid shop or plan' });
+  if (!dbPool) return res.status(500).json({ ok: false, error: 'No database' });
+  try {
+    await dbPool.query(
+      `INSERT INTO store_plans (shop, plan, updated_at) VALUES ($1, $2, NOW())
+       ON CONFLICT (shop) DO UPDATE SET plan=$2, updated_at=NOW()`,
+      [shop, plan]
+    );
+    res.json({ ok: true, shop, plan });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: IS_PROD ? 'Error' : e.message });
+  }
+});
+
 app.get('/api/admin/stores', async (req, res) => {
   const secret = req.headers['x-ping-secret'] || req.query.secret;
   if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
