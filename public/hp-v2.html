@@ -7,460 +7,396 @@
   <meta name="robots" content="noindex,nofollow"/>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
     :root{
-      --bg:#080806;
-      --bg2:#0f0f0c;
-      --bg3:#161612;
-      --bg4:#1c1c18;
-      --surface:rgba(255,255,255,.03);
-      --border:rgba(255,255,255,.08);
-      --border2:rgba(255,255,255,.13);
-      --ink:#f0f0ec;
-      --ink2:rgba(240,240,236,.68);
-      --ink3:rgba(240,240,236,.38);
-      --ink4:rgba(240,240,236,.2);
-      --green:#1a5c38;
-      --lime:#86efac;
-      --lime-dim:rgba(134,239,172,.12);
-      --lime-border:rgba(134,239,172,.28);
+      /* Dark palette — charcoal, not black */
+      --dark:  #111110;
+      --dark2: #191917;
+      --dark3: #222220;
+      --dark4: #2c2c28;
+      --dborder: rgba(255,255,255,.09);
+      --dborder2: rgba(255,255,255,.15);
+      --dink:  #f0f0ec;
+      --dink2: rgba(240,240,236,.65);
+      --dink3: rgba(240,240,236,.36);
+      --dink4: rgba(240,240,236,.18);
+
+      /* Light palette */
+      --bg:    #f7f7f5;
+      --white: #ffffff;
+      --border:#e2e2dc;
+      --border2:#ccccc4;
+      --ink:   #0e0e0c;
+      --ink2:  #3c3c38;
+      --ink3:  #7c7c74;
+      --ink4:  #b4b4ac;
+
+      /* Brand */
+      --green: #1a5c38;
+      --green-lt: #1f7044;
+      --green-bg: rgba(26,92,56,.07);
+      --green-brd: rgba(26,92,56,.18);
+      --lime:  #86efac;
+      --lime-dim: rgba(134,239,172,.13);
+      --lime-brd: rgba(134,239,172,.3);
+
       --serif:'DM Serif Display',Georgia,serif;
-      --sans:'DM Sans',system-ui,sans-serif;
-      --mono:'Geist Mono','Menlo',monospace;
+      --sans: 'DM Sans',system-ui,sans-serif;
+      --mono: 'Geist Mono','Menlo',monospace;
     }
 
     html{scroll-behavior:smooth}
-    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    body{font-family:var(--sans);background:var(--dark);color:var(--dink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 
     /* ─── NAV ─── */
     .v2-nav{
       position:sticky;top:0;z-index:100;height:58px;
       display:flex;align-items:center;justify-content:space-between;
       padding:0 48px;
-      background:rgba(8,8,6,.75);
+      background:rgba(17,17,16,.82);
       backdrop-filter:blur(24px);
-      border-bottom:1px solid var(--border);
+      border-bottom:1px solid var(--dborder);
     }
-    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--dink)}
     .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center;line-height:1}
-    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dink3)}
     .v2-cta{
-      background:var(--lime);color:#080806;
+      background:var(--lime);color:#0a0a08;
       border:none;border-radius:8px;padding:8px 20px;
-      font-size:13px;font-weight:700;cursor:pointer;
-      font-family:var(--sans);text-decoration:none;
-      transition:opacity .15s,transform .12s;
-      letter-spacing:.01em;
+      font-size:13px;font-weight:700;
+      text-decoration:none;font-family:var(--sans);
+      transition:opacity .15s,transform .12s;letter-spacing:.01em;
     }
-    .v2-cta:hover{opacity:.85;transform:translateY(-1px)}
+    .v2-cta:hover{opacity:.86;transform:translateY(-1px)}
 
-    /* ─── HERO ─── */
+    /* ─── HERO (dark, 2-column) ─── */
     .hero{
-      position:relative;
+      background:var(--dark);
+      position:relative;overflow:hidden;
       min-height:calc(100vh - 58px);
-      display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
-      text-align:center;
-      padding:72px 48px 56px;
-      overflow:hidden;
+      display:flex;align-items:center;
     }
     .hero::before{
       content:'';position:absolute;inset:0;pointer-events:none;
       background:
-        radial-gradient(ellipse 100% 55% at 50% 110%,rgba(26,92,56,.55),transparent 62%),
-        radial-gradient(ellipse 55% 38% at 50% 108%,rgba(134,239,172,.09),transparent 52%),
-        radial-gradient(ellipse 60% 40% at 10% 0%,rgba(26,92,56,.06),transparent 50%);
+        radial-gradient(ellipse 70% 80% at -5% 60%,rgba(26,92,56,.28),transparent 55%),
+        radial-gradient(ellipse 45% 55% at 110% 20%,rgba(26,92,56,.12),transparent 50%);
+    }
+    .hero-inner{
+      position:relative;z-index:1;
+      width:100%;max-width:1200px;margin:0 auto;
+      padding:80px 48px;
+      display:grid;grid-template-columns:1fr 520px;gap:72px;align-items:center;
     }
 
     /* Hero entrance */
-    @keyframes heroUp{
-      from{opacity:0;transform:translateY(22px)}
-      to{opacity:1;transform:none}
-    }
-    .h-tag,.h-sub,.h-cta-wrap,.hero-tl{
-      position:relative;z-index:1;
-      opacity:0;transform:translateY(22px);
-      animation:heroUp .85s cubic-bezier(.22,.68,0,1.15) forwards;
-    }
-    .hero-h1{position:relative;z-index:1}
-    .hero-h1 span{
-      display:block;
-      opacity:0;transform:translateY(22px);
-      animation:heroUp .85s cubic-bezier(.22,.68,0,1.15) forwards;
-    }
-    .h-tag{animation-delay:.08s}
-    .h1-l1{animation-delay:.2s}
-    .h1-l2{animation-delay:.32s}
-    .h1-l3{animation-delay:.42s}
-    .h1-l4{animation-delay:.52s}
-    .h-sub{animation-delay:.68s}
-    .h-cta-wrap{animation-delay:.82s}
-    .hero-tl{animation-delay:1.08s}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+    .h-tag{animation:fadeUp .8s cubic-bezier(.22,.68,0,1.15) .08s both}
+    .hero-h1 .hl{animation:fadeUp .8s cubic-bezier(.22,.68,0,1.15) both}
+    .hl-1{animation-delay:.2s}
+    .hl-2{animation-delay:.32s}
+    .hl-3{animation-delay:.42s}
+    .h-sub{animation:fadeUp .8s cubic-bezier(.22,.68,0,1.15) .58s both}
+    .h-cta-wrap{animation:fadeUp .8s cubic-bezier(.22,.68,0,1.15) .72s both}
+    .hero-visual{animation:fadeUp .9s cubic-bezier(.22,.68,0,1.1) .18s both}
 
     .h-tag{
       display:inline-flex;align-items:center;gap:8px;
-      padding:5px 15px;
-      border:1px solid var(--lime-border);
-      border-radius:20px;
+      padding:5px 14px;
+      border:1px solid var(--lime-brd);border-radius:20px;
       background:var(--lime-dim);
-      font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
-      color:var(--lime);
-      margin-bottom:32px;
+      font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+      color:var(--lime);margin-bottom:28px;
     }
-    .h-tag-dot{
-      width:6px;height:6px;background:var(--lime);border-radius:50%;
-      animation:tagPulse 2.2s ease-in-out infinite;
-    }
-    @keyframes tagPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.45)}}
+    .h-tag-dot{width:6px;height:6px;background:var(--lime);border-radius:50%;animation:tagPulse 2.2s ease-in-out infinite}
+    @keyframes tagPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.22;transform:scale(.4)}}
 
     .hero-h1{
       font-family:var(--serif);
-      font-size:clamp(52px,7.2vw,100px);
-      line-height:1.0;letter-spacing:-.035em;
-      color:var(--ink);
-      margin-bottom:26px;
+      font-size:clamp(48px,5.2vw,76px);
+      line-height:1.02;letter-spacing:-.035em;
+      color:var(--dink);margin-bottom:24px;
     }
+    .hl{display:block}
     .hero-h1 em{font-style:italic;color:var(--lime)}
 
     .h-sub{
-      font-family:var(--mono);font-size:13px;letter-spacing:.12em;
-      color:var(--ink3);margin-bottom:36px;
+      font-size:16px;color:var(--dink2);line-height:1.72;
+      margin-bottom:36px;max-width:420px;font-weight:300;
     }
-    .h-sub-sep{margin:0 10px;color:var(--border2)}
 
-    .h-cta-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:60px}
+    .h-cta-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
     .h-cta{
-      display:inline-flex;align-items:center;gap:10px;
-      background:var(--lime);color:#080806;
-      border:none;border-radius:12px;
-      padding:16px 38px;
-      font-size:16px;font-weight:700;
+      display:inline-flex;align-items:center;gap:9px;
+      background:var(--lime);color:#0a0a08;
+      border:none;border-radius:10px;
+      padding:14px 30px;font-size:15px;font-weight:700;
       text-decoration:none;font-family:var(--sans);
-      box-shadow:0 0 48px rgba(134,239,172,.22),0 4px 24px rgba(134,239,172,.12);
+      box-shadow:0 0 40px rgba(134,239,172,.2),0 4px 20px rgba(134,239,172,.1);
       transition:opacity .15s,transform .15s,box-shadow .15s;
-      letter-spacing:.01em;
     }
-    .h-cta:hover{
-      opacity:.88;transform:translateY(-2px);
-      box-shadow:0 0 72px rgba(134,239,172,.32),0 8px 32px rgba(134,239,172,.18);
-    }
+    .h-cta:hover{opacity:.88;transform:translateY(-2px);box-shadow:0 0 60px rgba(134,239,172,.3),0 6px 28px rgba(134,239,172,.16)}
     .h-cta-arrow{transition:transform .15s}
-    .h-cta:hover .h-cta-arrow{transform:translateX(5px)}
-    .h-cta-note{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--ink4)}
+    .h-cta:hover .h-cta-arrow{transform:translateX(4px)}
+    .h-note{font-family:var(--mono);font-size:10px;letter-spacing:.05em;color:var(--dink4)}
 
-    /* Hero mini timeline */
-    .hero-tl{display:flex;align-items:flex-start;gap:0}
-    .ht-step{display:flex;flex-direction:column;align-items:center;gap:8px}
-    .ht-dot{
-      width:42px;height:42px;border-radius:50%;
-      border:1px solid var(--border);background:var(--bg3);
-      display:flex;align-items:center;justify-content:center;
-      font-size:16px;
-      transition:border-color .4s,background .4s,box-shadow .4s;
-      line-height:1;
+    /* App table mockup (hero visual) */
+    .av{
+      background:var(--dark2);
+      border:1px solid var(--dborder);
+      border-radius:14px;overflow:hidden;
+      box-shadow:0 32px 80px rgba(0,0,0,.55),0 8px 24px rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.04);
     }
-    .ht-step[data-active] .ht-dot{
-      border-color:var(--lime);
-      background:var(--lime-dim);
-      box-shadow:0 0 18px rgba(134,239,172,.35),0 0 6px rgba(134,239,172,.5);
+    .av-bar{
+      display:flex;align-items:center;gap:7px;
+      padding:10px 14px;
+      background:rgba(255,255,255,.025);
+      border-bottom:1px solid var(--dborder);
     }
-    .ht-label{font-family:var(--mono);font-size:11px;color:var(--ink3);transition:color .4s;letter-spacing:.04em}
-    .ht-time{font-family:var(--mono);font-size:10px;color:var(--ink4)}
-    .ht-step[data-active] .ht-label{color:var(--lime)}
-    .ht-conn{width:72px;height:1px;background:var(--border);margin-top:21px;flex-shrink:0;position:relative;overflow:hidden}
-    .ht-conn-fill{position:absolute;inset:0;width:0;background:var(--lime);transition:width .65s ease}
+    .av-dots{display:flex;gap:5px}
+    .av-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.1)}
+    .av-title{font-family:var(--mono);font-size:10px;color:var(--dink4);flex:1;margin-left:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .av-badge{
+      font-family:var(--mono);font-size:9px;
+      color:var(--lime);background:var(--lime-dim);
+      border:1px solid var(--lime-brd);
+      border-radius:4px;padding:2px 8px;white-space:nowrap;flex-shrink:0;
+    }
+    .av-toolbar{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:7px 14px;
+      background:rgba(255,255,255,.015);
+      border-bottom:1px solid var(--dborder);
+    }
+    .av-tl{display:flex;align-items:center;gap:5px}
+    .av-tr{display:flex;align-items:center;gap:5px}
+    .av-tbtn{
+      padding:3px 9px;border-radius:4px;font-size:9px;
+      font-family:var(--mono);cursor:default;border:1px solid var(--dborder);
+      background:rgba(255,255,255,.04);color:var(--dink3);white-space:nowrap;
+    }
+    .av-tbtn-sched{background:rgba(134,239,172,.1);color:var(--lime);border-color:var(--lime-brd)}
+    .av-tbtn-push{background:var(--green);color:#fff;border-color:transparent;font-weight:600}
+    .av-head{
+      display:grid;grid-template-columns:20px 26px 1fr 68px 88px 82px;
+      padding:5px 14px;
+      background:rgba(255,255,255,.015);
+      border-bottom:1px solid var(--dborder);
+    }
+    .av-head span{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dink4);padding:0 4px}
+    .av-row{
+      display:grid;grid-template-columns:20px 26px 1fr 68px 88px 82px;
+      padding:8px 14px;border-bottom:1px solid var(--dborder);align-items:center;
+      transition:background .26s;
+    }
+    .av-row:last-child{border-bottom:none}
+    .av-row[data-active]{background:rgba(134,239,172,.04)}
+    .av-chk{width:11px;height:11px;accent-color:var(--lime);cursor:default}
+    .av-sw{width:20px;height:20px;border-radius:4px;display:block}
+    .av-name{font-family:var(--mono);font-size:10px;color:var(--dink2);padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .av-status{padding:0 4px}
+    .av-pill{display:inline-block;padding:1px 6px;border-radius:4px;font-size:8.5px;font-family:var(--mono);font-weight:500;background:var(--lime-dim);color:var(--lime);border:1px solid var(--lime-brd)}
+    .av-price{padding:0 4px;font-family:var(--mono);font-size:10px}
+    .av-old{color:var(--dink4);text-decoration:line-through;font-size:9px;margin-right:3px}
+    .av-new{color:var(--lime);font-weight:600}
+    .av-row[data-active] .av-new{animation:priceIn .36s cubic-bezier(.22,.68,0,1.2) forwards}
+    @keyframes priceIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    .av-cmp{padding:0 4px;font-family:var(--mono);font-size:10px;color:var(--dink4)}
+    .av-foot{
+      padding:8px 14px;background:rgba(255,255,255,.015);
+      border-top:1px solid var(--dborder);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .av-foot-l{font-family:var(--mono);font-size:9px;color:var(--lime)}
+    .av-foot-r{display:flex;gap:5px}
 
     /* ─── MARQUEE ─── */
     .mq{
+      background:var(--bg);
       border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-      background:var(--bg2);padding:14px 0;overflow:hidden;position:relative;
+      padding:13px 0;overflow:hidden;position:relative;
     }
     .mq::before,.mq::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none}
-    .mq::before{left:0;background:linear-gradient(to right,var(--bg2),transparent)}
-    .mq::after{right:0;background:linear-gradient(to left,var(--bg2),transparent)}
-    .mq-track{display:flex;width:max-content;animation:mqScroll 36s linear infinite}
+    .mq::before{left:0;background:linear-gradient(to right,var(--bg),transparent)}
+    .mq::after{right:0;background:linear-gradient(to left,var(--bg),transparent)}
+    .mq-track{display:flex;width:max-content;animation:mqScroll 34s linear infinite}
     @keyframes mqScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
     .mq-item{display:inline-flex;align-items:center;gap:8px;padding:0 22px;font-size:12px;font-family:var(--mono);color:var(--ink3);white-space:nowrap}
-    .mq-dot{width:3px;height:3px;background:var(--border2);border-radius:50%;flex-shrink:0}
-    .mq-item.hi{color:var(--lime);font-weight:500}
+    .mq-sep{width:3px;height:3px;background:var(--border2);border-radius:50%;flex-shrink:0}
+    .mq-item.hi{color:var(--green);font-weight:500}
 
-    /* ─── DEMO ─── */
-    .demo{
-      padding:104px 48px;
-      background:var(--bg2);
+    /* ─── THREE STATS (light) ─── */
+    .stats{
+      background:var(--white);
       border-top:1px solid var(--border);
+      padding:72px 48px;
     }
-    .demo-inner{
-      max-width:1080px;margin:0 auto;
-      display:grid;grid-template-columns:280px 1fr;gap:88px;align-items:center;
+    .stats-inner{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+    .stat-card{background:var(--white);padding:40px 36px}
+    .stat-num{
+      font-family:var(--serif);font-size:clamp(40px,5vw,68px);
+      color:var(--ink);letter-spacing:-.04em;line-height:.9;
+      display:block;margin-bottom:10px;
     }
-    .demo-stat{}
-    .demo-num{
-      font-family:var(--serif);
-      font-size:clamp(80px,11vw,148px);
-      line-height:.88;color:var(--lime);
-      letter-spacing:-.045em;display:block;
-    }
-    .demo-unit{
-      font-family:var(--serif);
-      font-size:clamp(28px,3.8vw,52px);
-      color:var(--ink2);letter-spacing:-.025em;
-      display:block;margin-bottom:28px;
-    }
-    .demo-desc{font-size:15px;color:var(--ink3);line-height:1.72;max-width:240px}
-    .demo-desc strong{color:var(--ink);font-weight:600}
+    .stat-num em{color:var(--green);font-style:normal}
+    .stat-label{font-size:15px;color:var(--ink3);line-height:1.6}
+    .stat-label strong{color:var(--ink);font-weight:600}
 
-    /* App table mockup */
-    .dt{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3)}
-    .dt-bar{
-      display:flex;align-items:center;gap:8px;
-      padding:10px 14px;
-      border-bottom:1px solid var(--border);
-      background:rgba(255,255,255,.02);
-    }
-    .dt-dots{display:flex;gap:5px}
-    .dt-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.08)}
-    .dt-title{font-family:var(--mono);font-size:10px;color:var(--ink4);flex:1;margin-left:6px}
-    .dt-badge{
-      font-family:var(--mono);font-size:9px;
-      color:var(--lime);background:var(--lime-dim);
-      border:1px solid var(--lime-border);
-      border-radius:4px;padding:2px 8px;
-    }
-    .dt-head{
-      display:grid;grid-template-columns:20px 26px 1fr 72px 96px 88px;
-      padding:6px 14px;border-bottom:1px solid var(--border);
-      background:rgba(255,255,255,.015);
-    }
-    .dt-head span{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);padding:0 5px}
-    .dt-row{
-      display:grid;grid-template-columns:20px 26px 1fr 72px 96px 88px;
-      padding:9px 14px;border-bottom:1px solid var(--border);
-      align-items:center;
-      transition:background .28s;
-    }
-    .dt-row:last-child{border-bottom:none}
-    .dt-row[data-active]{background:rgba(134,239,172,.042)}
-    .dt-chk{width:11px;height:11px;accent-color:var(--lime);cursor:default;padding:0 5px}
-    .dt-swatch{width:20px;height:20px;border-radius:4px;display:block}
-    .dt-name{font-family:var(--mono);font-size:10.5px;color:var(--ink2);padding:0 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .dt-status{padding:0 5px}
-    .dt-pill{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-family:var(--mono);font-weight:500;background:var(--lime-dim);color:var(--lime);border:1px solid var(--lime-border)}
-    .dt-price{padding:0 5px;font-family:var(--mono);font-size:10.5px}
-    .dt-old{color:var(--ink4);text-decoration:line-through;font-size:9.5px;margin-right:3px}
-    .dt-new{color:var(--lime);font-weight:600}
-    .dt-row[data-active] .dt-new{animation:priceFlash .38s cubic-bezier(.22,.68,0,1.2) forwards}
-    @keyframes priceFlash{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-    .dt-compare{padding:0 5px;font-family:var(--mono);font-size:10.5px;color:var(--ink4)}
-    .dt-foot{
-      padding:8px 14px;border-top:1px solid var(--border);
-      background:rgba(255,255,255,.015);
-      display:flex;align-items:center;justify-content:space-between;
-    }
-    .dt-foot-l{font-family:var(--mono);font-size:9px;color:var(--lime)}
-    .dt-foot-r{display:flex;align-items:center;gap:6px}
-    .dt-btn{border:none;border-radius:5px;padding:4px 10px;font-family:var(--mono);font-size:9px;font-weight:600;cursor:default}
-    .dt-btn-sched{background:var(--lime-dim);color:var(--lime);border:1px solid var(--lime-border)}
-    .dt-btn-push{background:var(--lime);color:#080806}
-
-    /* ─── PILLARS ─── */
-    .pillars{
-      padding:104px 48px;
-      background:var(--bg);
-      border-top:1px solid var(--border);
-    }
+    /* ─── PILLARS (light) ─── */
+    .pillars{background:var(--bg);border-top:1px solid var(--border);padding:100px 48px}
     .pillars-inner{max-width:1000px;margin:0 auto}
-    .pillars-sup{
-      font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
-      color:var(--lime);display:block;text-align:center;margin-bottom:56px;
-    }
-    .pillars-grid{
-      display:grid;grid-template-columns:repeat(3,1fr);
-      gap:1px;background:var(--border);
-      border:1px solid var(--border);border-radius:20px;overflow:hidden;
-    }
-    .pillar{background:var(--bg2);padding:44px 38px;transition:background .2s}
-    .pillar:hover{background:var(--bg3)}
-    .pillar-ico{
-      width:46px;height:46px;
-      background:var(--lime-dim);border:1px solid var(--lime-border);
-      border-radius:12px;
-      display:flex;align-items:center;justify-content:center;
-      margin-bottom:26px;
-    }
-    .pillar-title{font-family:var(--serif);font-size:26px;color:var(--ink);margin-bottom:12px;letter-spacing:-.01em}
+    .section-tag{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);display:block;margin-bottom:14px}
+    .section-h{font-family:var(--serif);font-size:clamp(32px,3.8vw,50px);color:var(--ink);letter-spacing:-.025em;margin-bottom:52px;line-height:1.06}
+    .pillars-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+    .pillar{background:var(--white);padding:40px 34px;transition:background .2s}
+    .pillar:hover{background:var(--bg)}
+    .pillar-ico{width:44px;height:44px;background:var(--green-bg);border:1px solid var(--green-brd);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+    .pillar-title{font-family:var(--serif);font-size:24px;color:var(--ink);margin-bottom:10px;letter-spacing:-.015em}
     .pillar-body{font-size:14px;color:var(--ink3);line-height:1.72}
 
-    /* ─── SCHEDULE BIG ─── */
-    .sched-big{
-      padding:120px 48px;
-      background:var(--bg2);
-      border-top:1px solid var(--border);
-      text-align:center;position:relative;overflow:hidden;
+    /* ─── SCHEDULE (dark) ─── */
+    .sched{
+      background:var(--dark);border-top:1px solid var(--dborder);
+      padding:108px 48px;text-align:center;
+      position:relative;overflow:hidden;
     }
-    .sched-big::before{
+    .sched::before{
       content:'';position:absolute;inset:0;pointer-events:none;
-      background:radial-gradient(ellipse 80% 65% at 105% 0%,rgba(26,92,56,.38),transparent 55%);
+      background:radial-gradient(ellipse 80% 60% at 110% -10%,rgba(26,92,56,.38),transparent 55%);
     }
-    .sched-sup{
-      font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
-      color:var(--lime);display:inline-block;margin-bottom:32px;position:relative;
+    .sched-tag{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--lime);display:inline-block;margin-bottom:28px;position:relative}
+    .sched-h{
+      font-family:var(--serif);font-size:clamp(44px,6vw,82px);
+      line-height:1.04;letter-spacing:-.035em;color:var(--dink);
+      margin-bottom:68px;position:relative;
     }
-    .sched-big-h{
-      font-family:var(--serif);
-      font-size:clamp(46px,6.8vw,90px);
-      line-height:1.04;letter-spacing:-.035em;
-      color:var(--ink);
-      margin-bottom:72px;position:relative;
-    }
-    .sched-big-h em{font-style:italic;color:var(--lime)}
+    .sched-h em{font-style:italic;color:var(--lime)}
 
-    /* Big timeline */
-    .sched-tl{display:inline-flex;align-items:flex-start;gap:0;position:relative}
+    /* Timeline */
+    .sched-tl{display:inline-flex;align-items:flex-start;gap:0}
     .stl-step{display:flex;flex-direction:column;align-items:center;gap:10px}
     .stl-dot{
       width:52px;height:52px;border-radius:50%;
-      border:1px solid var(--border);background:var(--bg3);
+      border:1px solid var(--dborder);background:var(--dark2);
       display:flex;align-items:center;justify-content:center;font-size:20px;
       transition:border-color .5s,background .5s,box-shadow .5s,transform .4s cubic-bezier(.22,.68,0,1.4);
     }
     .stl-step.active .stl-dot{
-      border-color:var(--lime);
-      background:var(--lime-dim);
-      box-shadow:0 0 24px rgba(134,239,172,.38),0 0 56px rgba(134,239,172,.12);
+      border-color:var(--lime);background:var(--lime-dim);
+      box-shadow:0 0 24px rgba(134,239,172,.38),0 0 52px rgba(134,239,172,.12);
       transform:scale(1.12);
     }
-    .stl-label{font-family:var(--mono);font-size:12px;color:var(--ink3);letter-spacing:.05em;transition:color .5s}
-    .stl-time{font-family:var(--mono);font-size:10px;color:var(--ink4)}
+    .stl-label{font-family:var(--mono);font-size:11px;color:var(--dink3);letter-spacing:.05em;transition:color .5s}
+    .stl-time{font-family:var(--mono);font-size:10px;color:var(--dink4)}
     .stl-step.active .stl-label{color:var(--lime)}
-    .stl-conn{width:96px;height:2px;background:var(--border);margin-top:25px;flex-shrink:0;position:relative;overflow:hidden}
+    .stl-conn{width:96px;height:2px;background:var(--dborder);margin-top:25px;flex-shrink:0;position:relative;overflow:hidden}
     .stl-conn-fill{position:absolute;inset:0;width:0;background:var(--lime);transition:width .85s cubic-bezier(.22,.68,0,1)}
 
-    /* ─── PRICING ─── */
-    .pricing{padding:104px 48px;background:var(--bg);border-top:1px solid var(--border)}
-    .pricing-inner{max-width:920px;margin:0 auto}
-    .pricing-sup{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--lime);display:block;text-align:center;margin-bottom:14px}
-    .pricing-title{font-family:var(--serif);font-size:clamp(34px,4.5vw,56px);color:var(--ink);text-align:center;margin-bottom:14px;letter-spacing:-.025em}
-    .pricing-sub{font-size:15px;color:var(--ink3);text-align:center;margin-bottom:40px}
+    /* ─── PRICING (light) ─── */
+    .pricing{background:var(--bg);border-top:1px solid var(--border);padding:100px 48px}
+    .pricing-inner{max-width:960px;margin:0 auto}
     .pricing-banner{
       display:flex;align-items:flex-start;gap:10px;
-      background:var(--lime-dim);border:1px solid var(--lime-border);
+      background:var(--green-bg);border:1px solid var(--green-brd);
       border-radius:10px;padding:14px 18px;margin-bottom:36px;
       font-size:13px;color:var(--ink2);line-height:1.65;
     }
-    .pricing-banner-dot{width:7px;height:7px;background:var(--lime);border-radius:50%;flex-shrink:0;margin-top:5px;animation:tagPulse 2.2s ease-in-out infinite}
-    .pricing-grid{
-      display:grid;grid-template-columns:repeat(3,1fr);
-      gap:1px;background:var(--border);
-      border:1px solid var(--border);border-radius:18px;overflow:hidden;
-    }
-    .p-card{background:var(--bg2);padding:34px 28px;display:flex;flex-direction:column}
-    .p-card.featured{background:var(--bg3)}
-    .p-tag{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--lime);margin-bottom:10px}
+    .pricing-banner-dot{width:7px;height:7px;background:var(--green);border-radius:50%;flex-shrink:0;margin-top:5px;animation:tagPulse 2.2s ease-in-out infinite}
+    .pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-top:48px}
+    .p-card{background:var(--white);padding:34px 28px;display:flex;flex-direction:column}
+    .p-card.featured{background:#f2f9f5}
+    .p-tag{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:10px}
     .p-name{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:6px}
-    .p-price{font-family:var(--serif);font-size:42px;color:var(--ink);letter-spacing:-.035em;line-height:1;margin-bottom:4px}
+    .p-price{font-family:var(--serif);font-size:42px;color:var(--ink);letter-spacing:-.03em;line-height:1;margin-bottom:4px}
     .p-price span{font-family:var(--sans);font-size:14px;font-weight:400;color:var(--ink3);letter-spacing:0}
     .p-sub{font-size:11px;color:var(--ink4);font-family:var(--mono);margin-bottom:24px}
     .p-div{height:1px;background:var(--border);margin:0 0 20px}
     .p-feats{list-style:none;display:flex;flex-direction:column;gap:9px;flex:1}
     .p-feats li{font-size:13px;color:var(--ink2);display:flex;align-items:baseline;gap:8px;line-height:1.4}
-    .p-feats li::before{content:'✓';font-size:10px;color:var(--lime);font-weight:700;flex-shrink:0}
+    .p-feats li::before{content:'✓';font-size:10px;color:var(--green);font-weight:700;flex-shrink:0}
     .p-feats li.off{color:var(--ink4)}
     .p-feats li.off::before{content:'—';color:var(--ink4)}
     .p-beta{font-size:10px;font-family:var(--mono);color:var(--ink4);margin-top:20px;line-height:1.5}
 
-    /* ─── CTA FINAL ─── */
+    /* ─── CTA FINAL (dark) ─── */
     .cta-final{
-      padding:128px 48px;
-      background:var(--bg2);border-top:1px solid var(--border);
-      text-align:center;position:relative;overflow:hidden;
+      background:var(--dark2);border-top:1px solid var(--dborder);
+      padding:120px 48px;text-align:center;position:relative;overflow:hidden;
     }
     .cta-final::before{
       content:'';position:absolute;inset:0;pointer-events:none;
-      background:radial-gradient(ellipse 90% 65% at 50% 115%,rgba(26,92,56,.55),transparent 62%);
+      background:radial-gradient(ellipse 90% 60% at 50% 120%,rgba(26,92,56,.55),transparent 62%);
     }
-    .cta-final-h{
+    .cta-h{
       font-family:var(--serif);
-      font-size:clamp(42px,6.5vw,84px);
-      color:var(--ink);line-height:1.04;letter-spacing:-.035em;
+      font-size:clamp(40px,6vw,78px);
+      color:var(--dink);line-height:1.04;letter-spacing:-.035em;
       margin-bottom:10px;position:relative;
     }
-    .cta-final-h em{font-style:italic;color:var(--lime)}
-    .cta-final-sub{font-size:15px;color:var(--ink3);margin-bottom:8px;position:relative}
-    .cta-final-note{font-family:var(--mono);font-size:11px;color:var(--ink4);margin-bottom:40px;letter-spacing:.05em;position:relative}
-    .cta-final-btn{
+    .cta-h em{font-style:italic;color:var(--lime)}
+    .cta-sub{font-size:15px;color:var(--dink3);margin-bottom:8px;position:relative}
+    .cta-note{font-family:var(--mono);font-size:11px;color:var(--dink4);margin-bottom:40px;letter-spacing:.05em;position:relative}
+    .cta-btn{
       display:inline-flex;align-items:center;gap:10px;
-      background:#fff;color:#080806;
+      background:#fff;color:#0a0a08;
       border:none;border-radius:12px;
-      padding:17px 40px;font-size:16px;font-weight:700;
+      padding:16px 38px;font-size:16px;font-weight:700;
       text-decoration:none;font-family:var(--sans);
-      box-shadow:0 8px 48px rgba(0,0,0,.55),0 2px 10px rgba(0,0,0,.35);
-      transition:opacity .15s,transform .15s;
-      position:relative;
+      box-shadow:0 8px 48px rgba(0,0,0,.5),0 2px 10px rgba(0,0,0,.3);
+      transition:opacity .15s,transform .15s;position:relative;
     }
-    .cta-final-btn:hover{opacity:.92;transform:translateY(-2px)}
+    .cta-btn:hover{opacity:.92;transform:translateY(-2px)}
     .cta-arrow{transition:transform .15s}
-    .cta-final-btn:hover .cta-arrow{transform:translateX(5px)}
+    .cta-btn:hover .cta-arrow{transform:translateX(5px)}
 
     /* ─── FOOTER ─── */
     .v2-footer{
-      padding:28px 48px;
-      border-top:1px solid var(--border);
+      padding:28px 48px;border-top:1px solid var(--border);
       display:flex;align-items:center;justify-content:space-between;
-      flex-wrap:wrap;gap:10px;
-      background:var(--bg);
+      flex-wrap:wrap;gap:10px;background:var(--bg);
     }
+    .v2-footer .logo{color:var(--ink)}
+    .v2-footer .logo-name{color:var(--ink3)}
     .v2-footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
 
-    /* ─── REVEAL ─── */
-    .reveal{opacity:0;transform:translateY(26px);transition:opacity .72s ease,transform .72s ease}
+    /* ─── SCROLL REVEAL ─── */
+    .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
     .reveal.visible{opacity:1;transform:none}
     .reveal-d1{transition-delay:.1s}
     .reveal-d2{transition-delay:.2s}
     .reveal-d3{transition-delay:.3s}
 
-    /* ─── PREVIEW BADGE ─── */
+    /* ─── PREVIEW ─── */
     .preview-badge{
-      position:fixed;bottom:18px;right:18px;z-index:9999;
-      background:rgba(134,239,172,.12);
-      border:1px solid rgba(134,239,172,.3);
+      position:fixed;bottom:16px;right:16px;z-index:9999;
+      background:rgba(134,239,172,.12);border:1px solid rgba(134,239,172,.3);
       border-radius:8px;padding:7px 14px;
       font-family:var(--mono);font-size:10px;letter-spacing:.1em;
-      color:var(--lime);
-      backdrop-filter:blur(12px);
-      pointer-events:none;
+      color:var(--lime);backdrop-filter:blur(12px);pointer-events:none;
     }
 
     /* ─── RESPONSIVE ─── */
-    @media(max-width:1040px){
-      .demo-inner{grid-template-columns:1fr;gap:52px}
-      .demo-num{font-size:clamp(72px,14vw,120px)}
-      .demo-desc{max-width:100%}
+    @media(max-width:1080px){
+      .hero-inner{grid-template-columns:1fr;gap:52px;padding:64px 32px}
+      .hero-h1{font-size:clamp(44px,7vw,68px)}
+      .h-sub{max-width:100%}
     }
     @media(max-width:768px){
       .v2-nav{padding:0 20px}
-      .hero{padding:56px 24px 48px}
-      .mq{display:none}
-      .demo{padding:72px 24px}
-      .pillars{padding:72px 24px}
+      .stats-inner{grid-template-columns:1fr}
+      .pillars{padding:72px 20px}
       .pillars-grid{grid-template-columns:1fr}
-      .sched-big{padding:80px 24px}
+      .sched{padding:80px 20px}
       .sched-tl{flex-wrap:wrap;justify-content:center}
       .stl-conn{display:none}
-      .pricing{padding:72px 24px}
+      .pricing{padding:72px 20px}
       .pricing-grid{grid-template-columns:1fr}
-      .cta-final{padding:80px 24px}
+      .cta-final{padding:80px 20px}
       .v2-footer{padding:20px;flex-direction:column;align-items:flex-start}
-      .hero-tl{flex-wrap:wrap;justify-content:center;gap:12px}
-      .ht-conn{display:none}
-    }
-    @media(max-width:480px){
-      .hero-tl{gap:8px}
-      .ht-step{gap:6px}
-      .ht-dot{width:36px;height:36px;font-size:14px}
+      .stats{padding:56px 20px}
     }
   </style>
 </head>
@@ -476,219 +412,216 @@
 
 <!-- ─── HERO ─── -->
 <section class="hero">
-  <div class="h-tag">
-    <span class="h-tag-dot"></span>
-    Free · Shopify Bulk Editor
-  </div>
+  <div class="hero-inner">
 
-  <h1 class="hero-h1">
-    <span class="h1-l1">Your Black Friday</span>
-    <span class="h1-l2">prices go live</span>
-    <span class="h1-l3">at midnight.</span>
-    <span class="h1-l4"><em>Without you.</em></span>
-  </h1>
+    <!-- Left: copy -->
+    <div>
+      <div class="h-tag">
+        <span class="h-tag-dot"></span>
+        Free · Shopify Bulk Editor
+      </div>
+      <h1 class="hero-h1">
+        <span class="hl hl-1">Edit 500 products.</span>
+        <span class="hl hl-2">Schedule the sale.</span>
+        <span class="hl hl-3"><em>Go to sleep.</em></span>
+      </h1>
+      <p class="h-sub">
+        Bulk edit prices, tags and metafields across your entire catalog in a live table. Schedule changes to go live automatically — and revert when the sale ends.
+      </p>
+      <div class="h-cta-wrap">
+        <a href="/app" class="h-cta">
+          Try for free
+          <span class="h-cta-arrow">→</span>
+        </a>
+        <span class="h-note">No account · No credit card · OAuth</span>
+      </div>
+    </div>
 
-  <p class="h-sub">
-    Bulk edit<span class="h-sub-sep">·</span>Schedule<span class="h-sub-sep">·</span>Auto-revert
-  </p>
+    <!-- Right: app table -->
+    <div class="hero-visual">
+      <div class="av">
+        <div class="av-bar">
+          <div class="av-dots">
+            <div class="av-dot"></div>
+            <div class="av-dot"></div>
+            <div class="av-dot"></div>
+          </div>
+          <span class="av-title">your-store.myshopify.com — Lederly</span>
+          <span class="av-badge">5 changes staged</span>
+        </div>
+        <div class="av-toolbar">
+          <div class="av-tl">
+            <button class="av-tbtn">↩</button>
+            <button class="av-tbtn">↪</button>
+          </div>
+          <div class="av-tr">
+            <button class="av-tbtn av-tbtn-sched">✦ Schedule</button>
+            <button class="av-tbtn av-tbtn-push">↑ Push to Shopify</button>
+          </div>
+        </div>
+        <div class="av-head">
+          <span></span><span></span>
+          <span>Product</span>
+          <span>Status</span>
+          <span>Price</span>
+          <span>Compare at</span>
+        </div>
+        <div id="av-body">
+          <div class="av-row" data-active>
+            <input type="checkbox" class="av-chk" checked readonly>
+            <span class="av-sw" style="background:#c8b8a2"></span>
+            <div class="av-name">Merino Sweater — S</div>
+            <div class="av-status"><span class="av-pill">Active</span></div>
+            <div class="av-price"><span class="av-old">89.00</span><span class="av-new">69.00</span></div>
+            <div class="av-cmp">89.00</div>
+          </div>
+          <div class="av-row">
+            <input type="checkbox" class="av-chk" checked readonly>
+            <span class="av-sw" style="background:#c8b8a2"></span>
+            <div class="av-name">Merino Sweater — M</div>
+            <div class="av-status"><span class="av-pill">Active</span></div>
+            <div class="av-price"><span class="av-old">89.00</span><span class="av-new">69.00</span></div>
+            <div class="av-cmp">89.00</div>
+          </div>
+          <div class="av-row">
+            <input type="checkbox" class="av-chk" checked readonly>
+            <span class="av-sw" style="background:#8b7560"></span>
+            <div class="av-name">Leather Crossbody Bag</div>
+            <div class="av-status"><span class="av-pill">Active</span></div>
+            <div class="av-price"><span class="av-old">149.00</span><span class="av-new">119.00</span></div>
+            <div class="av-cmp">149.00</div>
+          </div>
+          <div class="av-row">
+            <input type="checkbox" class="av-chk" checked readonly>
+            <span class="av-sw" style="background:#a8c4a0"></span>
+            <div class="av-name">Yoga Mat 6mm</div>
+            <div class="av-status"><span class="av-pill">Active</span></div>
+            <div class="av-price"><span class="av-old">78.00</span><span class="av-new">65.00</span></div>
+            <div class="av-cmp">78.00</div>
+          </div>
+          <div class="av-row">
+            <input type="checkbox" class="av-chk" checked readonly>
+            <span class="av-sw" style="background:#d4c5a8"></span>
+            <div class="av-name">Organic Cotton Tee</div>
+            <div class="av-status"><span class="av-pill">Active</span></div>
+            <div class="av-price"><span class="av-old">34.00</span><span class="av-new">24.00</span></div>
+            <div class="av-cmp">34.00</div>
+          </div>
+        </div>
+        <div class="av-foot">
+          <span class="av-foot-l">↑ 5 changes ready · push live or schedule</span>
+          <div class="av-foot-r">
+            <button class="av-tbtn av-tbtn-sched">✦ Schedule</button>
+            <button class="av-tbtn av-tbtn-push">↑ Push live</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <div class="h-cta-wrap">
-    <a href="/app" class="h-cta">
-      Try for free
-      <span class="h-cta-arrow">→</span>
-    </a>
-    <span class="h-cta-note">No account · No credit card · OAuth secured</span>
-  </div>
-
-  <!-- Mini timeline -->
-  <div class="hero-tl">
-    <div class="ht-step" data-step="0">
-      <div class="ht-dot">✏</div>
-      <div class="ht-label">Edit</div>
-      <div class="ht-time">Now</div>
-    </div>
-    <div class="ht-conn"><div class="ht-conn-fill" id="htc0"></div></div>
-    <div class="ht-step" data-step="1">
-      <div class="ht-dot">🗓</div>
-      <div class="ht-label">Schedule</div>
-      <div class="ht-time">Nov 29</div>
-    </div>
-    <div class="ht-conn"><div class="ht-conn-fill" id="htc1"></div></div>
-    <div class="ht-step" data-step="2">
-      <div class="ht-dot">⚡</div>
-      <div class="ht-label">Goes live</div>
-      <div class="ht-time">00:00</div>
-    </div>
-    <div class="ht-conn"><div class="ht-conn-fill" id="htc2"></div></div>
-    <div class="ht-step" data-step="3">
-      <div class="ht-dot">↩</div>
-      <div class="ht-label">Reverts</div>
-      <div class="ht-time">Dec 2</div>
-    </div>
   </div>
 </section>
 
-<!-- ─── MARQUEE ─── -->
+<!-- ─── MARQUEE (light) ─── -->
 <div class="mq">
   <div class="mq-track">
-    <span class="mq-item">Inline table editing<span class="mq-dot"></span></span>
-    <span class="mq-item">Bulk price rules<span class="mq-dot"></span></span>
-    <span class="mq-item">Variant metafields<span class="mq-dot"></span></span>
-    <span class="mq-item">Compare at price<span class="mq-dot"></span></span>
-    <span class="mq-item">Inventory qty<span class="mq-dot"></span></span>
-    <span class="mq-item">Bulk tags<span class="mq-dot"></span></span>
-    <span class="mq-item">Collections<span class="mq-dot"></span></span>
-    <span class="mq-item">Review before saving<span class="mq-dot"></span></span>
-    <span class="mq-item">CSV export<span class="mq-dot"></span></span>
-    <span class="mq-item hi">✦ Scheduled publishing<span class="mq-dot"></span></span>
-    <span class="mq-item hi">✦ Auto-revert when sale ends<span class="mq-dot"></span></span>
-    <span class="mq-item hi">✦ Email when it goes live<span class="mq-dot"></span></span>
-    <span class="mq-item">Inline table editing<span class="mq-dot"></span></span>
-    <span class="mq-item">Bulk price rules<span class="mq-dot"></span></span>
-    <span class="mq-item">Variant metafields<span class="mq-dot"></span></span>
-    <span class="mq-item">Compare at price<span class="mq-dot"></span></span>
-    <span class="mq-item">Inventory qty<span class="mq-dot"></span></span>
-    <span class="mq-item">Bulk tags<span class="mq-dot"></span></span>
-    <span class="mq-item">Collections<span class="mq-dot"></span></span>
-    <span class="mq-item">Review before saving<span class="mq-dot"></span></span>
-    <span class="mq-item">CSV export<span class="mq-dot"></span></span>
-    <span class="mq-item hi">✦ Scheduled publishing<span class="mq-dot"></span></span>
-    <span class="mq-item hi">✦ Auto-revert when sale ends<span class="mq-dot"></span></span>
-    <span class="mq-item hi">✦ Email when it goes live<span class="mq-dot"></span></span>
+    <span class="mq-item">Inline table editing<span class="mq-sep"></span></span>
+    <span class="mq-item">Bulk price rules<span class="mq-sep"></span></span>
+    <span class="mq-item">Variant metafields<span class="mq-sep"></span></span>
+    <span class="mq-item">Compare at price<span class="mq-sep"></span></span>
+    <span class="mq-item">Inventory qty<span class="mq-sep"></span></span>
+    <span class="mq-item">Bulk tags<span class="mq-sep"></span></span>
+    <span class="mq-item">Add to collections<span class="mq-sep"></span></span>
+    <span class="mq-item">Review before saving<span class="mq-sep"></span></span>
+    <span class="mq-item">CSV export<span class="mq-sep"></span></span>
+    <span class="mq-item hi">✦ Scheduled publishing<span class="mq-sep"></span></span>
+    <span class="mq-item hi">✦ Auto-revert when sale ends<span class="mq-sep"></span></span>
+    <span class="mq-item hi">✦ Email when it goes live<span class="mq-sep"></span></span>
+    <span class="mq-item">Inline table editing<span class="mq-sep"></span></span>
+    <span class="mq-item">Bulk price rules<span class="mq-sep"></span></span>
+    <span class="mq-item">Variant metafields<span class="mq-sep"></span></span>
+    <span class="mq-item">Compare at price<span class="mq-sep"></span></span>
+    <span class="mq-item">Inventory qty<span class="mq-sep"></span></span>
+    <span class="mq-item">Bulk tags<span class="mq-sep"></span></span>
+    <span class="mq-item">Add to collections<span class="mq-sep"></span></span>
+    <span class="mq-item">Review before saving<span class="mq-sep"></span></span>
+    <span class="mq-item">CSV export<span class="mq-sep"></span></span>
+    <span class="mq-item hi">✦ Scheduled publishing<span class="mq-sep"></span></span>
+    <span class="mq-item hi">✦ Auto-revert when sale ends<span class="mq-sep"></span></span>
+    <span class="mq-item hi">✦ Email when it goes live<span class="mq-sep"></span></span>
   </div>
 </div>
 
-<!-- ─── DEMO ─── -->
-<section class="demo">
-  <div class="demo-inner">
-    <div class="demo-stat reveal">
-      <span class="demo-num">2</span>
-      <span class="demo-unit">min</span>
-      <p class="demo-desc">to update <strong>500 products</strong>. No CSV. No imports. Click a cell, type the value, push.</p>
+<!-- ─── STATS (light) ─── -->
+<section class="stats">
+  <div class="stats-inner">
+    <div class="stat-card reveal">
+      <span class="stat-num">2<em>min</em></span>
+      <p class="stat-label">to update <strong>500 products</strong>. No CSV. No imports. Click, type, push.</p>
     </div>
-
-    <div class="dt reveal reveal-d1">
-      <div class="dt-bar">
-        <div class="dt-dots">
-          <div class="dt-dot"></div>
-          <div class="dt-dot"></div>
-          <div class="dt-dot"></div>
-        </div>
-        <span class="dt-title">your-store.myshopify.com — Lederly</span>
-        <span class="dt-badge">5 changes staged</span>
-      </div>
-      <div class="dt-head">
-        <span></span><span></span>
-        <span>Product</span>
-        <span>Status</span>
-        <span>Price</span>
-        <span>Compare at</span>
-      </div>
-      <div class="dt-body">
-        <div class="dt-row" data-active>
-          <input type="checkbox" class="dt-chk" checked readonly>
-          <span class="dt-swatch" style="background:#c8b8a2"></span>
-          <div class="dt-name">Merino Sweater — S</div>
-          <div class="dt-status"><span class="dt-pill">Active</span></div>
-          <div class="dt-price"><span class="dt-old">89.00</span><span class="dt-new">69.00</span></div>
-          <div class="dt-compare">89.00</div>
-        </div>
-        <div class="dt-row">
-          <input type="checkbox" class="dt-chk" checked readonly>
-          <span class="dt-swatch" style="background:#c8b8a2"></span>
-          <div class="dt-name">Merino Sweater — M</div>
-          <div class="dt-status"><span class="dt-pill">Active</span></div>
-          <div class="dt-price"><span class="dt-old">89.00</span><span class="dt-new">69.00</span></div>
-          <div class="dt-compare">89.00</div>
-        </div>
-        <div class="dt-row">
-          <input type="checkbox" class="dt-chk" checked readonly>
-          <span class="dt-swatch" style="background:#8b7560"></span>
-          <div class="dt-name">Leather Crossbody Bag</div>
-          <div class="dt-status"><span class="dt-pill">Active</span></div>
-          <div class="dt-price"><span class="dt-old">149.00</span><span class="dt-new">119.00</span></div>
-          <div class="dt-compare">149.00</div>
-        </div>
-        <div class="dt-row">
-          <input type="checkbox" class="dt-chk" checked readonly>
-          <span class="dt-swatch" style="background:#a8c4a0"></span>
-          <div class="dt-name">Yoga Mat 6mm</div>
-          <div class="dt-status"><span class="dt-pill">Active</span></div>
-          <div class="dt-price"><span class="dt-old">78.00</span><span class="dt-new">65.00</span></div>
-          <div class="dt-compare">78.00</div>
-        </div>
-        <div class="dt-row">
-          <input type="checkbox" class="dt-chk" checked readonly>
-          <span class="dt-swatch" style="background:#d4c5a8"></span>
-          <div class="dt-name">Organic Cotton Tee</div>
-          <div class="dt-status"><span class="dt-pill">Active</span></div>
-          <div class="dt-price"><span class="dt-old">34.00</span><span class="dt-new">24.00</span></div>
-          <div class="dt-compare">34.00</div>
-        </div>
-      </div>
-      <div class="dt-foot">
-        <span class="dt-foot-l">↑ 5 changes ready</span>
-        <div class="dt-foot-r">
-          <button class="dt-btn dt-btn-sched">✦ Schedule</button>
-          <button class="dt-btn dt-btn-push">↑ Push live</button>
-        </div>
-      </div>
+    <div class="stat-card reveal reveal-d1">
+      <span class="stat-num">0</span>
+      <p class="stat-label"><strong>manual reverts</strong> needed. Prices go back to original automatically when the sale ends.</p>
+    </div>
+    <div class="stat-card reveal reveal-d2">
+      <span class="stat-num">€0</span>
+      <p class="stat-label">to start. <strong>Free plan</strong> includes 100 edits/month. No credit card required.</p>
     </div>
   </div>
 </section>
 
-<!-- ─── PILLARS ─── -->
+<!-- ─── PILLARS (light) ─── -->
 <section class="pillars">
   <div class="pillars-inner">
-    <span class="pillars-sup reveal">Three things Shopify's editor can't do</span>
+    <span class="section-tag reveal">What it does</span>
+    <h2 class="section-h reveal">Three things Shopify's editor can't.</h2>
     <div class="pillars-grid">
       <div class="pillar reveal">
         <div class="pillar-ico">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1a5c38" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M13.5 2.5l4 4L5 19H1v-4L13.5 2.5z"/>
           </svg>
         </div>
         <h3 class="pillar-title">Edit</h3>
-        <p class="pillar-body">Any field on any product, directly in a table. Click a cell, type the new value, move on. No exports. No format headaches. No CSV.</p>
+        <p class="pillar-body">Any field on any product, directly in a table. Click a cell, type the new value, move on. No CSV. No exports. No reimports.</p>
       </div>
       <div class="pillar reveal reveal-d1">
         <div class="pillar-ico">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1a5c38" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="4" width="16" height="14" rx="2"/>
             <path d="M2 9h16M6 1v6M14 1v6"/>
           </svg>
         </div>
         <h3 class="pillar-title">Schedule</h3>
-        <p class="pillar-body">Pick a date and time. Your Black Friday prices go live at midnight automatically — no alarm required, no login at midnight.</p>
+        <p class="pillar-body">Pick a date and time. Your changes go live automatically — no alarm, no login at midnight, no forgotten sale.</p>
       </div>
       <div class="pillar reveal reveal-d2">
         <div class="pillar-ico">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#1a5c38" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 10a7 7 0 1 0 7-7H6"/>
             <path d="M2 6.5l4-3-4-3"/>
           </svg>
         </div>
         <h3 class="pillar-title">Revert</h3>
-        <p class="pillar-body">The sale ends itself. Lederly saves your original prices before any change and restores them automatically when the promo window closes.</p>
+        <p class="pillar-body">The sale ends itself. Lederly saves your original prices and restores them automatically when the promo window closes.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─── SCHEDULE MOMENT ─── -->
-<section class="sched-big">
-  <span class="sched-sup reveal">✦ The difference</span>
-  <h2 class="sched-big-h">
-    <span class="reveal">Set it Friday.</span><br>
-    <span class="reveal reveal-d1">Forget it.</span><br>
-    <span class="reveal reveal-d2"><em>Reverts Monday.</em></span>
+<!-- ─── SCHEDULE MOMENT (dark) ─── -->
+<section class="sched">
+  <span class="sched-tag reveal">✦ The part no one else does</span>
+  <h2 class="sched-h">
+    <span class="reveal">Set it up.</span><br>
+    <span class="reveal reveal-d1">Walk away.</span><br>
+    <span class="reveal reveal-d2"><em>It reverts itself.</em></span>
   </h2>
 
   <div class="sched-tl reveal reveal-d3" id="sched-tl">
     <div class="stl-step" data-stl="0">
       <div class="stl-dot">✏</div>
       <div class="stl-label">Edit</div>
-      <div class="stl-time">Friday</div>
+      <div class="stl-time">You, now</div>
     </div>
     <div class="stl-conn"><div class="stl-conn-fill" id="stc0"></div></div>
     <div class="stl-step" data-stl="1">
@@ -711,15 +644,14 @@
   </div>
 </section>
 
-<!-- ─── PRICING ─── -->
+<!-- ─── PRICING (light) ─── -->
 <section class="pricing">
   <div class="pricing-inner">
-    <span class="pricing-sup reveal">Pricing</span>
-    <h2 class="pricing-title reveal">Simple, transparent.</h2>
-    <p class="pricing-sub reveal">Free to start. Upgrade when you need scheduling and auto-revert.</p>
+    <span class="section-tag reveal">Pricing</span>
+    <h2 class="section-h reveal">Simple, transparent.</h2>
     <div class="pricing-banner reveal">
       <span class="pricing-banner-dot"></span>
-      <div><strong>Free during early access</strong> — all plans unlocked at no cost while we collect feedback. Pricing activates when paid plans launch.</div>
+      <div><strong>Free during early access</strong> — all plans are unlocked at no cost while we collect feedback. Pricing activates when paid plans launch.</div>
     </div>
     <div class="pricing-grid reveal reveal-d1">
       <div class="p-card">
@@ -771,15 +703,15 @@
   </div>
 </section>
 
-<!-- ─── CTA FINAL ─── -->
+<!-- ─── CTA FINAL (dark) ─── -->
 <section class="cta-final">
-  <h2 class="cta-final-h reveal">
-    Stop editing one by one.<br>
+  <h2 class="cta-h reveal">
+    Stop editing products<br>one by one.<br>
     <em>There's a better way.</em>
   </h2>
-  <p class="cta-final-sub reveal">Works with any Shopify store. No setup. No account. No CSV.</p>
-  <p class="cta-final-note reveal">Free · OAuth login · Token stays in your browser</p>
-  <a href="/app" class="cta-final-btn reveal">
+  <p class="cta-sub reveal">Works with any Shopify store. No setup. No account. No CSV.</p>
+  <p class="cta-note reveal">Free · OAuth login · Token stays in your browser</p>
+  <a href="/app" class="cta-btn reveal">
     Try Lederly free
     <span class="cta-arrow">→</span>
   </a>
@@ -790,137 +722,74 @@
     <span class="logo-mark">L</span>
     <span class="logo-name">Lederly</span>
   </a>
-  <p>© 2026 Lederly · <a href="/privacy" style="color:rgba(240,240,236,.3);text-decoration:none">Privacy</a> · <a href="/terms" style="color:rgba(240,240,236,.3);text-decoration:none">Terms</a></p>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink4);text-decoration:none">Privacy</a> · <a href="/terms" style="color:var(--ink4);text-decoration:none">Terms</a></p>
 </footer>
 
-<!-- Preview badge -->
 <div class="preview-badge">PREVIEW · /hp-v2</div>
 
 <script>
-/* ─── Hero mini timeline ─── */
+/* Table row cycle */
 (function(){
-  var steps = Array.from(document.querySelectorAll('.ht-step'));
-  var fills = [
-    document.getElementById('htc0'),
-    document.getElementById('htc1'),
-    document.getElementById('htc2')
-  ];
-  var step = 0;
-  var total = steps.length;
-
-  function tick() {
-    steps.forEach(function(s, i) {
-      if (i <= step) s.setAttribute('data-active', '');
-      else s.removeAttribute('data-active');
-    });
-    fills.forEach(function(f, i) {
-      f.style.transition = i < step ? 'width .65s ease' : 'none';
-      f.style.width = i < step ? '100%' : '0%';
-    });
-
-    if (step < total - 1) {
-      step++;
-      setTimeout(tick, 950);
-    } else {
-      setTimeout(function() {
-        steps.forEach(function(s) { s.removeAttribute('data-active'); });
-        fills.forEach(function(f) {
-          f.style.transition = 'none';
-          f.style.width = '0%';
-        });
-        step = 0;
-        setTimeout(tick, 400);
-      }, 2800);
-    }
-  }
-
-  setTimeout(tick, 1700);
-})();
-
-/* ─── Table row cycle ─── */
-(function(){
-  var rows = Array.from(document.querySelectorAll('.dt-row'));
+  var rows = Array.from(document.querySelectorAll('#av-body .av-row'));
   var idx = 0;
-
-  function next() {
-    rows.forEach(function(r) { r.removeAttribute('data-active'); });
-    rows[idx].setAttribute('data-active', '');
-    idx = (idx + 1) % rows.length;
+  function next(){
+    rows.forEach(function(r){r.removeAttribute('data-active')});
+    rows[idx].setAttribute('data-active','');
+    idx = (idx+1) % rows.length;
   }
-
   next();
   setInterval(next, 1750);
 })();
 
-/* ─── Big schedule timeline ─── */
+/* Schedule timeline */
 (function(){
   var steps = Array.from(document.querySelectorAll('.stl-step'));
-  var fills = [
-    document.getElementById('stc0'),
-    document.getElementById('stc1'),
-    document.getElementById('stc2')
-  ];
+  var fills = [document.getElementById('stc0'),document.getElementById('stc1'),document.getElementById('stc2')];
   var step = 0;
   var total = steps.length;
-  var running = false;
 
-  function tick() {
-    steps.forEach(function(s, i) {
-      s.classList.toggle('active', i <= step);
+  function tick(){
+    steps.forEach(function(s,i){s.classList.toggle('active', i<=step)});
+    fills.forEach(function(f,i){
+      f.style.transition = i<step ? 'width .85s cubic-bezier(.22,.68,0,1)' : 'none';
+      f.style.width = i<step ? '100%' : '0%';
     });
-    fills.forEach(function(f, i) {
-      f.style.transition = i < step ? 'width .85s cubic-bezier(.22,.68,0,1)' : 'none';
-      f.style.width = i < step ? '100%' : '0%';
-    });
-
-    if (step < total - 1) {
+    if(step < total-1){
       step++;
       setTimeout(tick, 1100);
     } else {
-      setTimeout(function() {
-        steps.forEach(function(s) { s.classList.remove('active'); });
-        fills.forEach(function(f) {
-          f.style.transition = 'none';
-          f.style.width = '0%';
-        });
-        step = 0;
+      setTimeout(function(){
+        steps.forEach(function(s){s.classList.remove('active')});
+        fills.forEach(function(f){f.style.transition='none';f.style.width='0%'});
+        step=0;
         setTimeout(tick, 500);
-      }, 3200);
+      }, 3000);
     }
   }
 
   var tl = document.getElementById('sched-tl');
-  if (tl && 'IntersectionObserver' in window) {
+  if(tl && 'IntersectionObserver' in window){
     var started = false;
-    new IntersectionObserver(function(entries, obs) {
-      if (started || !entries[0].isIntersecting) return;
-      started = true;
-      obs.disconnect();
-      tick();
-    }, { threshold: 0.35 }).observe(tl);
-  } else {
-    tick();
-  }
+    new IntersectionObserver(function(entries,obs){
+      if(started || !entries[0].isIntersecting) return;
+      started=true; obs.disconnect(); tick();
+    },{threshold:0.3}).observe(tl);
+  } else { tick(); }
 })();
 
-/* ─── Scroll reveals ─── */
+/* Scroll reveals */
 (function(){
   var els = Array.from(document.querySelectorAll('.reveal'));
-  if (!('IntersectionObserver' in window)) {
-    els.forEach(function(el) { el.classList.add('visible'); });
-    return;
+  if(!('IntersectionObserver' in window)){
+    els.forEach(function(el){el.classList.add('visible')}); return;
   }
-  var obs = new IntersectionObserver(function(entries) {
-    entries.forEach(function(e) {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        obs.unobserve(e.target);
-      }
+  var obs = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}
     });
-  }, { threshold: 0.1 });
-  els.forEach(function(el) { obs.observe(el); });
+  },{threshold:0.1});
+  els.forEach(function(el){obs.observe(el)});
 })();
 </script>
-
 </body>
 </html>
