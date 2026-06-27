@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Lederly — Bulk Edit & Schedule Shopify Products</title>
+  <meta name="robots" content="noindex,nofollow"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+    :root{
+      --bg:#080806;
+      --bg2:#0f0f0c;
+      --bg3:#161612;
+      --bg4:#1c1c18;
+      --surface:rgba(255,255,255,.03);
+      --border:rgba(255,255,255,.08);
+      --border2:rgba(255,255,255,.13);
+      --ink:#f0f0ec;
+      --ink2:rgba(240,240,236,.68);
+      --ink3:rgba(240,240,236,.38);
+      --ink4:rgba(240,240,236,.2);
+      --green:#1a5c38;
+      --lime:#86efac;
+      --lime-dim:rgba(134,239,172,.12);
+      --lime-border:rgba(134,239,172,.28);
+      --serif:'DM Serif Display',Georgia,serif;
+      --sans:'DM Sans',system-ui,sans-serif;
+      --mono:'Geist Mono','Menlo',monospace;
+    }
+
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+
+    /* ─── NAV ─── */
+    .v2-nav{
+      position:sticky;top:0;z-index:100;height:58px;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:0 48px;
+      background:rgba(8,8,6,.75);
+      backdrop-filter:blur(24px);
+      border-bottom:1px solid var(--border);
+    }
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center;line-height:1}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .v2-cta{
+      background:var(--lime);color:#080806;
+      border:none;border-radius:8px;padding:8px 20px;
+      font-size:13px;font-weight:700;cursor:pointer;
+      font-family:var(--sans);text-decoration:none;
+      transition:opacity .15s,transform .12s;
+      letter-spacing:.01em;
+    }
+    .v2-cta:hover{opacity:.85;transform:translateY(-1px)}
+
+    /* ─── HERO ─── */
+    .hero{
+      position:relative;
+      min-height:calc(100vh - 58px);
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      text-align:center;
+      padding:72px 48px 56px;
+      overflow:hidden;
+    }
+    .hero::before{
+      content:'';position:absolute;inset:0;pointer-events:none;
+      background:
+        radial-gradient(ellipse 100% 55% at 50% 110%,rgba(26,92,56,.55),transparent 62%),
+        radial-gradient(ellipse 55% 38% at 50% 108%,rgba(134,239,172,.09),transparent 52%),
+        radial-gradient(ellipse 60% 40% at 10% 0%,rgba(26,92,56,.06),transparent 50%);
+    }
+
+    /* Hero entrance */
+    @keyframes heroUp{
+      from{opacity:0;transform:translateY(22px)}
+      to{opacity:1;transform:none}
+    }
+    .h-tag,.h-sub,.h-cta-wrap,.hero-tl{
+      position:relative;z-index:1;
+      opacity:0;transform:translateY(22px);
+      animation:heroUp .85s cubic-bezier(.22,.68,0,1.15) forwards;
+    }
+    .hero-h1{position:relative;z-index:1}
+    .hero-h1 span{
+      display:block;
+      opacity:0;transform:translateY(22px);
+      animation:heroUp .85s cubic-bezier(.22,.68,0,1.15) forwards;
+    }
+    .h-tag{animation-delay:.08s}
+    .h1-l1{animation-delay:.2s}
+    .h1-l2{animation-delay:.32s}
+    .h1-l3{animation-delay:.42s}
+    .h1-l4{animation-delay:.52s}
+    .h-sub{animation-delay:.68s}
+    .h-cta-wrap{animation-delay:.82s}
+    .hero-tl{animation-delay:1.08s}
+
+    .h-tag{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:5px 15px;
+      border:1px solid var(--lime-border);
+      border-radius:20px;
+      background:var(--lime-dim);
+      font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+      color:var(--lime);
+      margin-bottom:32px;
+    }
+    .h-tag-dot{
+      width:6px;height:6px;background:var(--lime);border-radius:50%;
+      animation:tagPulse 2.2s ease-in-out infinite;
+    }
+    @keyframes tagPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.45)}}
+
+    .hero-h1{
+      font-family:var(--serif);
+      font-size:clamp(52px,7.2vw,100px);
+      line-height:1.0;letter-spacing:-.035em;
+      color:var(--ink);
+      margin-bottom:26px;
+    }
+    .hero-h1 em{font-style:italic;color:var(--lime)}
+
+    .h-sub{
+      font-family:var(--mono);font-size:13px;letter-spacing:.12em;
+      color:var(--ink3);margin-bottom:36px;
+    }
+    .h-sub-sep{margin:0 10px;color:var(--border2)}
+
+    .h-cta-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:60px}
+    .h-cta{
+      display:inline-flex;align-items:center;gap:10px;
+      background:var(--lime);color:#080806;
+      border:none;border-radius:12px;
+      padding:16px 38px;
+      font-size:16px;font-weight:700;
+      text-decoration:none;font-family:var(--sans);
+      box-shadow:0 0 48px rgba(134,239,172,.22),0 4px 24px rgba(134,239,172,.12);
+      transition:opacity .15s,transform .15s,box-shadow .15s;
+      letter-spacing:.01em;
+    }
+    .h-cta:hover{
+      opacity:.88;transform:translateY(-2px);
+      box-shadow:0 0 72px rgba(134,239,172,.32),0 8px 32px rgba(134,239,172,.18);
+    }
+    .h-cta-arrow{transition:transform .15s}
+    .h-cta:hover .h-cta-arrow{transform:translateX(5px)}
+    .h-cta-note{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--ink4)}
+
+    /* Hero mini timeline */
+    .hero-tl{display:flex;align-items:flex-start;gap:0}
+    .ht-step{display:flex;flex-direction:column;align-items:center;gap:8px}
+    .ht-dot{
+      width:42px;height:42px;border-radius:50%;
+      border:1px solid var(--border);background:var(--bg3);
+      display:flex;align-items:center;justify-content:center;
+      font-size:16px;
+      transition:border-color .4s,background .4s,box-shadow .4s;
+      line-height:1;
+    }
+    .ht-step[data-active] .ht-dot{
+      border-color:var(--lime);
+      background:var(--lime-dim);
+      box-shadow:0 0 18px rgba(134,239,172,.35),0 0 6px rgba(134,239,172,.5);
+    }
+    .ht-label{font-family:var(--mono);font-size:11px;color:var(--ink3);transition:color .4s;letter-spacing:.04em}
+    .ht-time{font-family:var(--mono);font-size:10px;color:var(--ink4)}
+    .ht-step[data-active] .ht-label{color:var(--lime)}
+    .ht-conn{width:72px;height:1px;background:var(--border);margin-top:21px;flex-shrink:0;position:relative;overflow:hidden}
+    .ht-conn-fill{position:absolute;inset:0;width:0;background:var(--lime);transition:width .65s ease}
+
+    /* ─── MARQUEE ─── */
+    .mq{
+      border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+      background:var(--bg2);padding:14px 0;overflow:hidden;position:relative;
+    }
+    .mq::before,.mq::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2;pointer-events:none}
+    .mq::before{left:0;background:linear-gradient(to right,var(--bg2),transparent)}
+    .mq::after{right:0;background:linear-gradient(to left,var(--bg2),transparent)}
+    .mq-track{display:flex;width:max-content;animation:mqScroll 36s linear infinite}
+    @keyframes mqScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+    .mq-item{display:inline-flex;align-items:center;gap:8px;padding:0 22px;font-size:12px;font-family:var(--mono);color:var(--ink3);white-space:nowrap}
+    .mq-dot{width:3px;height:3px;background:var(--border2);border-radius:50%;flex-shrink:0}
+    .mq-item.hi{color:var(--lime);font-weight:500}
+
+    /* ─── DEMO ─── */
+    .demo{
+      padding:104px 48px;
+      background:var(--bg2);
+      border-top:1px solid var(--border);
+    }
+    .demo-inner{
+      max-width:1080px;margin:0 auto;
+      display:grid;grid-template-columns:280px 1fr;gap:88px;align-items:center;
+    }
+    .demo-stat{}
+    .demo-num{
+      font-family:var(--serif);
+      font-size:clamp(80px,11vw,148px);
+      line-height:.88;color:var(--lime);
+      letter-spacing:-.045em;display:block;
+    }
+    .demo-unit{
+      font-family:var(--serif);
+      font-size:clamp(28px,3.8vw,52px);
+      color:var(--ink2);letter-spacing:-.025em;
+      display:block;margin-bottom:28px;
+    }
+    .demo-desc{font-size:15px;color:var(--ink3);line-height:1.72;max-width:240px}
+    .demo-desc strong{color:var(--ink);font-weight:600}
+
+    /* App table mockup */
+    .dt{background:var(--bg3);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.5),0 4px 16px rgba(0,0,0,.3)}
+    .dt-bar{
+      display:flex;align-items:center;gap:8px;
+      padding:10px 14px;
+      border-bottom:1px solid var(--border);
+      background:rgba(255,255,255,.02);
+    }
+    .dt-dots{display:flex;gap:5px}
+    .dt-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.08)}
+    .dt-title{font-family:var(--mono);font-size:10px;color:var(--ink4);flex:1;margin-left:6px}
+    .dt-badge{
+      font-family:var(--mono);font-size:9px;
+      color:var(--lime);background:var(--lime-dim);
+      border:1px solid var(--lime-border);
+      border-radius:4px;padding:2px 8px;
+    }
+    .dt-head{
+      display:grid;grid-template-columns:20px 26px 1fr 72px 96px 88px;
+      padding:6px 14px;border-bottom:1px solid var(--border);
+      background:rgba(255,255,255,.015);
+    }
+    .dt-head span{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);padding:0 5px}
+    .dt-row{
+      display:grid;grid-template-columns:20px 26px 1fr 72px 96px 88px;
+      padding:9px 14px;border-bottom:1px solid var(--border);
+      align-items:center;
+      transition:background .28s;
+    }
+    .dt-row:last-child{border-bottom:none}
+    .dt-row[data-active]{background:rgba(134,239,172,.042)}
+    .dt-chk{width:11px;height:11px;accent-color:var(--lime);cursor:default;padding:0 5px}
+    .dt-swatch{width:20px;height:20px;border-radius:4px;display:block}
+    .dt-name{font-family:var(--mono);font-size:10.5px;color:var(--ink2);padding:0 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .dt-status{padding:0 5px}
+    .dt-pill{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-family:var(--mono);font-weight:500;background:var(--lime-dim);color:var(--lime);border:1px solid var(--lime-border)}
+    .dt-price{padding:0 5px;font-family:var(--mono);font-size:10.5px}
+    .dt-old{color:var(--ink4);text-decoration:line-through;font-size:9.5px;margin-right:3px}
+    .dt-new{color:var(--lime);font-weight:600}
+    .dt-row[data-active] .dt-new{animation:priceFlash .38s cubic-bezier(.22,.68,0,1.2) forwards}
+    @keyframes priceFlash{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    .dt-compare{padding:0 5px;font-family:var(--mono);font-size:10.5px;color:var(--ink4)}
+    .dt-foot{
+      padding:8px 14px;border-top:1px solid var(--border);
+      background:rgba(255,255,255,.015);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .dt-foot-l{font-family:var(--mono);font-size:9px;color:var(--lime)}
+    .dt-foot-r{display:flex;align-items:center;gap:6px}
+    .dt-btn{border:none;border-radius:5px;padding:4px 10px;font-family:var(--mono);font-size:9px;font-weight:600;cursor:default}
+    .dt-btn-sched{background:var(--lime-dim);color:var(--lime);border:1px solid var(--lime-border)}
+    .dt-btn-push{background:var(--lime);color:#080806}
+
+    /* ─── PILLARS ─── */
+    .pillars{
+      padding:104px 48px;
+      background:var(--bg);
+      border-top:1px solid var(--border);
+    }
+    .pillars-inner{max-width:1000px;margin:0 auto}
+    .pillars-sup{
+      font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+      color:var(--lime);display:block;text-align:center;margin-bottom:56px;
+    }
+    .pillars-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      gap:1px;background:var(--border);
+      border:1px solid var(--border);border-radius:20px;overflow:hidden;
+    }
+    .pillar{background:var(--bg2);padding:44px 38px;transition:background .2s}
+    .pillar:hover{background:var(--bg3)}
+    .pillar-ico{
+      width:46px;height:46px;
+      background:var(--lime-dim);border:1px solid var(--lime-border);
+      border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      margin-bottom:26px;
+    }
+    .pillar-title{font-family:var(--serif);font-size:26px;color:var(--ink);margin-bottom:12px;letter-spacing:-.01em}
+    .pillar-body{font-size:14px;color:var(--ink3);line-height:1.72}
+
+    /* ─── SCHEDULE BIG ─── */
+    .sched-big{
+      padding:120px 48px;
+      background:var(--bg2);
+      border-top:1px solid var(--border);
+      text-align:center;position:relative;overflow:hidden;
+    }
+    .sched-big::before{
+      content:'';position:absolute;inset:0;pointer-events:none;
+      background:radial-gradient(ellipse 80% 65% at 105% 0%,rgba(26,92,56,.38),transparent 55%);
+    }
+    .sched-sup{
+      font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+      color:var(--lime);display:inline-block;margin-bottom:32px;position:relative;
+    }
+    .sched-big-h{
+      font-family:var(--serif);
+      font-size:clamp(46px,6.8vw,90px);
+      line-height:1.04;letter-spacing:-.035em;
+      color:var(--ink);
+      margin-bottom:72px;position:relative;
+    }
+    .sched-big-h em{font-style:italic;color:var(--lime)}
+
+    /* Big timeline */
+    .sched-tl{display:inline-flex;align-items:flex-start;gap:0;position:relative}
+    .stl-step{display:flex;flex-direction:column;align-items:center;gap:10px}
+    .stl-dot{
+      width:52px;height:52px;border-radius:50%;
+      border:1px solid var(--border);background:var(--bg3);
+      display:flex;align-items:center;justify-content:center;font-size:20px;
+      transition:border-color .5s,background .5s,box-shadow .5s,transform .4s cubic-bezier(.22,.68,0,1.4);
+    }
+    .stl-step.active .stl-dot{
+      border-color:var(--lime);
+      background:var(--lime-dim);
+      box-shadow:0 0 24px rgba(134,239,172,.38),0 0 56px rgba(134,239,172,.12);
+      transform:scale(1.12);
+    }
+    .stl-label{font-family:var(--mono);font-size:12px;color:var(--ink3);letter-spacing:.05em;transition:color .5s}
+    .stl-time{font-family:var(--mono);font-size:10px;color:var(--ink4)}
+    .stl-step.active .stl-label{color:var(--lime)}
+    .stl-conn{width:96px;height:2px;background:var(--border);margin-top:25px;flex-shrink:0;position:relative;overflow:hidden}
+    .stl-conn-fill{position:absolute;inset:0;width:0;background:var(--lime);transition:width .85s cubic-bezier(.22,.68,0,1)}
+
+    /* ─── PRICING ─── */
+    .pricing{padding:104px 48px;background:var(--bg);border-top:1px solid var(--border)}
+    .pricing-inner{max-width:920px;margin:0 auto}
+    .pricing-sup{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--lime);display:block;text-align:center;margin-bottom:14px}
+    .pricing-title{font-family:var(--serif);font-size:clamp(34px,4.5vw,56px);color:var(--ink);text-align:center;margin-bottom:14px;letter-spacing:-.025em}
+    .pricing-sub{font-size:15px;color:var(--ink3);text-align:center;margin-bottom:40px}
+    .pricing-banner{
+      display:flex;align-items:flex-start;gap:10px;
+      background:var(--lime-dim);border:1px solid var(--lime-border);
+      border-radius:10px;padding:14px 18px;margin-bottom:36px;
+      font-size:13px;color:var(--ink2);line-height:1.65;
+    }
+    .pricing-banner-dot{width:7px;height:7px;background:var(--lime);border-radius:50%;flex-shrink:0;margin-top:5px;animation:tagPulse 2.2s ease-in-out infinite}
+    .pricing-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);
+      gap:1px;background:var(--border);
+      border:1px solid var(--border);border-radius:18px;overflow:hidden;
+    }
+    .p-card{background:var(--bg2);padding:34px 28px;display:flex;flex-direction:column}
+    .p-card.featured{background:var(--bg3)}
+    .p-tag{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--lime);margin-bottom:10px}
+    .p-name{font-family:var(--serif);font-size:22px;color:var(--ink);margin-bottom:6px}
+    .p-price{font-family:var(--serif);font-size:42px;color:var(--ink);letter-spacing:-.035em;line-height:1;margin-bottom:4px}
+    .p-price span{font-family:var(--sans);font-size:14px;font-weight:400;color:var(--ink3);letter-spacing:0}
+    .p-sub{font-size:11px;color:var(--ink4);font-family:var(--mono);margin-bottom:24px}
+    .p-div{height:1px;background:var(--border);margin:0 0 20px}
+    .p-feats{list-style:none;display:flex;flex-direction:column;gap:9px;flex:1}
+    .p-feats li{font-size:13px;color:var(--ink2);display:flex;align-items:baseline;gap:8px;line-height:1.4}
+    .p-feats li::before{content:'✓';font-size:10px;color:var(--lime);font-weight:700;flex-shrink:0}
+    .p-feats li.off{color:var(--ink4)}
+    .p-feats li.off::before{content:'—';color:var(--ink4)}
+    .p-beta{font-size:10px;font-family:var(--mono);color:var(--ink4);margin-top:20px;line-height:1.5}
+
+    /* ─── CTA FINAL ─── */
+    .cta-final{
+      padding:128px 48px;
+      background:var(--bg2);border-top:1px solid var(--border);
+      text-align:center;position:relative;overflow:hidden;
+    }
+    .cta-final::before{
+      content:'';position:absolute;inset:0;pointer-events:none;
+      background:radial-gradient(ellipse 90% 65% at 50% 115%,rgba(26,92,56,.55),transparent 62%);
+    }
+    .cta-final-h{
+      font-family:var(--serif);
+      font-size:clamp(42px,6.5vw,84px);
+      color:var(--ink);line-height:1.04;letter-spacing:-.035em;
+      margin-bottom:10px;position:relative;
+    }
+    .cta-final-h em{font-style:italic;color:var(--lime)}
+    .cta-final-sub{font-size:15px;color:var(--ink3);margin-bottom:8px;position:relative}
+    .cta-final-note{font-family:var(--mono);font-size:11px;color:var(--ink4);margin-bottom:40px;letter-spacing:.05em;position:relative}
+    .cta-final-btn{
+      display:inline-flex;align-items:center;gap:10px;
+      background:#fff;color:#080806;
+      border:none;border-radius:12px;
+      padding:17px 40px;font-size:16px;font-weight:700;
+      text-decoration:none;font-family:var(--sans);
+      box-shadow:0 8px 48px rgba(0,0,0,.55),0 2px 10px rgba(0,0,0,.35);
+      transition:opacity .15s,transform .15s;
+      position:relative;
+    }
+    .cta-final-btn:hover{opacity:.92;transform:translateY(-2px)}
+    .cta-arrow{transition:transform .15s}
+    .cta-final-btn:hover .cta-arrow{transform:translateX(5px)}
+
+    /* ─── FOOTER ─── */
+    .v2-footer{
+      padding:28px 48px;
+      border-top:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;gap:10px;
+      background:var(--bg);
+    }
+    .v2-footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+
+    /* ─── REVEAL ─── */
+    .reveal{opacity:0;transform:translateY(26px);transition:opacity .72s ease,transform .72s ease}
+    .reveal.visible{opacity:1;transform:none}
+    .reveal-d1{transition-delay:.1s}
+    .reveal-d2{transition-delay:.2s}
+    .reveal-d3{transition-delay:.3s}
+
+    /* ─── PREVIEW BADGE ─── */
+    .preview-badge{
+      position:fixed;bottom:18px;right:18px;z-index:9999;
+      background:rgba(134,239,172,.12);
+      border:1px solid rgba(134,239,172,.3);
+      border-radius:8px;padding:7px 14px;
+      font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+      color:var(--lime);
+      backdrop-filter:blur(12px);
+      pointer-events:none;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media(max-width:1040px){
+      .demo-inner{grid-template-columns:1fr;gap:52px}
+      .demo-num{font-size:clamp(72px,14vw,120px)}
+      .demo-desc{max-width:100%}
+    }
+    @media(max-width:768px){
+      .v2-nav{padding:0 20px}
+      .hero{padding:56px 24px 48px}
+      .mq{display:none}
+      .demo{padding:72px 24px}
+      .pillars{padding:72px 24px}
+      .pillars-grid{grid-template-columns:1fr}
+      .sched-big{padding:80px 24px}
+      .sched-tl{flex-wrap:wrap;justify-content:center}
+      .stl-conn{display:none}
+      .pricing{padding:72px 24px}
+      .pricing-grid{grid-template-columns:1fr}
+      .cta-final{padding:80px 24px}
+      .v2-footer{padding:20px;flex-direction:column;align-items:flex-start}
+      .hero-tl{flex-wrap:wrap;justify-content:center;gap:12px}
+      .ht-conn{display:none}
+    }
+    @media(max-width:480px){
+      .hero-tl{gap:8px}
+      .ht-step{gap:6px}
+      .ht-dot{width:36px;height:36px;font-size:14px}
+    }
+  </style>
+</head>
+<body>
+
+<nav class="v2-nav">
+  <a href="/" class="logo">
+    <span class="logo-mark">L</span>
+    <span class="logo-name">Lederly</span>
+  </a>
+  <a href="/app" class="v2-cta">Try for free →</a>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="h-tag">
+    <span class="h-tag-dot"></span>
+    Free · Shopify Bulk Editor
+  </div>
+
+  <h1 class="hero-h1">
+    <span class="h1-l1">Your Black Friday</span>
+    <span class="h1-l2">prices go live</span>
+    <span class="h1-l3">at midnight.</span>
+    <span class="h1-l4"><em>Without you.</em></span>
+  </h1>
+
+  <p class="h-sub">
+    Bulk edit<span class="h-sub-sep">·</span>Schedule<span class="h-sub-sep">·</span>Auto-revert
+  </p>
+
+  <div class="h-cta-wrap">
+    <a href="/app" class="h-cta">
+      Try for free
+      <span class="h-cta-arrow">→</span>
+    </a>
+    <span class="h-cta-note">No account · No credit card · OAuth secured</span>
+  </div>
+
+  <!-- Mini timeline -->
+  <div class="hero-tl">
+    <div class="ht-step" data-step="0">
+      <div class="ht-dot">✏</div>
+      <div class="ht-label">Edit</div>
+      <div class="ht-time">Now</div>
+    </div>
+    <div class="ht-conn"><div class="ht-conn-fill" id="htc0"></div></div>
+    <div class="ht-step" data-step="1">
+      <div class="ht-dot">🗓</div>
+      <div class="ht-label">Schedule</div>
+      <div class="ht-time">Nov 29</div>
+    </div>
+    <div class="ht-conn"><div class="ht-conn-fill" id="htc1"></div></div>
+    <div class="ht-step" data-step="2">
+      <div class="ht-dot">⚡</div>
+      <div class="ht-label">Goes live</div>
+      <div class="ht-time">00:00</div>
+    </div>
+    <div class="ht-conn"><div class="ht-conn-fill" id="htc2"></div></div>
+    <div class="ht-step" data-step="3">
+      <div class="ht-dot">↩</div>
+      <div class="ht-label">Reverts</div>
+      <div class="ht-time">Dec 2</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── MARQUEE ─── -->
+<div class="mq">
+  <div class="mq-track">
+    <span class="mq-item">Inline table editing<span class="mq-dot"></span></span>
+    <span class="mq-item">Bulk price rules<span class="mq-dot"></span></span>
+    <span class="mq-item">Variant metafields<span class="mq-dot"></span></span>
+    <span class="mq-item">Compare at price<span class="mq-dot"></span></span>
+    <span class="mq-item">Inventory qty<span class="mq-dot"></span></span>
+    <span class="mq-item">Bulk tags<span class="mq-dot"></span></span>
+    <span class="mq-item">Collections<span class="mq-dot"></span></span>
+    <span class="mq-item">Review before saving<span class="mq-dot"></span></span>
+    <span class="mq-item">CSV export<span class="mq-dot"></span></span>
+    <span class="mq-item hi">✦ Scheduled publishing<span class="mq-dot"></span></span>
+    <span class="mq-item hi">✦ Auto-revert when sale ends<span class="mq-dot"></span></span>
+    <span class="mq-item hi">✦ Email when it goes live<span class="mq-dot"></span></span>
+    <span class="mq-item">Inline table editing<span class="mq-dot"></span></span>
+    <span class="mq-item">Bulk price rules<span class="mq-dot"></span></span>
+    <span class="mq-item">Variant metafields<span class="mq-dot"></span></span>
+    <span class="mq-item">Compare at price<span class="mq-dot"></span></span>
+    <span class="mq-item">Inventory qty<span class="mq-dot"></span></span>
+    <span class="mq-item">Bulk tags<span class="mq-dot"></span></span>
+    <span class="mq-item">Collections<span class="mq-dot"></span></span>
+    <span class="mq-item">Review before saving<span class="mq-dot"></span></span>
+    <span class="mq-item">CSV export<span class="mq-dot"></span></span>
+    <span class="mq-item hi">✦ Scheduled publishing<span class="mq-dot"></span></span>
+    <span class="mq-item hi">✦ Auto-revert when sale ends<span class="mq-dot"></span></span>
+    <span class="mq-item hi">✦ Email when it goes live<span class="mq-dot"></span></span>
+  </div>
+</div>
+
+<!-- ─── DEMO ─── -->
+<section class="demo">
+  <div class="demo-inner">
+    <div class="demo-stat reveal">
+      <span class="demo-num">2</span>
+      <span class="demo-unit">min</span>
+      <p class="demo-desc">to update <strong>500 products</strong>. No CSV. No imports. Click a cell, type the value, push.</p>
+    </div>
+
+    <div class="dt reveal reveal-d1">
+      <div class="dt-bar">
+        <div class="dt-dots">
+          <div class="dt-dot"></div>
+          <div class="dt-dot"></div>
+          <div class="dt-dot"></div>
+        </div>
+        <span class="dt-title">your-store.myshopify.com — Lederly</span>
+        <span class="dt-badge">5 changes staged</span>
+      </div>
+      <div class="dt-head">
+        <span></span><span></span>
+        <span>Product</span>
+        <span>Status</span>
+        <span>Price</span>
+        <span>Compare at</span>
+      </div>
+      <div class="dt-body">
+        <div class="dt-row" data-active>
+          <input type="checkbox" class="dt-chk" checked readonly>
+          <span class="dt-swatch" style="background:#c8b8a2"></span>
+          <div class="dt-name">Merino Sweater — S</div>
+          <div class="dt-status"><span class="dt-pill">Active</span></div>
+          <div class="dt-price"><span class="dt-old">89.00</span><span class="dt-new">69.00</span></div>
+          <div class="dt-compare">89.00</div>
+        </div>
+        <div class="dt-row">
+          <input type="checkbox" class="dt-chk" checked readonly>
+          <span class="dt-swatch" style="background:#c8b8a2"></span>
+          <div class="dt-name">Merino Sweater — M</div>
+          <div class="dt-status"><span class="dt-pill">Active</span></div>
+          <div class="dt-price"><span class="dt-old">89.00</span><span class="dt-new">69.00</span></div>
+          <div class="dt-compare">89.00</div>
+        </div>
+        <div class="dt-row">
+          <input type="checkbox" class="dt-chk" checked readonly>
+          <span class="dt-swatch" style="background:#8b7560"></span>
+          <div class="dt-name">Leather Crossbody Bag</div>
+          <div class="dt-status"><span class="dt-pill">Active</span></div>
+          <div class="dt-price"><span class="dt-old">149.00</span><span class="dt-new">119.00</span></div>
+          <div class="dt-compare">149.00</div>
+        </div>
+        <div class="dt-row">
+          <input type="checkbox" class="dt-chk" checked readonly>
+          <span class="dt-swatch" style="background:#a8c4a0"></span>
+          <div class="dt-name">Yoga Mat 6mm</div>
+          <div class="dt-status"><span class="dt-pill">Active</span></div>
+          <div class="dt-price"><span class="dt-old">78.00</span><span class="dt-new">65.00</span></div>
+          <div class="dt-compare">78.00</div>
+        </div>
+        <div class="dt-row">
+          <input type="checkbox" class="dt-chk" checked readonly>
+          <span class="dt-swatch" style="background:#d4c5a8"></span>
+          <div class="dt-name">Organic Cotton Tee</div>
+          <div class="dt-status"><span class="dt-pill">Active</span></div>
+          <div class="dt-price"><span class="dt-old">34.00</span><span class="dt-new">24.00</span></div>
+          <div class="dt-compare">34.00</div>
+        </div>
+      </div>
+      <div class="dt-foot">
+        <span class="dt-foot-l">↑ 5 changes ready</span>
+        <div class="dt-foot-r">
+          <button class="dt-btn dt-btn-sched">✦ Schedule</button>
+          <button class="dt-btn dt-btn-push">↑ Push live</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PILLARS ─── -->
+<section class="pillars">
+  <div class="pillars-inner">
+    <span class="pillars-sup reveal">Three things Shopify's editor can't do</span>
+    <div class="pillars-grid">
+      <div class="pillar reveal">
+        <div class="pillar-ico">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13.5 2.5l4 4L5 19H1v-4L13.5 2.5z"/>
+          </svg>
+        </div>
+        <h3 class="pillar-title">Edit</h3>
+        <p class="pillar-body">Any field on any product, directly in a table. Click a cell, type the new value, move on. No exports. No format headaches. No CSV.</p>
+      </div>
+      <div class="pillar reveal reveal-d1">
+        <div class="pillar-ico">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="16" height="14" rx="2"/>
+            <path d="M2 9h16M6 1v6M14 1v6"/>
+          </svg>
+        </div>
+        <h3 class="pillar-title">Schedule</h3>
+        <p class="pillar-body">Pick a date and time. Your Black Friday prices go live at midnight automatically — no alarm required, no login at midnight.</p>
+      </div>
+      <div class="pillar reveal reveal-d2">
+        <div class="pillar-ico">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10a7 7 0 1 0 7-7H6"/>
+            <path d="M2 6.5l4-3-4-3"/>
+          </svg>
+        </div>
+        <h3 class="pillar-title">Revert</h3>
+        <p class="pillar-body">The sale ends itself. Lederly saves your original prices before any change and restores them automatically when the promo window closes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SCHEDULE MOMENT ─── -->
+<section class="sched-big">
+  <span class="sched-sup reveal">✦ The difference</span>
+  <h2 class="sched-big-h">
+    <span class="reveal">Set it Friday.</span><br>
+    <span class="reveal reveal-d1">Forget it.</span><br>
+    <span class="reveal reveal-d2"><em>Reverts Monday.</em></span>
+  </h2>
+
+  <div class="sched-tl reveal reveal-d3" id="sched-tl">
+    <div class="stl-step" data-stl="0">
+      <div class="stl-dot">✏</div>
+      <div class="stl-label">Edit</div>
+      <div class="stl-time">Friday</div>
+    </div>
+    <div class="stl-conn"><div class="stl-conn-fill" id="stc0"></div></div>
+    <div class="stl-step" data-stl="1">
+      <div class="stl-dot">🗓</div>
+      <div class="stl-label">Schedule</div>
+      <div class="stl-time">Fri · 00:00</div>
+    </div>
+    <div class="stl-conn"><div class="stl-conn-fill" id="stc1"></div></div>
+    <div class="stl-step" data-stl="2">
+      <div class="stl-dot">⚡</div>
+      <div class="stl-label">Goes live</div>
+      <div class="stl-time">Automatic</div>
+    </div>
+    <div class="stl-conn"><div class="stl-conn-fill" id="stc2"></div></div>
+    <div class="stl-step" data-stl="3">
+      <div class="stl-dot">↩</div>
+      <div class="stl-label">Auto-reverts</div>
+      <div class="stl-time">Mon · 09:00</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PRICING ─── -->
+<section class="pricing">
+  <div class="pricing-inner">
+    <span class="pricing-sup reveal">Pricing</span>
+    <h2 class="pricing-title reveal">Simple, transparent.</h2>
+    <p class="pricing-sub reveal">Free to start. Upgrade when you need scheduling and auto-revert.</p>
+    <div class="pricing-banner reveal">
+      <span class="pricing-banner-dot"></span>
+      <div><strong>Free during early access</strong> — all plans unlocked at no cost while we collect feedback. Pricing activates when paid plans launch.</div>
+    </div>
+    <div class="pricing-grid reveal reveal-d1">
+      <div class="p-card">
+        <div class="p-tag">Free</div>
+        <div class="p-name">Free</div>
+        <div class="p-price">€0<span>/mo</span></div>
+        <div class="p-sub">No credit card required</div>
+        <div class="p-div"></div>
+        <ul class="p-feats">
+          <li>Inline bulk editing</li>
+          <li>Prices, tags, status, SEO, metafields</li>
+          <li>Bulk actions</li>
+          <li>CSV Export</li>
+          <li>Up to 100 edits / month</li>
+          <li class="off">CSV Import</li>
+          <li class="off">Scheduling</li>
+          <li class="off">Auto-revert</li>
+        </ul>
+      </div>
+      <div class="p-card featured">
+        <div class="p-tag">Most popular</div>
+        <div class="p-name">Growth</div>
+        <div class="p-price">€9<span>.99/mo</span></div>
+        <div class="p-sub">For growing stores</div>
+        <div class="p-div"></div>
+        <ul class="p-feats">
+          <li>Everything in Free</li>
+          <li>Unlimited product edits</li>
+          <li>CSV Import</li>
+          <li>Up to 5 schedules / month</li>
+          <li class="off">Auto-revert</li>
+        </ul>
+        <p class="p-beta">Free during early access · your feedback shapes what we build.</p>
+      </div>
+      <div class="p-card">
+        <div class="p-tag">Pro</div>
+        <div class="p-name">Pro</div>
+        <div class="p-price">€19<span>.99/mo</span></div>
+        <div class="p-sub">Everything, unlimited</div>
+        <div class="p-div"></div>
+        <ul class="p-feats">
+          <li>Everything in Growth</li>
+          <li>Unlimited schedules</li>
+          <li><strong>Auto-revert after sale</strong></li>
+        </ul>
+        <p class="p-beta">Free during early access · your feedback shapes what we build.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA FINAL ─── -->
+<section class="cta-final">
+  <h2 class="cta-final-h reveal">
+    Stop editing one by one.<br>
+    <em>There's a better way.</em>
+  </h2>
+  <p class="cta-final-sub reveal">Works with any Shopify store. No setup. No account. No CSV.</p>
+  <p class="cta-final-note reveal">Free · OAuth login · Token stays in your browser</p>
+  <a href="/app" class="cta-final-btn reveal">
+    Try Lederly free
+    <span class="cta-arrow">→</span>
+  </a>
+</section>
+
+<footer class="v2-footer">
+  <a href="/" class="logo">
+    <span class="logo-mark">L</span>
+    <span class="logo-name">Lederly</span>
+  </a>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:rgba(240,240,236,.3);text-decoration:none">Privacy</a> · <a href="/terms" style="color:rgba(240,240,236,.3);text-decoration:none">Terms</a></p>
+</footer>
+
+<!-- Preview badge -->
+<div class="preview-badge">PREVIEW · /hp-v2</div>
+
+<script>
+/* ─── Hero mini timeline ─── */
+(function(){
+  var steps = Array.from(document.querySelectorAll('.ht-step'));
+  var fills = [
+    document.getElementById('htc0'),
+    document.getElementById('htc1'),
+    document.getElementById('htc2')
+  ];
+  var step = 0;
+  var total = steps.length;
+
+  function tick() {
+    steps.forEach(function(s, i) {
+      if (i <= step) s.setAttribute('data-active', '');
+      else s.removeAttribute('data-active');
+    });
+    fills.forEach(function(f, i) {
+      f.style.transition = i < step ? 'width .65s ease' : 'none';
+      f.style.width = i < step ? '100%' : '0%';
+    });
+
+    if (step < total - 1) {
+      step++;
+      setTimeout(tick, 950);
+    } else {
+      setTimeout(function() {
+        steps.forEach(function(s) { s.removeAttribute('data-active'); });
+        fills.forEach(function(f) {
+          f.style.transition = 'none';
+          f.style.width = '0%';
+        });
+        step = 0;
+        setTimeout(tick, 400);
+      }, 2800);
+    }
+  }
+
+  setTimeout(tick, 1700);
+})();
+
+/* ─── Table row cycle ─── */
+(function(){
+  var rows = Array.from(document.querySelectorAll('.dt-row'));
+  var idx = 0;
+
+  function next() {
+    rows.forEach(function(r) { r.removeAttribute('data-active'); });
+    rows[idx].setAttribute('data-active', '');
+    idx = (idx + 1) % rows.length;
+  }
+
+  next();
+  setInterval(next, 1750);
+})();
+
+/* ─── Big schedule timeline ─── */
+(function(){
+  var steps = Array.from(document.querySelectorAll('.stl-step'));
+  var fills = [
+    document.getElementById('stc0'),
+    document.getElementById('stc1'),
+    document.getElementById('stc2')
+  ];
+  var step = 0;
+  var total = steps.length;
+  var running = false;
+
+  function tick() {
+    steps.forEach(function(s, i) {
+      s.classList.toggle('active', i <= step);
+    });
+    fills.forEach(function(f, i) {
+      f.style.transition = i < step ? 'width .85s cubic-bezier(.22,.68,0,1)' : 'none';
+      f.style.width = i < step ? '100%' : '0%';
+    });
+
+    if (step < total - 1) {
+      step++;
+      setTimeout(tick, 1100);
+    } else {
+      setTimeout(function() {
+        steps.forEach(function(s) { s.classList.remove('active'); });
+        fills.forEach(function(f) {
+          f.style.transition = 'none';
+          f.style.width = '0%';
+        });
+        step = 0;
+        setTimeout(tick, 500);
+      }, 3200);
+    }
+  }
+
+  var tl = document.getElementById('sched-tl');
+  if (tl && 'IntersectionObserver' in window) {
+    var started = false;
+    new IntersectionObserver(function(entries, obs) {
+      if (started || !entries[0].isIntersecting) return;
+      started = true;
+      obs.disconnect();
+      tick();
+    }, { threshold: 0.35 }).observe(tl);
+  } else {
+    tick();
+  }
+})();
+
+/* ─── Scroll reveals ─── */
+(function(){
+  var els = Array.from(document.querySelectorAll('.reveal'));
+  if (!('IntersectionObserver' in window)) {
+    els.forEach(function(el) { el.classList.add('visible'); });
+    return;
+  }
+  var obs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  els.forEach(function(el) { obs.observe(el); });
+})();
+</script>
+
+</body>
+</html>
