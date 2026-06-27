@@ -1145,6 +1145,12 @@ app.get('/bulk-edit-shopify-prices',       (req, res) => res.sendFile(path.join(
 app.get('/shopify-schedule-price-changes', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-schedule-price-changes.html')));
 app.get('/shopify-auto-revert-prices',     (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-auto-revert-prices.html')));
 
+app.get('/alternatives/matrixify',                (req, res) => res.sendFile(path.join(__dirname, 'public', 'alternatives', 'matrixify.html')));
+app.get('/alternatives/hextom-bulk-product-editor', (req, res) => res.sendFile(path.join(__dirname, 'public', 'alternatives', 'hextom-bulk-product-editor.html')));
+app.get('/alternatives/ablestar-bulk-product-editor', (req, res) => res.sendFile(path.join(__dirname, 'public', 'alternatives', 'ablestar-bulk-product-editor.html')));
+app.get('/alternatives/shopify-bulk-editor',      (req, res) => res.sendFile(path.join(__dirname, 'public', 'alternatives', 'shopify-bulk-editor.html')));
+app.get('/alternatives/easyflow',                 (req, res) => res.sendFile(path.join(__dirname, 'public', 'alternatives', 'easyflow.html')));
+
 app.post('/api/feedback', feedbackLimiter, async (req, res) => {
   try {
     const { shop } = getSession(req);
