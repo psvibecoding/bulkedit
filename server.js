@@ -2200,7 +2200,9 @@ app.get('/api/admin/stores', async (req, res) => {
         si.email,
         COALESCE(si.country_code, '—') AS country_code,
         COALESCE(si.country, '—') AS country,
-        COALESCE(sp.plan, 'free') AS plan,
+        COALESCE(sp.plan, 'basic') AS plan,
+        sp.trial_ends_at,
+        sp.shopify_charge_id,
         si.first_seen,
         si.last_seen,
         COUNT(ae.id) FILTER (WHERE ae.event='connect') AS connects,
@@ -2209,7 +2211,7 @@ app.get('/api/admin/stores', async (req, res) => {
       FROM store_info si
       LEFT JOIN store_plans sp ON sp.shop = si.shop
       LEFT JOIN analytics_events ae ON ae.shop = si.shop
-      GROUP BY si.shop, si.name, si.email, si.country_code, si.country, sp.plan, si.first_seen, si.last_seen
+      GROUP BY si.shop, si.name, si.email, si.country_code, si.country, sp.plan, sp.trial_ends_at, sp.shopify_charge_id, si.first_seen, si.last_seen
       ORDER BY si.last_seen DESC NULLS LAST
       LIMIT 200
     `);

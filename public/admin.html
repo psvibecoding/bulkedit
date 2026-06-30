@@ -670,12 +670,16 @@ function renderStores(stores){
     <td style="font-size:12px;font-weight:500">${s.name!==s.shop?s.name:''}</td>
     <td style="font-size:11px;font-family:var(--mono);color:var(--ink3)">${s.email?`<a href="mailto:${s.email}" style="color:var(--green);text-decoration:none">${s.email}</a>`:'—'}</td>
     <td style="font-size:12px">${flagEmoji(s.country_code)}${s.country!=='—'?s.country:s.country_code}</td>
-    <td><select onchange="setPlan('${s.shop}',this)" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:${s.plan==='beta'?'#dcfce7':s.plan==='pro'?'#ede9fe':s.plan==='starter'?'#eff6ff':s.plan==='basic'?'#f0f9ff':'#f1f5f9'};color:${s.plan==='beta'?'#166534':s.plan==='pro'?'#5b21b6':s.plan==='starter'?'#1d4ed8':s.plan==='basic'?'#0369a1':'#475569'};cursor:pointer">
-      <option value="beta" ${s.plan==='beta'?'selected':''}>beta</option>
-      <option value="basic" ${s.plan==='basic'?'selected':''}>basic</option>
-      <option value="starter" ${s.plan==='starter'?'selected':''}>growth</option>
-      <option value="pro" ${s.plan==='pro'?'selected':''}>pro</option>
-    </select></td>
+    <td>
+      <select onchange="setPlan('${s.shop}',this)" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:${s.plan==='beta'?'#dcfce7':s.plan==='pro'?'#ede9fe':s.plan==='starter'?'#eff6ff':s.plan==='basic'?'#f0f9ff':'#f1f5f9'};color:${s.plan==='beta'?'#166534':s.plan==='pro'?'#5b21b6':s.plan==='starter'?'#1d4ed8':s.plan==='basic'?'#0369a1':'#475569'};cursor:pointer">
+        <option value="beta" ${s.plan==='beta'?'selected':''}>beta</option>
+        <option value="basic" ${s.plan==='basic'?'selected':''}>basic</option>
+        <option value="starter" ${s.plan==='starter'?'selected':''}>growth</option>
+        <option value="pro" ${s.plan==='pro'?'selected':''}>pro</option>
+      </select>
+      ${s.trial_ends_at && new Date(s.trial_ends_at)>new Date() ? `<span style="margin-left:4px;font-size:9px;font-family:var(--mono);background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px">trial ${Math.ceil((new Date(s.trial_ends_at)-Date.now())/86400000)}d</span>` : ''}
+      ${s.shopify_charge_id ? `<span style="margin-left:4px;font-size:9px;font-family:var(--mono);background:#dcfce7;color:#166534;border-radius:4px;padding:1px 5px">paid</span>` : ''}
+    </td>
     <td style="text-align:right;font-family:var(--mono);font-size:12px">${fmt(s.saves)}</td>
     <td style="text-align:right;font-family:var(--mono);font-size:12px">${fmt(s.schedules_run)}</td>
     <td style="font-size:11px;color:var(--ink3)">${s.last_seen?new Date(s.last_seen).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):'-'}</td>
