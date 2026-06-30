@@ -249,14 +249,14 @@ async function sendWelcomeEmail(shop, storeName, storeEmail) {
     <div style="background:#1a5c38;height:5px"></div>
     <div style="padding:36px 40px 32px;text-align:center;border-bottom:1px solid #f3f3f1">
       <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#0e0e0c;letter-spacing:-.02em">Welcome to Lederly</h1>
-      <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6">${storeName} is connected. Everything is <strong style="color:#1a5c38">free during early access</strong> — full features, no credit card required.</p>
+      <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6">${storeName} is connected. Your <strong style="color:#1a5c38">7-day free trial</strong> is active — full features unlocked, no credit card required.</p>
     </div>
     <div style="padding:28px 40px">
       <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.7">Here's what you can do right now:</p>
       <table style="width:100%;border-collapse:collapse">
         <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top;width:28px">✏️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Inline editing</strong> — click any product cell to edit title, price, tags, or description directly</td></tr>
         <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">⚡</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Bulk actions</strong> — select multiple products and change prices, status, or tags at once</td></tr>
-        <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">⏱️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Scheduling</strong> — stage changes now, push them live at the perfect moment (unlimited during early access)</td></tr>
+        <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">⏱️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Scheduling</strong> — stage changes now, push them live at the perfect moment</td></tr>
         <tr><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top">↩️</td><td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top"><strong>Auto-revert</strong> — set changes to revert automatically when a sale ends</td></tr>
       </table>
       <div style="margin-top:28px;text-align:center">

@@ -670,9 +670,9 @@ function renderStores(stores){
     <td style="font-size:12px;font-weight:500">${s.name!==s.shop?s.name:''}</td>
     <td style="font-size:11px;font-family:var(--mono);color:var(--ink3)">${s.email?`<a href="mailto:${s.email}" style="color:var(--green);text-decoration:none">${s.email}</a>`:'—'}</td>
     <td style="font-size:12px">${flagEmoji(s.country_code)}${s.country!=='—'?s.country:s.country_code}</td>
-    <td><select onchange="setPlan('${s.shop}',this)" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:${s.plan==='beta'||s.plan==='early_access'?'#dcfce7':s.plan==='pro'?'#ede9fe':s.plan==='starter'?'#eff6ff':'#f1f5f9'};color:${s.plan==='beta'||s.plan==='early_access'?'#166534':s.plan==='pro'?'#5b21b6':s.plan==='starter'?'#1d4ed8':'#475569'};cursor:pointer">
+    <td><select onchange="setPlan('${s.shop}',this)" style="font-size:10px;font-family:var(--mono);border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:${s.plan==='beta'?'#dcfce7':s.plan==='pro'?'#ede9fe':s.plan==='starter'?'#eff6ff':s.plan==='basic'?'#f0f9ff':'#f1f5f9'};color:${s.plan==='beta'?'#166534':s.plan==='pro'?'#5b21b6':s.plan==='starter'?'#1d4ed8':s.plan==='basic'?'#0369a1':'#475569'};cursor:pointer">
       <option value="beta" ${s.plan==='beta'?'selected':''}>beta</option>
-      <option value="free" ${s.plan==='free'?'selected':''}>free</option>
+      <option value="basic" ${s.plan==='basic'?'selected':''}>basic</option>
       <option value="starter" ${s.plan==='starter'?'selected':''}>growth</option>
       <option value="pro" ${s.plan==='pro'?'selected':''}>pro</option>
     </select></td>
@@ -704,8 +704,8 @@ async function setPlan(shop, sel){
     });
     const d = await r.json();
     if(!d.ok) { alert('Error: '+d.error); return; }
-    sel.style.background = plan==='beta'?'#dcfce7':plan==='pro'?'#ede9fe':plan==='starter'?'#eff6ff':'#f1f5f9';
-    sel.style.color = plan==='beta'?'#166534':plan==='pro'?'#5b21b6':plan==='starter'?'#1d4ed8':'#475569';
+    sel.style.background = plan==='beta'?'#dcfce7':plan==='pro'?'#ede9fe':plan==='starter'?'#eff6ff':plan==='basic'?'#f0f9ff':'#f1f5f9';
+    sel.style.color = plan==='beta'?'#166534':plan==='pro'?'#5b21b6':plan==='starter'?'#1d4ed8':plan==='basic'?'#0369a1':'#475569';
   } catch(e) { alert('Error: '+e.message); sel.value = sel.dataset.prev||'beta'; }
 }
 
