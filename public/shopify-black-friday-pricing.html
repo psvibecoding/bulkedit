@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Shopify Black Friday Pricing: How to Prepare, Schedule and Revert Prices | Lederly</title>
+  <meta name="description" content="A practical guide to setting up Black Friday and Cyber Monday pricing on Shopify — schedule discounts to go live automatically and revert without manual work."/>
+  <link rel="canonical" href="https://lederly.com/shopify-black-friday-pricing"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+  <meta property="og:type" content="article"/>
+  <meta property="og:title" content="Shopify Black Friday Pricing: How to Prepare, Schedule and Revert Prices"/>
+  <meta property="og:description" content="Schedule BFCM discounts to go live automatically and revert without manual work."/>
+  <meta property="og:url" content="https://lederly.com/shopify-black-friday-pricing"/>
+  <meta property="og:image"            content="https://lederly.com/og.png"/>
+  <meta property="og:image:secure_url" content="https://lederly.com/og.png"/>
+  <meta property="og:image:type"       content="image/png"/>
+  <meta property="og:image:width"      content="1200"/>
+  <meta property="og:image:height"     content="630"/>
+  <meta property="og:image:alt"        content="Lederly — Shopify Black Friday pricing automation"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Shopify Black Friday Pricing: How to Prepare, Schedule and Revert Prices",
+    "description": "A practical guide to setting up Black Friday and Cyber Monday pricing on Shopify — schedule discounts to go live automatically and revert without manual work.",
+    "author": { "@type": "Organization", "name": "Lederly" },
+    "publisher": { "@type": "Organization", "name": "Lederly", "url": "https://lederly.com" },
+    "mainEntityOfPage": "https://lederly.com/shopify-black-friday-pricing"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f9f9f7;--white:#fff;--ink:#0e0e0c;--ink2:#3c3c38;--ink3:#7c7c74;--ink4:#b4b4ac;
+      --border:#e4e4de;--green:#1a5c38;--green-lt:#1f7044;
+      --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+    nav{position:sticky;top:0;z-index:50;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(249,249,247,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none}
+    .nav-cta:hover{background:var(--green-lt)}
+    article{max-width:720px;margin:0 auto;padding:64px 24px 100px}
+    .art-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:16px}
+    h1{font-family:var(--serif);font-size:42px;line-height:1.15;color:var(--ink);margin-bottom:20px;letter-spacing:-.02em}
+    .art-sub{font-size:18px;color:var(--ink3);margin-bottom:48px;line-height:1.5}
+    h2{font-family:var(--serif);font-size:26px;color:var(--ink);margin:48px 0 16px;letter-spacing:-.01em}
+    h3{font-size:16px;font-weight:600;color:var(--ink);margin:28px 0 10px}
+    p{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px}
+    ul,ol{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px;padding-left:24px}
+    li{margin-bottom:6px}
+    .callout{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:20px 24px;margin:32px 0}
+    .callout p{margin:0;color:var(--ink2)}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;font-size:11px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);border-bottom:2px solid var(--border)}
+    td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--ink2);vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    .yes{color:var(--green);font-weight:600}
+    .no{color:var(--ink4)}
+    .cta-block{background:var(--green);border-radius:16px;padding:40px;text-align:center;margin:56px 0 0}
+    .cta-block h2{color:#fff;margin:0 0 10px;font-size:28px}
+    .cta-block p{color:rgba(255,255,255,.75);margin:0 0 24px}
+    .cta-btn{display:inline-block;background:#fff;color:var(--green);text-decoration:none;font-weight:700;font-size:15px;padding:13px 28px;border-radius:10px}
+    footer{padding:28px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg)}
+    footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+    @media(max-width:640px){nav{padding:0 20px}article{padding:40px 20px 80px}h1{font-size:30px}footer{padding:20px;flex-direction:column}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <a href="/app" class="nav-cta">Try now →</a>
+</nav>
+
+<article>
+  <p class="art-tag">Guide · BFCM Pricing</p>
+  <h1>Shopify Black Friday Pricing: How to Prepare, Schedule and Revert Prices</h1>
+  <p class="art-sub">BFCM is the highest-stakes week in e-commerce. Manually pushing prices at midnight and hoping someone remembers to revert them on Monday is not a strategy. Here's how to set it up once and let it run.</p>
+
+  <h2>The two biggest BFCM pricing mistakes</h2>
+
+  <h3>1. Prices go live late</h3>
+  <p>Your email campaign says the sale starts at midnight. Your countdown timer agrees. But the actual Shopify prices don't update until you log in and manually push them — which means 9am, or when you wake up, or after someone complains on social media. The disconnect between your marketing and your actual store prices is a trust problem.</p>
+
+  <h3>2. Prices don't revert</h3>
+  <p>The other common failure: BFCM prices stay in place for days after the sale ends. Customers buy at sale price when they shouldn't. Your margins take a hit. Someone has to notice, log in, and fix it manually — and by then the damage is done.</p>
+  <p>Both problems have the same root cause: relying on manual intervention during the busiest and most distracted time of the year.</p>
+
+  <h2>How to set up BFCM pricing the right way</h2>
+
+  <h3>Step 1 — Prepare your prices in advance</h3>
+  <p>At least 48 hours before BFCM, load your Shopify catalog in Lederly and set your sale prices. Use the bulk rules to apply percentage discounts across product categories — for example, 30% off all products tagged <strong>outerwear</strong>, 20% off everything else.</p>
+  <p>Review the resulting prices in the diff table before staging anything. Catch any products where the discount produces an unexpected or unacceptably low price.</p>
+
+  <h3>Step 2 — Schedule the go-live</h3>
+  <p>Instead of pushing immediately, click Schedule and set the go-live to exactly when your sale starts — midnight Thursday, 9am Friday, or whatever your campaign specifies. The changes execute automatically at that time whether you're awake or not.</p>
+
+  <h3>Step 3 — Set the auto-revert</h3>
+  <p>When scheduling, set the auto-revert time to Monday midnight (or whenever your sale ends). Lederly stores your original prices alongside the scheduled changes and restores them automatically when the revert time hits.</p>
+  <p>You get email confirmations when both the go-live and the revert execute. No manual checking required.</p>
+
+  <div class="callout">
+    <p>The auto-revert uses the prices that were live <em>before</em> you staged the schedule — not a hardcoded value you have to enter. So even if prices changed in the weeks leading up to BFCM, the revert goes back to the right number.</p>
+  </div>
+
+  <h2>BFCM pricing strategy options</h2>
+
+  <h3>Flat percentage off sitewide</h3>
+  <p>The simplest approach: one discount rate applied to every product. Easy to communicate ("20% off everything"), easy to execute in bulk. Leaves margin on the table for high-demand products but minimizes decision fatigue.</p>
+
+  <h3>Tiered discounts by category</h3>
+  <p>Higher discounts on slower-moving inventory, lower discounts on best-sellers. Requires more setup (separate bulk rules per category tag) but protects margin where demand is strong.</p>
+
+  <h3>Staggered sale windows</h3>
+  <p>Black Friday pricing from midnight to midnight, then a second "Cyber Monday" pricing starting Saturday. Two separate schedules — one to switch prices at the boundary, one to revert after Cyber Monday. Each schedule is independent and has its own revert.</p>
+
+  <h2>What about Shopify discount codes?</h2>
+  <p>Discount codes are a parallel strategy, not a replacement. A discount code requires the customer to find and enter the code — there's friction, and customers who don't know the code see full prices. For a sitewide BFCM sale where your marketing is driving to a product page (not a checkout), changing the actual listed price is essential for conversion.</p>
+  <p>Use discount codes for email-exclusive deals. Use price changes for the storefront-visible sale price.</p>
+
+  <h2>BFCM pricing checklist</h2>
+  <ul>
+    <li>Confirm sale prices and discounts at least 48h before BFCM</li>
+    <li>Set schedule go-live to match your campaign exactly (with timezone)</li>
+    <li>Set auto-revert to the minute your sale ends</li>
+    <li>Check that original prices are correctly captured in the schedule</li>
+    <li>Verify email notifications are enabled for schedule confirmation</li>
+    <li>Test on one product a week before to confirm the scheduling flow works</li>
+  </ul>
+
+  <h2>Related guides</h2>
+  <ul>
+    <li><a href="/shopify-schedule-price-changes" style="color:var(--green)">How to schedule Shopify price changes →</a></li>
+    <li><a href="/shopify-auto-revert-prices" style="color:var(--green)">How auto-revert prices work after a sale →</a></li>
+    <li><a href="/shopify-flash-sale" style="color:var(--green)">How to run a flash sale on Shopify →</a></li>
+  </ul>
+
+  <div class="cta-block">
+    <h2>Set your BFCM prices now, not at midnight</h2>
+    <p>Schedule the go-live and the revert in one step. Free to try — no credit card required.</p>
+    <a href="/app" class="cta-btn">Try Lederly free →</a>
+  </div>
+</article>
+
+<footer>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a></p>
+</footer>
+</body>
+</html>

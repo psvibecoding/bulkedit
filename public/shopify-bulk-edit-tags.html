@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>How to Bulk Edit Shopify Product Tags (Add, Remove, Replace) | Lederly</title>
+  <meta name="description" content="Add, remove, or replace tags across hundreds of Shopify products at once — no CSV, no coding. Keep your catalog organized without clicking product by product."/>
+  <link rel="canonical" href="https://lederly.com/shopify-bulk-edit-tags"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+  <meta property="og:type" content="article"/>
+  <meta property="og:title" content="How to Bulk Edit Shopify Product Tags (Add, Remove, Replace)"/>
+  <meta property="og:description" content="Add, remove, or replace tags across hundreds of Shopify products at once — no CSV, no coding."/>
+  <meta property="og:url" content="https://lederly.com/shopify-bulk-edit-tags"/>
+  <meta property="og:image"            content="https://lederly.com/og.png"/>
+  <meta property="og:image:secure_url" content="https://lederly.com/og.png"/>
+  <meta property="og:image:type"       content="image/png"/>
+  <meta property="og:image:width"      content="1200"/>
+  <meta property="og:image:height"     content="630"/>
+  <meta property="og:image:alt"        content="Lederly — Bulk edit Shopify product tags"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Bulk Edit Shopify Product Tags (Add, Remove, Replace)",
+    "description": "Add, remove, or replace tags across hundreds of Shopify products at once — no CSV, no coding.",
+    "author": { "@type": "Organization", "name": "Lederly" },
+    "publisher": { "@type": "Organization", "name": "Lederly", "url": "https://lederly.com" },
+    "mainEntityOfPage": "https://lederly.com/shopify-bulk-edit-tags"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f9f9f7;--white:#fff;--ink:#0e0e0c;--ink2:#3c3c38;--ink3:#7c7c74;--ink4:#b4b4ac;
+      --border:#e4e4de;--green:#1a5c38;--green-lt:#1f7044;
+      --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+    nav{position:sticky;top:0;z-index:50;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(249,249,247,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none}
+    .nav-cta:hover{background:var(--green-lt)}
+    article{max-width:720px;margin:0 auto;padding:64px 24px 100px}
+    .art-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:16px}
+    h1{font-family:var(--serif);font-size:42px;line-height:1.15;color:var(--ink);margin-bottom:20px;letter-spacing:-.02em}
+    .art-sub{font-size:18px;color:var(--ink3);margin-bottom:48px;line-height:1.5}
+    h2{font-family:var(--serif);font-size:26px;color:var(--ink);margin:48px 0 16px;letter-spacing:-.01em}
+    h3{font-size:16px;font-weight:600;color:var(--ink);margin:28px 0 10px}
+    p{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px}
+    ul,ol{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px;padding-left:24px}
+    li{margin-bottom:6px}
+    .callout{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:20px 24px;margin:32px 0}
+    .callout p{margin:0;color:var(--ink2)}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;font-size:11px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);border-bottom:2px solid var(--border)}
+    td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--ink2);vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    .yes{color:var(--green);font-weight:600}
+    .no{color:var(--ink4)}
+    .cta-block{background:var(--green);border-radius:16px;padding:40px;text-align:center;margin:56px 0 0}
+    .cta-block h2{color:#fff;margin:0 0 10px;font-size:28px}
+    .cta-block p{color:rgba(255,255,255,.75);margin:0 0 24px}
+    .cta-btn{display:inline-block;background:#fff;color:var(--green);text-decoration:none;font-weight:700;font-size:15px;padding:13px 28px;border-radius:10px}
+    footer{padding:28px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg)}
+    footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+    @media(max-width:640px){nav{padding:0 20px}article{padding:40px 20px 80px}h1{font-size:30px}footer{padding:20px;flex-direction:column}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <a href="/app" class="nav-cta">Try now →</a>
+</nav>
+
+<article>
+  <p class="art-tag">Guide · Shopify Tags</p>
+  <h1>How to Bulk Edit Shopify Product Tags (Add, Remove, Replace)</h1>
+  <p class="art-sub">Shopify's native editor lets you edit tags one product at a time. If you need to retag 300 products before a sale or reorganize your entire catalog, that's hours of clicking. Here's a faster way.</p>
+
+  <h2>Why product tags matter in Shopify</h2>
+  <p>Tags in Shopify do more than organize your admin view. They control which products appear in automated collections, they power filtering on most storefront themes, and they're used by apps for segmentation and automation. A tag like <strong>sale</strong>, <strong>new-arrival</strong>, or <strong>clearance</strong> can determine whether a product shows up in your most visible collection.</p>
+  <p>Keeping tags consistent and up to date across a catalog of hundreds or thousands of products is a real operational challenge — especially when products move in and out of seasonal categories.</p>
+
+  <h2>The problem with Shopify's native tag editor</h2>
+  <p>Shopify does let you edit tags on individual products, and you can apply tags to a selection of products in the bulk editor. But the built-in bulk editor is limited: you can only add a single tag at a time, you can't remove a specific tag across a selection, and you can't replace one tag with another.</p>
+  <p>For any complex retagging operation — removing a seasonal tag from all products after a campaign, adding a new category tag to a filtered subset — the native tools aren't enough.</p>
+
+  <h2>How to bulk edit tags in Lederly</h2>
+  <p>Lederly loads your entire catalog in a spreadsheet-style table. The Tags column is editable inline — click any cell to add, remove, or rewrite the tags for that product. For bulk operations, select a range of products and apply a tag rule across all of them at once.</p>
+
+  <h3>Adding a tag to multiple products</h3>
+  <ol>
+    <li>Filter your product table to show the products you want to retag</li>
+    <li>Select all (or a specific range)</li>
+    <li>Type the tag you want to add in the bulk field — existing tags are preserved</li>
+    <li>Review the diff — every product shows before/after</li>
+    <li>Push the changes or schedule them to go live at a specific time</li>
+  </ol>
+
+  <h3>Removing a tag across the catalog</h3>
+  <p>Select the products that carry the tag, open the bulk tag editor, and remove it. Lederly removes only the specified tag — all other tags on each product are untouched.</p>
+
+  <h3>Replacing one tag with another</h3>
+  <p>Use the find-and-replace mode: enter the tag to remove and the tag to add. The operation runs across your selection in a single pass — useful when you're renaming a category or migrating to a new tagging convention.</p>
+
+  <h2>Common use cases</h2>
+
+  <h3>End-of-season cleanup</h3>
+  <p>After a seasonal campaign, remove the <strong>summer-sale</strong> or <strong>bfcm</strong> tag from all products that carried it. Without bulk editing, this means opening each product individually and deleting the tag by hand.</p>
+
+  <h3>New collection launch</h3>
+  <p>Tag a set of products with a new collection identifier before a launch so they appear in the right automated collection the moment the collection goes live.</p>
+
+  <h3>Inventory reorg</h3>
+  <p>When you restructure your category taxonomy — renaming "tops" to "shirts" or splitting "accessories" into subcategories — bulk tag replacement lets you migrate the entire catalog without touching individual products.</p>
+
+  <h3>App integrations</h3>
+  <p>Many Shopify apps (reviews, loyalty, upsell) trigger on specific tags. Adding or removing those trigger tags in bulk lets you include or exclude large groups of products from app behavior without configuring each one manually.</p>
+
+  <h2>Bulk tag editing methods compared</h2>
+  <table>
+    <thead>
+      <tr><th>Method</th><th>Add tag</th><th>Remove tag</th><th>Replace tag</th><th>Bulk selection</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Shopify admin (product page)</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="no">One at a time</td></tr>
+      <tr><td>Shopify bulk editor</td><td class="yes">✓ one tag</td><td class="no">✗</td><td class="no">✗</td><td class="yes">✓</td></tr>
+      <tr><td>CSV import</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Lederly</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓ inline</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <p>CSV import can do bulk tag edits too — but it requires exporting your catalog, editing the file in Excel or Google Sheets, and re-importing. Any mistake in the CSV format means the entire import fails. Lederly does the same operation directly in the browser without file handling.</p>
+  </div>
+
+  <h2>What about using Shopify Flow?</h2>
+  <p>Shopify Flow can add or remove tags automatically based on triggers — useful for ongoing automation. But Flow isn't designed for one-time bulk operations on existing products. If you have 500 products that need a tag added right now, Flow requires setting up a trigger that fires for each product — which is complex and not guaranteed to run in order.</p>
+  <p>For bulk operations on a static selection of products, a spreadsheet-style editor is faster and more predictable than building an automation workflow.</p>
+
+  <h2>Related guides</h2>
+  <ul>
+    <li><a href="/bulk-edit-shopify-prices" style="color:var(--green)">How to bulk edit Shopify prices without CSV →</a></li>
+    <li><a href="/shopify-schedule-price-changes" style="color:var(--green)">How to schedule price changes on Shopify →</a></li>
+    <li><a href="/shopify-bulk-edit-seo" style="color:var(--green)">How to bulk edit Shopify SEO titles and descriptions →</a></li>
+  </ul>
+
+  <div class="cta-block">
+    <h2>Retag your entire catalog in minutes</h2>
+    <p>Add, remove, or replace tags across hundreds of products at once. Free to try — no credit card required.</p>
+    <a href="/app" class="cta-btn">Try Lederly free →</a>
+  </div>
+</article>
+
+<footer>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a></p>
+</footer>
+</body>
+</html>

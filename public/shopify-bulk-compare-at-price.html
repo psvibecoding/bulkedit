@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>How to Bulk Update Compare At Price on Shopify (Show the Strikethrough) | Lederly</title>
+  <meta name="description" content="Add a Compare At price to hundreds of Shopify products at once to show the original price with a strikethrough. No CSV required — edit inline and push in seconds."/>
+  <link rel="canonical" href="https://lederly.com/shopify-bulk-compare-at-price"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+  <meta property="og:type" content="article"/>
+  <meta property="og:title" content="How to Bulk Update Compare At Price on Shopify (Show the Strikethrough)"/>
+  <meta property="og:description" content="Add a Compare At price to hundreds of Shopify products at once to show the original price with a strikethrough. No CSV required."/>
+  <meta property="og:url" content="https://lederly.com/shopify-bulk-compare-at-price"/>
+  <meta property="og:image"            content="https://lederly.com/og.png"/>
+  <meta property="og:image:secure_url" content="https://lederly.com/og.png"/>
+  <meta property="og:image:type"       content="image/png"/>
+  <meta property="og:image:width"      content="1200"/>
+  <meta property="og:image:height"     content="630"/>
+  <meta property="og:image:alt"        content="Lederly — Bulk update Compare At Price on Shopify"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Bulk Update Compare At Price on Shopify (Show the Strikethrough)",
+    "description": "Add a Compare At price to hundreds of Shopify products at once to show the original price with a strikethrough. No CSV required.",
+    "author": { "@type": "Organization", "name": "Lederly" },
+    "publisher": { "@type": "Organization", "name": "Lederly", "url": "https://lederly.com" },
+    "mainEntityOfPage": "https://lederly.com/shopify-bulk-compare-at-price"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f9f9f7;--white:#fff;--ink:#0e0e0c;--ink2:#3c3c38;--ink3:#7c7c74;--ink4:#b4b4ac;
+      --border:#e4e4de;--green:#1a5c38;--green-lt:#1f7044;
+      --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+    nav{position:sticky;top:0;z-index:50;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(249,249,247,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none}
+    .nav-cta:hover{background:var(--green-lt)}
+    article{max-width:720px;margin:0 auto;padding:64px 24px 100px}
+    .art-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:16px}
+    h1{font-family:var(--serif);font-size:42px;line-height:1.15;color:var(--ink);margin-bottom:20px;letter-spacing:-.02em}
+    .art-sub{font-size:18px;color:var(--ink3);margin-bottom:48px;line-height:1.5}
+    h2{font-family:var(--serif);font-size:26px;color:var(--ink);margin:48px 0 16px;letter-spacing:-.01em}
+    h3{font-size:16px;font-weight:600;color:var(--ink);margin:28px 0 10px}
+    p{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px}
+    ul,ol{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px;padding-left:24px}
+    li{margin-bottom:6px}
+    .callout{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:20px 24px;margin:32px 0}
+    .callout p{margin:0;color:var(--ink2)}
+    table{width:100%;border-collapse:collapse;margin:24px 0;font-size:14px}
+    th{text-align:left;padding:10px 14px;font-size:11px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);border-bottom:2px solid var(--border)}
+    td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--ink2);vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    .yes{color:var(--green);font-weight:600}
+    .no{color:var(--ink4)}
+    .cta-block{background:var(--green);border-radius:16px;padding:40px;text-align:center;margin:56px 0 0}
+    .cta-block h2{color:#fff;margin:0 0 10px;font-size:28px}
+    .cta-block p{color:rgba(255,255,255,.75);margin:0 0 24px}
+    .cta-btn{display:inline-block;background:#fff;color:var(--green);text-decoration:none;font-weight:700;font-size:15px;padding:13px 28px;border-radius:10px}
+    footer{padding:28px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg)}
+    footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+    @media(max-width:640px){nav{padding:0 20px}article{padding:40px 20px 80px}h1{font-size:30px}footer{padding:20px;flex-direction:column}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <a href="/app" class="nav-cta">Try now →</a>
+</nav>
+
+<article>
+  <p class="art-tag">Guide · Compare At Price</p>
+  <h1>How to Bulk Update Compare At Price on Shopify (Show the Strikethrough)</h1>
+  <p class="art-sub">The "Compare At" price is what creates the strikethrough effect on your product pages — showing customers what they're saving. Setting it on hundreds of products one by one isn't realistic. Here's how to do it in bulk.</p>
+
+  <h2>What is the Compare At price in Shopify?</h2>
+  <p>Every Shopify product variant has two price fields: <strong>Price</strong> (the actual selling price) and <strong>Compare At Price</strong> (the "was" price shown with a strikethrough). When the Compare At price is higher than the Price, Shopify displays the original as crossed out and calculates a "% off" badge automatically in most themes.</p>
+  <p>It's one of the most effective conversion levers available — showing a discount visually, without requiring a discount code. But it only works if you actually set both fields, and setting them across a large catalog product-by-product is impractical.</p>
+
+  <h2>When to use Compare At price vs discount codes</h2>
+  <table>
+    <thead>
+      <tr><th>Scenario</th><th>Compare At price</th><th>Discount code</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Show strikethrough on product page</td><td class="yes">✓ Use this</td><td class="no">✗ Not visible</td></tr>
+      <tr><td>Private deal for email subscribers</td><td class="no">✗ Public</td><td class="yes">✓ Use this</td></tr>
+      <tr><td>Google Shopping price comparison</td><td class="yes">✓ Reflected</td><td class="no">✗ Not reflected</td></tr>
+      <tr><td>Limit who can access the discount</td><td class="no">✗ Public</td><td class="yes">✓ Use this</td></tr>
+      <tr><td>BFCM sitewide visible sale</td><td class="yes">✓ Use this</td><td class="no">✗ Requires code entry</td></tr>
+    </tbody>
+  </table>
+
+  <h2>How to bulk update Compare At price in Lederly</h2>
+  <p>Lederly displays both the Price and Compare At price columns side by side in the product table. You can edit them inline or apply bulk rules.</p>
+
+  <h3>Setting Compare At to current price, then discounting</h3>
+  <p>This is the most common BFCM workflow:</p>
+  <ol>
+    <li>Load your catalog — both price columns are visible</li>
+    <li>Select the products you want to put on sale</li>
+    <li>Set Compare At = current Price (captures the original as the "was" price)</li>
+    <li>Apply a percentage reduction to Price (the actual sale price)</li>
+    <li>Review the diff — every product shows old price / new price / new compare-at</li>
+    <li>Push or schedule with auto-revert</li>
+  </ol>
+
+  <h3>Clearing Compare At after a sale</h3>
+  <p>When auto-revert runs, Lederly restores both the Price and the Compare At to their original values. The strikethrough disappears automatically when the sale ends — no manual cleanup.</p>
+  <p>If you want to clear Compare At without touching prices, select the products and set Compare At to empty. The strikethrough disappears and the selling price is unchanged.</p>
+
+  <div class="callout">
+    <p>Shopify only shows the strikethrough when Compare At is strictly greater than Price. If you accidentally set them equal, or if a rounding rule makes Price &gt; Compare At, the strikethrough won't appear. Lederly flags these cases in the diff before you push.</p>
+  </div>
+
+  <h2>Bulk rules for Compare At price</h2>
+
+  <h3>Set Compare At as a fixed markup over Price</h3>
+  <p>Useful for stores that always show an original retail price. Set Compare At = Price × 1.3 (or whatever your standard markup is) across a selection. Every product's original price is calculated from the current price, not entered manually.</p>
+
+  <h3>Set Price as a percentage of Compare At</h3>
+  <p>Inverse approach: you already have Compare At set (the original retail price), and you want to calculate the sale price. Set Price = Compare At × 0.70 for 30% off. The "was" price stays fixed; only the sale price changes.</p>
+
+  <h2>Common mistakes with Compare At price</h2>
+
+  <h3>Forgetting to clear it after a sale</h3>
+  <p>The most common issue. After a promotion ends, the Compare At stays set and your products permanently look like they're on sale — even at full price. This erodes trust over time and may violate advertising standards in some markets. Auto-revert eliminates this risk entirely.</p>
+
+  <h3>Setting it too high</h3>
+  <p>A Compare At price that's 3× the actual price looks manipulated. Customers recognize inflated "original" prices and discount the credibility of the discount. Keep Compare At to your actual regular selling price.</p>
+
+  <h3>Not updating it when base prices change</h3>
+  <p>If your regular price increases but Compare At stays at the old level, the strikethrough math becomes inaccurate. Review Compare At whenever you do a price update.</p>
+
+  <h2>Related guides</h2>
+  <ul>
+    <li><a href="/bulk-edit-shopify-prices" style="color:var(--green)">How to bulk edit Shopify prices without CSV →</a></li>
+    <li><a href="/shopify-black-friday-pricing" style="color:var(--green)">Shopify Black Friday pricing: schedule and revert →</a></li>
+    <li><a href="/shopify-auto-revert-prices" style="color:var(--green)">How to auto-revert Shopify prices after a sale →</a></li>
+  </ul>
+
+  <div class="cta-block">
+    <h2>Show the strikethrough across your entire catalog</h2>
+    <p>Set Compare At price on hundreds of products in one step. Free to try — no credit card required.</p>
+    <a href="/app" class="cta-btn">Try Lederly free →</a>
+  </div>
+</article>
+
+<footer>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a></p>
+</footer>
+</body>
+</html>

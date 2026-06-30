@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>How to Run a Flash Sale on Shopify (With Automatic Price Revert) | Lederly</title>
+  <meta name="description" content="Set up a Shopify flash sale that starts and ends exactly on time — prices go live automatically and revert when the window closes, with no manual work required."/>
+  <link rel="canonical" href="https://lederly.com/shopify-flash-sale"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+  <meta property="og:type" content="article"/>
+  <meta property="og:title" content="How to Run a Flash Sale on Shopify (With Automatic Price Revert)"/>
+  <meta property="og:description" content="Set up a flash sale that starts and ends exactly on time — no manual price changes required."/>
+  <meta property="og:url" content="https://lederly.com/shopify-flash-sale"/>
+  <meta property="og:image"            content="https://lederly.com/og.png"/>
+  <meta property="og:image:secure_url" content="https://lederly.com/og.png"/>
+  <meta property="og:image:type"       content="image/png"/>
+  <meta property="og:image:width"      content="1200"/>
+  <meta property="og:image:height"     content="630"/>
+  <meta property="og:image:alt"        content="Lederly — Run Shopify flash sales automatically"/>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Run a Flash Sale on Shopify (With Automatic Price Revert)",
+    "description": "Set up a Shopify flash sale that starts and ends exactly on time — prices go live automatically and revert when the window closes, with no manual work required.",
+    "author": { "@type": "Organization", "name": "Lederly" },
+    "publisher": { "@type": "Organization", "name": "Lederly", "url": "https://lederly.com" },
+    "mainEntityOfPage": "https://lederly.com/shopify-flash-sale"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#f9f9f7;--white:#fff;--ink:#0e0e0c;--ink2:#3c3c38;--ink3:#7c7c74;--ink4:#b4b4ac;
+      --border:#e4e4de;--green:#1a5c38;--green-lt:#1f7044;
+      --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;--mono:'Geist Mono','Menlo',monospace;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6}
+    nav{position:sticky;top:0;z-index:50;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(249,249,247,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .logo-mark{width:28px;height:28px;background:var(--green);color:#fff;font-family:var(--mono);font-size:10px;font-weight:500;border-radius:6px;display:flex;align-items:center;justify-content:center}
+    .logo-name{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+    .nav-cta{background:var(--green);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);text-decoration:none}
+    .nav-cta:hover{background:var(--green-lt)}
+    article{max-width:720px;margin:0 auto;padding:64px 24px 100px}
+    .art-tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:16px}
+    h1{font-family:var(--serif);font-size:42px;line-height:1.15;color:var(--ink);margin-bottom:20px;letter-spacing:-.02em}
+    .art-sub{font-size:18px;color:var(--ink3);margin-bottom:48px;line-height:1.5}
+    h2{font-family:var(--serif);font-size:26px;color:var(--ink);margin:48px 0 16px;letter-spacing:-.01em}
+    h3{font-size:16px;font-weight:600;color:var(--ink);margin:28px 0 10px}
+    p{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px}
+    ul,ol{color:var(--ink2);font-size:16px;line-height:1.75;margin-bottom:18px;padding-left:24px}
+    li{margin-bottom:6px}
+    .callout{background:var(--white);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:8px;padding:20px 24px;margin:32px 0}
+    .callout p{margin:0;color:var(--ink2)}
+    .cta-block{background:var(--green);border-radius:16px;padding:40px;text-align:center;margin:56px 0 0}
+    .cta-block h2{color:#fff;margin:0 0 10px;font-size:28px}
+    .cta-block p{color:rgba(255,255,255,.75);margin:0 0 24px}
+    .cta-btn{display:inline-block;background:#fff;color:var(--green);text-decoration:none;font-weight:700;font-size:15px;padding:13px 28px;border-radius:10px}
+    footer{padding:28px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:var(--bg)}
+    footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+    @media(max-width:640px){nav{padding:0 20px}article{padding:40px 20px 80px}h1{font-size:30px}footer{padding:20px;flex-direction:column}}
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <a href="/app" class="nav-cta">Try now →</a>
+</nav>
+
+<article>
+  <p class="art-tag">Guide · Flash Sales</p>
+  <h1>How to Run a Flash Sale on Shopify (With Automatic Price Revert)</h1>
+  <p class="art-sub">Flash sales work because of urgency — a hard start time and a hard end time. If your prices go live 20 minutes late or stay discounted for two days after the window closes, you've broken the premise. Here's how to set up a flash sale that actually runs on time.</p>
+
+  <h2>What makes a flash sale different from a regular promotion</h2>
+  <p>A flash sale has two properties that make it effective: a short window (usually 24 hours or less) and a firm end time. The urgency is real — when the clock hits zero, the price goes back up.</p>
+  <p>That firmness is also what makes flash sales operationally hard. You need prices to go live at exactly the right moment and revert at exactly the right moment, regardless of whether anyone is at a computer when the window opens or closes.</p>
+
+  <h2>The problem with manual flash sales on Shopify</h2>
+  <p>Shopify doesn't have a built-in price scheduler. Running a flash sale manually means:</p>
+  <ul>
+    <li>Pushing prices at the exact start time (which might be midnight, 6am, or during peak traffic)</li>
+    <li>Setting a reminder to manually revert prices at the end time</li>
+    <li>Hoping you don't get distracted or forget</li>
+    <li>Catching errors when customers report that sale prices are still active two days later</li>
+  </ul>
+  <p>For a one-off promotion this is manageable. For a store that runs flash sales regularly, it's a persistent operational risk.</p>
+
+  <h2>Setting up a flash sale with automatic revert</h2>
+
+  <h3>Step 1 — Set your sale prices</h3>
+  <p>Load your catalog in Lederly and apply your discounts. For a flash sale, this is usually a percentage off a specific collection or tag. Select the relevant products, apply a percentage reduction, and review the resulting prices before staging anything.</p>
+
+  <h3>Step 2 — Schedule the start</h3>
+  <p>Set the go-live time to the exact minute your flash sale begins. If your countdown timer on the storefront says "Sale starts in 4 hours 23 minutes at 8:00pm EST," set the schedule to 8:00pm EST. The prices update at that exact time — no manual push.</p>
+
+  <h3>Step 3 — Set the auto-revert</h3>
+  <p>On the same schedule, set the revert time. For a 24-hour flash sale starting at 8pm, the revert goes to 8pm the next day. Lederly stores the original prices alongside the scheduled change and restores them automatically when the revert time hits.</p>
+  <p>You receive an email when the sale goes live and another when the revert runs. The prices are back to normal without any action on your part.</p>
+
+  <div class="callout">
+    <p>The auto-revert captures the original prices at the moment you create the schedule — not when the schedule runs. This means even if something changes between now and go-live, the revert uses the correct baseline.</p>
+  </div>
+
+  <h2>Flash sale types and how to set them up</h2>
+
+  <h3>Sitewide flash sale</h3>
+  <p>Select all products, apply a flat percentage off, schedule with revert. The most common format — easy to communicate and fast to set up.</p>
+
+  <h3>Single-collection flash sale</h3>
+  <p>Filter the product table by tag or collection, select the visible products, apply the discount. Only those products go on sale; everything else stays at full price.</p>
+
+  <h3>Graduated flash sale</h3>
+  <p>Different discount levels at different times — for example, 30% off for the first 6 hours, then 20% off for the remaining 18. Set up two schedules: the first runs the 30% discount with a revert set to when the deeper discount expires; the second runs the 20% discount. Both are staged in advance.</p>
+
+  <h3>Product drop with status change</h3>
+  <p>Some flash sales combine a price drop with activating previously draft products. Lederly's status field lets you bulk-activate products at the same time as the price change, bringing new inventory live exactly when the sale starts.</p>
+
+  <h2>What happens if a sale runs over by accident</h2>
+  <p>Without auto-revert, the most common failure mode is a flash sale that technically ends but prices stay discounted — either because no one remembered to revert, or because someone started the revert but only got through part of the catalog.</p>
+  <p>Auto-revert eliminates this class of error. The revert is part of the schedule, not a separate task. If you set the end time correctly when staging the sale, the end time executes correctly — with or without you.</p>
+
+  <h2>Flash sale checklist</h2>
+  <ul>
+    <li>Confirm discounted prices and product selection before staging</li>
+    <li>Set start time to match your campaign and countdown timer exactly</li>
+    <li>Set auto-revert to the exact end time — account for timezone</li>
+    <li>Check that original prices are captured correctly in the schedule</li>
+    <li>Confirm email notification is enabled for start and revert confirmation</li>
+  </ul>
+
+  <h2>Related guides</h2>
+  <ul>
+    <li><a href="/shopify-schedule-price-changes" style="color:var(--green)">How to schedule Shopify price changes →</a></li>
+    <li><a href="/shopify-auto-revert-prices" style="color:var(--green)">How auto-revert prices work after a sale →</a></li>
+    <li><a href="/shopify-black-friday-pricing" style="color:var(--green)">Shopify Black Friday pricing: full guide →</a></li>
+  </ul>
+
+  <div class="cta-block">
+    <h2>Run your next flash sale on autopilot</h2>
+    <p>Schedule the start and the end in one step. Free to try — no credit card required.</p>
+    <a href="/app" class="cta-btn">Try Lederly free →</a>
+  </div>
+</article>
+
+<footer>
+  <a href="/" class="logo"><span class="logo-mark">L</span><span class="logo-name">Lederly</span></a>
+  <p>© 2026 Lederly · <a href="/privacy" style="color:var(--ink3);text-decoration:none">Privacy</a></p>
+</footer>
+</body>
+</html>
