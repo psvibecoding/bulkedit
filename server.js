@@ -2174,7 +2174,7 @@ app.post('/api/admin/set-plan', async (req, res) => {
   const secret = req.headers['x-ping-secret'] || req.query.secret;
   if (PING_SECRET && secret !== PING_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
   const { shop, plan } = req.body || {};
-  if (!shop || !['free', 'starter', 'pro', 'beta'].includes(plan)) return res.status(400).json({ ok: false, error: 'Invalid shop or plan' });
+  if (!shop || !['basic', 'starter', 'pro', 'beta'].includes(plan)) return res.status(400).json({ ok: false, error: 'Invalid shop or plan' });
   if (!dbPool) return res.status(500).json({ ok: false, error: 'No database' });
   try {
     await dbPool.query(
