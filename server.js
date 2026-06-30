@@ -1349,6 +1349,93 @@ app.get('/auth/token', authLimiter, (req, res) => {
   res.json({ ok: true, token: entry.token, shop: entry.shop });
 });
 
+// ── BILLING ───────────────────────────────────────────────
+
+app.post('/billing/subscribe', apiLimiter, async (req, res) => {
+  try {
+    const { shop, token } = getSession(req);
+    const { plan } = req.body || {};
+    if (!PLAN_PRICES[plan]) throw new Error('Invalid plan');
+    if (!dbPool) throw new Error('Database not configured');
+
+    const cfg = PLAN_PRICES[plan];
+    const state = crypto.randomBytes(16).toString('hex');
+    const returnUrl = `${APP_URL}/billing/callback?state=${state}`;
+
+    const encTok = encryptToken(token);
+    await dbPool.query(
+      `INSERT INTO billing_sessions (state, shop, plan, enc_token, expires_at)
+       VALUES ($1, $2, $3, $4, NOW() + interval '1 hour')
+       ON CONFLICT (state) DO NOTHING`,
+      [state, shop, plan, encTok]
+    );
+
+    const d = await gql({ shop, token }, `
+      mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!) {
+        appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems) {
+          userErrors { field message }
+          confirmationUrl
+          appSubscription { id }
+        }
+      }`, {
+      name: cfg.name,
+      returnUrl,
+      lineItems: [{
+        plan: {
+          appRecurringPricingDetails: {
+            price: { amount: cfg.price, currencyCode: 'EUR' },
+            interval: 'EVERY_30_DAYS'
+          }
+        }
+      }]
+    });
+
+    const { userErrors, confirmationUrl } = d.appSubscriptionCreate;
+    if (userErrors?.length) throw new Error(userErrors.map(e => e.message).join(', '));
+    if (!confirmationUrl) throw new Error('No confirmationUrl returned by Shopify');
+
+    res.json({ ok: true, confirmationUrl });
+  } catch (e) {
+    console.error('[billing/subscribe]', e.message);
+    res.status(400).json({ ok: false, error: safeErr(e) });
+  }
+});
+
+app.get('/billing/callback', async (req, res) => {
+  try {
+    const { state } = req.query;
+    if (!state || !dbPool) return res.redirect('/app?billing_error=invalid');
+
+    const r = await dbPool.query(
+      `SELECT * FROM billing_sessions WHERE state=$1 AND expires_at > NOW()`,
+      [state]
+    );
+    if (!r.rows[0]) return res.redirect('/app?billing_error=expired');
+
+    const { shop, plan, enc_token } = r.rows[0];
+    const token = decryptToken(enc_token);
+    if (!token) return res.redirect('/app?billing_error=token_error');
+
+    const d = await gql({ shop, token }, `
+      query { currentAppInstallation { activeSubscriptions { id status } } }
+    `);
+    const activeSubs = d.currentAppInstallation?.activeSubscriptions || [];
+    if (!activeSubs.length) return res.redirect('/app?billing_error=not_active');
+
+    await dbPool.query(
+      `UPDATE store_plans SET plan=$1, shopify_charge_id=$2, trial_ends_at=NULL, updated_at=NOW() WHERE shop=$3`,
+      [plan, activeSubs[0].id, shop]
+    );
+    await dbPool.query(`DELETE FROM billing_sessions WHERE state=$1`, [state]);
+
+    track('billing_activated', shop, { plan });
+    res.redirect(`/app?billing_ok=${encodeURIComponent(plan)}`);
+  } catch (e) {
+    console.error('[billing/callback]', e.message);
+    res.redirect('/app?billing_error=server_error');
+  }
+});
+
 // ── API ───────────────────────────────────────────────────
 // Piggyback schedule check on every API call (catches server wakeups from sleep)
 app.use('/api/', (req, res, next) => { maybeRunSchedules(); next(); });
