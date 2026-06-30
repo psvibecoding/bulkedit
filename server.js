@@ -82,6 +82,16 @@ if (process.env.DATABASE_URL) {
     last_seen TIMESTAMPTZ DEFAULT NOW()
   )`).catch(e => console.error('[db] store_info init error:', e.message));
   dbPool.query(`ALTER TABLE store_info ADD COLUMN IF NOT EXISTS email TEXT`).catch(() => {});
+  dbPool.query(`ALTER TABLE store_plans ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ`).catch(() => {});
+  dbPool.query(`ALTER TABLE store_plans ADD COLUMN IF NOT EXISTS shopify_charge_id TEXT`).catch(() => {});
+  dbPool.query(`CREATE TABLE IF NOT EXISTS billing_sessions (
+    state TEXT PRIMARY KEY,
+    shop TEXT NOT NULL,
+    plan TEXT NOT NULL,
+    enc_token TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
+  )`).catch(e => console.error('[db] billing_sessions init error:', e.message));
+  dbPool.query(`DELETE FROM billing_sessions WHERE expires_at < NOW()`).catch(() => {});
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
