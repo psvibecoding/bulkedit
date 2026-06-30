@@ -42,7 +42,7 @@ let S = {
   selectedVids: new Set(),
   bulkType: null,
   schedules:[],
-  plan:'free', schedLimit:5, schedUsed:0, pushesUsed:0, periodEnd:null,
+  plan:'basic', schedLimit:0, schedUsed:0, periodEnd:null, trialInfo:null,
   pageInfo:{ hasNextPage:false, endCursor:null },
   exportFields:['handle','title','status','vendor','tags','variant','sku','price','compareAtPrice'],
 };
@@ -1112,10 +1112,6 @@ async function confirmColl(){
 /* ── REVIEW & SAVE ── */
 function openSaveModal(){
   const payloads=Object.values(S.changes); if(!payloads.length)return toast('No changes to save.');
-  if(S.plan==='free'&&S.pushesUsed>=100){
-    showUpgradeModal('You\'ve reached your 100 product monthly limit. Upgrade to Growth for unlimited saves.','Monthly limit reached');
-    return;
-  }
   $('m-save-sub').textContent=`${payloads.length} product${payloads.length!==1?'s':''} with pending changes`;
   const list=$('m-save-diff');
   list.innerHTML=payloads.map(c=>{
@@ -1269,7 +1265,6 @@ async function confirmSave(){
       delete S.changes[pid];
     });
 
-    if(S.plan==='free'&&savedPids.length>0){ S.pushesUsed+=savedPids.length; updatePlanBadge(); }
     renderTable(); updateSaveBtn(); updateUndoUI();
 
     // Silently reload from Shopify so the table reflects actual saved values
@@ -1278,16 +1273,6 @@ async function confirmSave(){
     const allFailed=[...failed,...(invFailed.length?[{pid:'inv',title:'Inventory',err:invFailed.join(', ')}]:[])];
 
     if(allFailed.length){
-      const isPlanLimit=allFailed.every(f=>/free plan limit|100 products/i.test(f.err||''));
-      if(isPlanLimit){
-        closeModal('m-save');
-        const msg=savedPids.length>0
-          ?`You saved ${savedPids.length} product${savedPids.length!==1?'s':''} but hit your 100 product monthly limit. Upgrade to Growth for unlimited saves.`
-          :'You\'ve reached your 100 product monthly limit. Upgrade to Growth for unlimited saves.';
-        showUpgradeModal(msg,'Monthly limit reached');
-        if(savedPids.length>0){ S.pushesUsed+=savedPids.length; updatePlanBadge(); }
-        return;
-      }
       // Show real errors inside modal, keep it open for retry
       const errHTML=allFailed.map(f=>`<div class="diff-row"><span class="diff-field" style="color:var(--red)">✕ ${esc(f.title)}</span><span class="diff-new" style="color:var(--red);font-family:var(--mono);font-size:11px">${esc(f.err)}</span></div>`).join('');
       const banner=`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px;margin-bottom:14px"><div style="font-size:12px;font-weight:600;color:#dc2626;margin-bottom:8px">⚠ ${allFailed.length} failed · ${savedPids.length} saved</div>${errHTML}</div>`;
@@ -1373,25 +1358,19 @@ function updateSchedBadge(){
 
 function updatePlanBadge(){
   const el=$('plan-badge'); if(!el)return;
-  const plan=S.plan||'free';
+  const effectivePlan=S.plan||'basic';
+  const inTrial=S.trialInfo?.inTrial;
   const fbBtn=$('btn-feedback');
-  if(fbBtn) fbBtn.textContent=['starter','pro'].includes(plan)?'Support':'Feedback';
-  const planLabel=plan==='pro'?'Pro':plan==='starter'?'Growth':plan==='beta'?'Beta':'Free';
+  if(fbBtn) fbBtn.textContent=['starter','pro'].includes(effectivePlan)?'Support':'Feedback';
+  const planLabel=inTrial?`Trial (${S.trialInfo.daysLeft}d)`:effectivePlan==='pro'?'Pro':effectivePlan==='starter'?'Growth':effectivePlan==='beta'?'Beta':'Basic';
   const parts=[];
-  if(plan==='free'){
-    const resetLabel=S.periodEnd?`resets ${new Date(S.periodEnd).toLocaleDateString('en',{month:'short',day:'numeric'})}`:'this month';
-    parts.push(`${S.pushesUsed}/100 products · ${resetLabel}`);
-  }
   if(S.schedLimit===0) parts.push('no scheduling');
   else if(S.schedLimit!==null) parts.push(`${S.schedUsed}/${S.schedLimit} schedules`);
   else parts.push('schedules unlimited');
   el.textContent=`${planLabel} · ${parts.join(' · ')}`;
-  el.dataset.plan=plan;
-  const atLimit=(plan==='free'&&S.pushesUsed>=100)||(S.schedLimit!==null&&S.schedLimit>0&&S.schedUsed>=S.schedLimit);
-  const warning=!atLimit&&(
-    (plan==='free'&&S.pushesUsed>=80)||
-    (S.schedLimit!==null&&S.schedLimit>0&&S.schedUsed>=S.schedLimit-1)
-  );
+  el.dataset.plan=effectivePlan;
+  const atLimit=S.schedLimit!==null&&S.schedLimit>0&&S.schedUsed>=S.schedLimit;
+  const warning=!atLimit&&S.schedLimit!==null&&S.schedLimit>0&&S.schedUsed>=S.schedLimit-1;
   el.dataset.atLimit=atLimit?'1':'0';
   el.dataset.warning=warning?'1':'0';
 }
@@ -1402,11 +1381,19 @@ async function loadSchedules(){
     const r=await api('/api/schedule/list',{});
     S.schedules=r.schedules||[];
     S.schedPersistWarning=!!r.persistWarning;
-    S.plan=r.plan||'free';
-    S.schedLimit=r.schedLimit??5;
+    S.plan=r.plan||'basic';
+    S.schedLimit=r.schedLimit??0;
     S.schedUsed=r.schedUsed??0;
-    S.pushesUsed=r.pushesUsed??0;
     S.periodEnd=r.periodEnd||null;
+    S.trialInfo=r.trialInfo||null;
+    // Trial banner
+    const trialBanner=document.getElementById('trial-banner');
+    const trialText=document.getElementById('trial-banner-text');
+    if(trialBanner&&S.trialInfo?.inTrial){
+      const d=S.trialInfo.daysLeft;
+      trialText.textContent=`${d} day${d!==1?'s':''} left in your free trial`;
+      trialBanner.style.display='block';
+    } else if(trialBanner){ trialBanner.style.display='none'; }
   }catch{ S.schedules=[]; }
   updateSchedBadge();
   updatePlanBadge();
@@ -1960,14 +1947,20 @@ function boot(){
     showUpgradeModal('Upgrade to Pro for unlimited schedules and auto-revert.','Unlock unlimited schedules');
   });
 
-  // Upgrade request
-  $('btn-upgrade-request').addEventListener('click', ()=>{
-    closeModal('m-upgrade');
-    const plan = S.plan==='free'?'Growth':'Pro';
-    $('fb-message').value=`I'd like to upgrade to the ${plan} plan.`;
-    $('fb-email').value='';
-    openModal('m-feedback');
-  });
+  // billing_ok / billing_error from redirect
+  (()=>{
+    const p=new URLSearchParams(location.search);
+    const ok=p.get('billing_ok'), err=p.get('billing_error');
+    if(ok){
+      const n=ok==='starter'?'Growth':(ok.charAt(0).toUpperCase()+ok.slice(1));
+      toast(`${n} plan activated! Welcome aboard.`);
+      history.replaceState({},'','/app');
+    }
+    if(err){
+      toast('Billing not completed. Try again from the upgrade modal.','warn');
+      history.replaceState({},'','/app');
+    }
+  })();
 
   // Feedback / Support
   $('btn-feedback').addEventListener('click', ()=>{
@@ -2051,7 +2044,7 @@ function boot(){
 
   // CSV Import
   $('btn-import-csv').addEventListener('click', ()=>{
-    if((S.plan==='free')&&!S.demo){ showUpgradeModal('CSV Import is available from the Growth plan (€9.99/mo).'); return; }
+    if((S.plan==='basic')&&!S.demo){ showUpgradeModal('CSV Import is available from the Growth plan (€9.99/mo).','Upgrade to import CSV'); return; }
     $('csv-file-input').click();
   });
   $('btn-csv-template').addEventListener('click', downloadCSVTemplate);
@@ -2573,9 +2566,23 @@ function maybeStartTour(){
 }
 
 function showUpgradeModal(reason, title){
-  $('m-upgrade-title').textContent = title || 'Plan limit reached';
+  $('m-upgrade-title').textContent = title || 'Upgrade your plan';
   $('m-upgrade-sub').textContent = reason || 'Upgrade your plan to unlock this feature.';
+  const errMsg=$('billing-error-msg'); if(errMsg){ errMsg.style.display='none'; errMsg.textContent=''; }
   openModal('m-upgrade');
+}
+
+async function startBilling(plan){
+  const errMsg=$('billing-error-msg');
+  if(errMsg){ errMsg.style.display='none'; errMsg.textContent=''; }
+  try{
+    const r=await api('/billing/subscribe',{plan});
+    if(!r.ok||!r.confirmationUrl) throw new Error(r.error||'No confirmation URL');
+    window.location.href=r.confirmationUrl;
+  }catch(e){
+    if(errMsg){ errMsg.textContent=e.message; errMsg.style.display='block'; }
+    else toast(e.message,'warn');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', boot);

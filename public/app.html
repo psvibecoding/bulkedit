@@ -77,6 +77,12 @@
       <button class="btn-ghost xs" id="btn-demo-exit">Connect real store →</button>
     </div>
 
+    <div id="trial-banner" style="display:none;background:#1a5c38;color:#fff;font-size:12px;font-family:var(--mono);padding:7px 16px;text-align:center">
+      <span id="trial-banner-text"></span>
+      &nbsp;·&nbsp;
+      <button onclick="showUpgradeModal('Choose a plan to keep access after your trial ends.','Upgrade before trial ends')" style="background:none;border:none;color:#fff;font-weight:700;cursor:pointer;font-family:var(--mono);font-size:12px;text-decoration:underline">Upgrade now →</button>
+    </div>
+
     <nav class="tabs">
       <button class="tab active" data-tab="products">Products</button>
       <button class="tab" data-tab="export">Export</button>
@@ -304,59 +310,57 @@
 
 <!-- UPGRADE MODAL -->
 <div id="m-upgrade" class="overlay hidden">
-  <div class="modal" style="max-width:460px">
+  <div class="modal" style="max-width:620px">
     <div class="modal-head">
-      <div><h2 id="m-upgrade-title">Plan limit reached</h2><p id="m-upgrade-sub" class="modal-sub"></p></div>
+      <div><h2 id="m-upgrade-title">Upgrade your plan</h2><p id="m-upgrade-sub" class="modal-sub"></p></div>
       <button class="close-btn" data-close="m-upgrade">✕</button>
     </div>
     <div class="modal-body" style="padding:0">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-bottom:1px solid var(--b1)">
         <div class="upgrade-plan" style="border-right:1px solid var(--b1)">
-          <div class="upgrade-plan-name">Free</div>
-          <div class="upgrade-plan-price">€0</div>
+          <div class="upgrade-plan-name">Basic</div>
+          <div class="upgrade-plan-price">€4.99<span>/mo</span></div>
           <ul class="upgrade-feat-list">
-            <li>Inline editing</li>
-            <li>Bulk actions</li>
+            <li>Unlimited edits</li>
+            <li>Prices, tags, SEO</li>
             <li>CSV export</li>
-            <li>100 products/mo</li>
             <li class="upgrade-no">No scheduling</li>
             <li class="upgrade-no">No CSV import</li>
             <li class="upgrade-no">No auto-revert</li>
           </ul>
+          <button class="btn-ghost sm" style="margin-top:12px;width:100%" onclick="startBilling('basic')">Choose Basic →</button>
         </div>
         <div class="upgrade-plan upgrade-plan-mid" style="border-right:1px solid var(--b1)">
           <div class="upgrade-plan-badge">Growth</div>
           <div class="upgrade-plan-name">Growth</div>
           <div class="upgrade-plan-price">€9.99<span>/mo</span></div>
           <ul class="upgrade-feat-list">
-            <li>Inline editing</li>
-            <li>Bulk actions</li>
-            <li>CSV export</li>
-            <li>Unlimited products</li>
-            <li>CSV import</li>
-            <li>5 schedules/mo</li>
+            <li>Unlimited edits</li>
+            <li>Prices, tags, SEO</li>
+            <li>CSV export + import</li>
+            <li>5 schedules / month</li>
             <li class="upgrade-no">No auto-revert</li>
           </ul>
+          <button class="btn-cta sm" style="margin-top:12px;width:100%" onclick="startBilling('starter')">Choose Growth →</button>
         </div>
         <div class="upgrade-plan upgrade-plan-pro">
           <div class="upgrade-plan-badge upgrade-plan-badge-pro">Pro</div>
           <div class="upgrade-plan-name">Pro</div>
           <div class="upgrade-plan-price">€19.99<span>/mo</span></div>
           <ul class="upgrade-feat-list">
-            <li>Inline editing</li>
-            <li>Bulk actions</li>
-            <li>CSV export</li>
-            <li>Unlimited products</li>
-            <li>CSV import</li>
+            <li>Unlimited edits</li>
+            <li>Prices, tags, SEO</li>
+            <li>CSV export + import</li>
             <li>Unlimited schedules</li>
             <li><strong>Auto-revert after sale</strong></li>
           </ul>
+          <button class="btn-cta sm" style="margin-top:12px;width:100%;background:#7c3aed;border-color:#7c3aed" onclick="startBilling('pro')">Choose Pro →</button>
         </div>
       </div>
     </div>
-    <div class="modal-foot" style="flex-direction:column;align-items:stretch;gap:10px">
-      <button class="btn-cta sm" id="btn-upgrade-request" style="text-align:center">Upgrade my plan →</button>
-      <p style="margin:0;font-size:11px;color:var(--t4);text-align:center">Paid plans coming soon — we'll activate your upgrade manually within 24h.</p>
+    <div class="modal-foot" style="flex-direction:column;align-items:center;gap:6px">
+      <p id="billing-error-msg" style="display:none;font-size:12px;color:#dc2626;margin:0"></p>
+      <p style="margin:0;font-size:11px;color:var(--t4)">Billed monthly via Shopify · Cancel anytime</p>
     </div>
   </div>
 </div>
@@ -390,8 +394,8 @@
   <div class="modal" style="max-width:420px">
     <div class="modal-head" style="border-bottom:none;padding-bottom:4px">
       <div>
-        <h2 style="font-size:18px">You're in early access 🌿</h2>
-        <p class="modal-sub">All features unlocked — free, no credit card.</p>
+        <h2 style="font-size:18px">Your 7-day free trial is active</h2>
+        <p class="modal-sub">All features unlocked — no credit card required.</p>
       </div>
     </div>
     <div class="modal-body" style="padding-top:4px">
