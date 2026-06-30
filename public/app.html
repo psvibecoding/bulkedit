@@ -328,7 +328,7 @@
             <li class="upgrade-no">No CSV import</li>
             <li class="upgrade-no">No auto-revert</li>
           </ul>
-          <button class="btn-ghost sm" style="margin-top:12px;width:100%" onclick="startBilling('basic')">Choose Basic →</button>
+          <button id="m-billing-basic" class="btn-ghost sm" style="margin-top:12px;width:100%" onclick="startBilling('basic')">Choose Basic →</button>
         </div>
         <div class="upgrade-plan upgrade-plan-mid" style="border-right:1px solid var(--b1)">
           <div class="upgrade-plan-badge">Growth</div>
@@ -341,7 +341,7 @@
             <li>5 schedules / month</li>
             <li class="upgrade-no">No auto-revert</li>
           </ul>
-          <button class="btn-cta sm" style="margin-top:12px;width:100%" onclick="startBilling('starter')">Choose Growth →</button>
+          <button id="m-billing-starter" class="btn-cta sm" style="margin-top:12px;width:100%" onclick="startBilling('starter')">Choose Growth →</button>
         </div>
         <div class="upgrade-plan upgrade-plan-pro">
           <div class="upgrade-plan-badge upgrade-plan-badge-pro">Pro</div>
@@ -354,13 +354,13 @@
             <li>Unlimited schedules</li>
             <li><strong>Auto-revert after sale</strong></li>
           </ul>
-          <button class="btn-cta sm" style="margin-top:12px;width:100%;background:#7c3aed;border-color:#7c3aed" onclick="startBilling('pro')">Choose Pro →</button>
+          <button id="m-billing-pro" class="btn-cta sm" style="margin-top:12px;width:100%;background:#7c3aed;border-color:#7c3aed" onclick="startBilling('pro')">Choose Pro →</button>
         </div>
       </div>
     </div>
     <div class="modal-foot" style="flex-direction:column;align-items:center;gap:6px">
       <p id="billing-error-msg" style="display:none;font-size:12px;color:#dc2626;margin:0"></p>
-      <p style="margin:0;font-size:11px;color:var(--t4)">Billed monthly via Shopify · Cancel anytime</p>
+      <p id="m-billing-footer" style="margin:0;font-size:11px;color:var(--t4)">Billed monthly via Shopify · Cancel anytime</p>
     </div>
   </div>
 </div>
@@ -470,6 +470,6 @@
 <div id="toast" class="toast"></div>
 <div id="stip" class="stip" style="display:none"></div>
 <script src="/driver.iife.js"></script>
-<script src="/app-tool.js?v=81"></script>
+<script src="/app-tool.js?v=82"></script>
 </body>
 </html>

@@ -1111,7 +1111,7 @@ async function confirmColl(){
 
 /* ── REVIEW & SAVE ── */
 function openSaveModal(){
-  if(S.plan==='expired'){ showUpgradeModal('Your 7-day trial has ended. Choose a plan to keep editing your products.','Choose a plan to continue'); return; }
+  if(S.plan==='pending'||S.plan==='expired'){ showUpgradeModal(S.plan==='pending'?'No charge today. Try Lederly free for 7 days, then stay on the plan you pick.':'Your access has ended. Choose a plan to continue editing your products.', S.plan==='pending'?'Choose your plan to start':'Choose a plan to continue'); return; }
   const payloads=Object.values(S.changes); if(!payloads.length)return toast('No changes to save.');
   $('m-save-sub').textContent=`${payloads.length} product${payloads.length!==1?'s':''} with pending changes`;
   const list=$('m-save-diff');
@@ -1363,7 +1363,7 @@ function updatePlanBadge(){
   const inTrial=S.trialInfo?.inTrial;
   const fbBtn=$('btn-feedback');
   if(fbBtn) fbBtn.textContent=['starter','pro'].includes(effectivePlan)?'Support':'Feedback';
-  const planLabel=effectivePlan==='expired'?'Trial ended':inTrial?`Trial (${S.trialInfo.daysLeft}d)`:effectivePlan==='pro'?'Pro':effectivePlan==='starter'?'Growth':effectivePlan==='beta'?'Beta':'Basic';
+  const planLabel=effectivePlan==='pending'?'Choose plan':effectivePlan==='expired'?'Subscription ended':inTrial?`Trial (${S.trialInfo.daysLeft}d)`:effectivePlan==='pro'?'Pro':effectivePlan==='starter'?'Growth':effectivePlan==='beta'?'Beta':'Basic';
   const parts=[];
   if(S.schedLimit===0) parts.push('no scheduling');
   else if(S.schedLimit!==null) parts.push(`${S.schedUsed}/${S.schedLimit} schedules`);
@@ -1387,19 +1387,24 @@ async function loadSchedules(){
     S.schedUsed=r.schedUsed??0;
     S.periodEnd=r.periodEnd||null;
     S.trialInfo=r.trialInfo||null;
-    // Expired → show paywall immediately
-    if(S.plan==='expired'){
-      const trialBanner=document.getElementById('trial-banner');
-      if(trialBanner){
-        trialBanner.style.background='#991b1b';
-        document.getElementById('trial-banner-text').textContent='Your free trial has ended.';
-        trialBanner.style.display='block';
-      }
-      showUpgradeModal('Your 7-day trial has ended. Choose a plan to keep editing your products.','Choose a plan to continue');
+    const trialBanner=document.getElementById('trial-banner');
+    // New install: no plan chosen yet → show plan selection
+    if(S.plan==='pending'){
+      if(trialBanner) trialBanner.style.display='none';
+      showUpgradeModal('No charge today. Try Lederly free for 7 days, then stay on the plan you pick.','Choose your plan to start');
       return;
     }
-    // Trial banner
-    const trialBanner=document.getElementById('trial-banner');
+    // Expired: trial/subscription ended → show paywall
+    if(S.plan==='expired'){
+      if(trialBanner){
+        trialBanner.style.background='#991b1b';
+        document.getElementById('trial-banner-text').textContent='Your subscription has ended.';
+        trialBanner.style.display='block';
+      }
+      showUpgradeModal('Your access has ended. Choose a plan to continue editing your products.','Choose a plan to continue');
+      return;
+    }
+    // Backward compat: server-side trial (old installs)
     const trialText=document.getElementById('trial-banner-text');
     if(trialBanner&&S.trialInfo?.inTrial){
       const d=S.trialInfo.daysLeft;
@@ -2578,9 +2583,19 @@ function maybeStartTour(){
 }
 
 function showUpgradeModal(reason, title){
-  $('m-upgrade-title').textContent = title || 'Upgrade your plan';
+  const isPending = S.plan === 'pending';
+  $('m-upgrade-title').textContent = title || (isPending ? 'Start your free trial' : 'Upgrade your plan');
   $('m-upgrade-sub').textContent = reason || 'Upgrade your plan to unlock this feature.';
   const errMsg=$('billing-error-msg'); if(errMsg){ errMsg.style.display='none'; errMsg.textContent=''; }
+  // Update button labels based on context
+  const suffix = isPending ? ' — Start free trial →' : ' →';
+  const bBasic=$('m-billing-basic'); if(bBasic) bBasic.textContent='Basic'+suffix;
+  const bStarter=$('m-billing-starter'); if(bStarter) bStarter.textContent='Growth'+suffix;
+  const bPro=$('m-billing-pro'); if(bPro) bPro.textContent='Pro'+suffix;
+  const footer=$('m-billing-footer');
+  if(footer) footer.textContent = isPending
+    ? 'No charge today · 7-day free trial · Cancel anytime'
+    : 'Billed monthly via Shopify · Cancel anytime';
   openModal('m-upgrade');
 }
 

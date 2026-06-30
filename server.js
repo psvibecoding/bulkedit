@@ -95,7 +95,7 @@ if (process.env.DATABASE_URL) {
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
-const PLAN_SCHED_LIMIT = { beta: Infinity, basic: 0, starter: 5, pro: Infinity };
+const PLAN_SCHED_LIMIT = { beta: Infinity, basic: 0, starter: 5, pro: Infinity, pending: 0, expired: 0 };
 const PLAN_PRO_FEATURES = new Set(['beta', 'pro']);
 const PLAN_PRICES = {
   basic:   { name: 'Lederly Basic',  price: '4.99'  },
@@ -109,12 +109,14 @@ async function getStorePlan(shop) {
     const r = await dbPool.query(
       'SELECT plan, trial_ends_at, shopify_charge_id FROM store_plans WHERE shop=$1', [shop]
     );
-    if (!r.rows[0]) return 'expired';
+    if (!r.rows[0]) return 'pending';
     const { plan, trial_ends_at, shopify_charge_id } = r.rows[0];
     if (plan === 'beta') return 'beta';
-    if (trial_ends_at && new Date(trial_ends_at) > new Date()) return 'pro';
     if (shopify_charge_id) return plan || 'basic';
-    return 'expired'; // trial ended, no active subscription
+    // Backward compat: stores that were given a server-side trial before this change
+    if (trial_ends_at && new Date(trial_ends_at) > new Date()) return 'pro';
+    if (plan === 'pending') return 'pending';
+    return 'expired';
   } catch { return 'beta'; }
 }
 
@@ -227,8 +229,8 @@ async function isFirstConnect(shop) {
   if (!dbPool) return false;
   try {
     const r = await dbPool.query(
-      `INSERT INTO store_plans (shop, plan, trial_ends_at, updated_at)
-       VALUES ($1, 'basic', NOW() + interval '7 days', NOW())
+      `INSERT INTO store_plans (shop, plan, updated_at)
+       VALUES ($1, 'pending', NOW())
        ON CONFLICT (shop) DO NOTHING`,
       [shop]
     );
@@ -1386,6 +1388,10 @@ app.post('/billing/subscribe', apiLimiter, async (req, res) => {
     const state = crypto.randomBytes(16).toString('hex');
     const returnUrl = `${APP_URL}/billing/callback?state=${state}`;
 
+    // Give 7-day trial only to new subscribers (pending plan, no prior charge)
+    const currentPlan = await getStorePlan(shop);
+    const trialDays = currentPlan === 'pending' ? 7 : 0;
+
     const encTok = encryptToken(token);
     await dbPool.query(
       `INSERT INTO billing_sessions (state, shop, plan, enc_token, expires_at)
@@ -1395,8 +1401,8 @@ app.post('/billing/subscribe', apiLimiter, async (req, res) => {
     );
 
     const d = await gql({ shop, token }, `
-      mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!) {
-        appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems) {
+      mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int) {
+        appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, trialDays: $trialDays) {
           userErrors { field message }
           confirmationUrl
           appSubscription { id }
@@ -1404,6 +1410,7 @@ app.post('/billing/subscribe', apiLimiter, async (req, res) => {
       }`, {
       name: cfg.name,
       returnUrl,
+      trialDays,
       lineItems: [{
         plan: {
           appRecurringPricingDetails: {
@@ -1612,7 +1619,7 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
   try {
     const s = getSession(req);
     const plan = await getStorePlan(s.shop);
-    if (plan === 'expired') return res.status(402).json({ ok: false, error: 'Trial ended. Choose a plan to continue.', expired: true });
+    if (plan === 'expired' || plan === 'pending') return res.status(402).json({ ok: false, error: 'Choose a plan to continue.', expired: true });
     const { productId, product, variants = [], metafields = [] } = req.body || {};
     const results = [];
 
@@ -1698,7 +1705,7 @@ app.post('/api/save-products-bulk', apiLimiter, writeLimiter, async (req, res) =
     if (products.length > 20) return res.status(400).json({ ok: false, error: 'Max 20 products per request' });
 
     const plan = await getStorePlan(s.shop);
-    if (plan === 'expired') return res.status(402).json({ ok: false, error: 'Trial ended. Choose a plan to continue.', expired: true });
+    if (plan === 'expired' || plan === 'pending') return res.status(402).json({ ok: false, error: 'Choose a plan to continue.', expired: true });
 
     // Process 4 products concurrently per round — ~4× faster without hitting Shopify rate limits
     const INNER = 4;
