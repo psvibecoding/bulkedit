@@ -95,15 +95,35 @@ if (process.env.DATABASE_URL) {
 }
 
 // ── PLAN LIMITS ──────────────────────────────────────────────
-const PLAN_SCHED_LIMIT = { beta: 10, free: 0, starter: 5, pro: Infinity }; // free = no scheduling
-const PLAN_PRO_FEATURES = new Set(['beta', 'pro']); // plans with full pro features
+const PLAN_SCHED_LIMIT = { beta: Infinity, basic: 0, starter: 5, pro: Infinity };
+const PLAN_PRO_FEATURES = new Set(['beta', 'pro']);
+const PLAN_PRICES = {
+  basic:   { name: 'Lederly Basic',  price: '4.99'  },
+  starter: { name: 'Lederly Growth', price: '9.99'  },
+  pro:     { name: 'Lederly Pro',    price: '19.99' },
+};
 
 async function getStorePlan(shop) {
   if (!dbPool) return 'beta';
   try {
-    const r = await dbPool.query('SELECT plan FROM store_plans WHERE shop=$1', [shop]);
-    return r.rows[0]?.plan || 'beta';
+    const r = await dbPool.query('SELECT plan, trial_ends_at FROM store_plans WHERE shop=$1', [shop]);
+    if (!r.rows[0]) return 'basic';
+    const { plan, trial_ends_at } = r.rows[0];
+    if (trial_ends_at && new Date(trial_ends_at) > new Date()) return 'pro';
+    return plan || 'basic';
   } catch { return 'beta'; }
+}
+
+async function getTrialInfo(shop) {
+  if (!dbPool) return { inTrial: false, trialEndsAt: null, daysLeft: 0, actualPlan: 'basic' };
+  try {
+    const r = await dbPool.query('SELECT plan, trial_ends_at FROM store_plans WHERE shop=$1', [shop]);
+    const trialEndsAt = r.rows[0]?.trial_ends_at ? new Date(r.rows[0].trial_ends_at) : null;
+    const inTrial = !!trialEndsAt && trialEndsAt > new Date();
+    const daysLeft = inTrial ? Math.ceil((trialEndsAt - new Date()) / 86400000) : 0;
+    const actualPlan = r.rows[0]?.plan || 'basic';
+    return { inTrial, trialEndsAt: trialEndsAt?.toISOString() || null, daysLeft, actualPlan };
+  } catch { return { inTrial: false, trialEndsAt: null, daysLeft: 0, actualPlan: 'basic' }; }
 }
 
 // Returns { key: 'YYYY-MM-DD', start: Date, end: Date } for the current 30-day billing period.
@@ -203,7 +223,8 @@ async function isFirstConnect(shop) {
   if (!dbPool) return false;
   try {
     const r = await dbPool.query(
-      `INSERT INTO store_plans (shop, plan, updated_at) VALUES ($1, 'beta', NOW())
+      `INSERT INTO store_plans (shop, plan, trial_ends_at, updated_at)
+       VALUES ($1, 'basic', NOW() + interval '7 days', NOW())
        ON CONFLICT (shop) DO NOTHING`,
       [shop]
     );
@@ -1478,10 +1499,6 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
   try {
     const s = getSession(req);
     const plan = await getStorePlan(s.shop);
-    if (plan === 'free') {
-      const used = await getPushesThisMonth(s.shop);
-      if (used >= 100) throw Object.assign(new Error('Free plan limit reached: 100 products pushed this month. Upgrade to Growth for unlimited pushes.'), { code: 'PLAN_LIMIT' });
-    }
     const { productId, product, variants = [], metafields = [] } = req.body || {};
     const results = [];
 
@@ -1554,7 +1571,6 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
     }
 
     track('save', s.shop, { v: variants.length, mf: metafields.length });
-    if (plan === 'free') await incrementPushes(s.shop); // beta + paid plans have unlimited pushes
     res.json({ ok: true, results });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -1568,10 +1584,6 @@ app.post('/api/save-products-bulk', apiLimiter, writeLimiter, async (req, res) =
     if (products.length > 20) return res.status(400).json({ ok: false, error: 'Max 20 products per request' });
 
     const plan = await getStorePlan(s.shop);
-    if (plan === 'free') {
-      const used = await getPushesThisMonth(s.shop);
-      if (used + products.length > 100) return res.status(400).json({ ok: false, error: 'Free plan limit reached: 100 products pushed this month.' });
-    }
 
     // Process 4 products concurrently per round — ~4× faster without hitting Shopify rate limits
     const INNER = 4;
@@ -1591,9 +1603,6 @@ app.post('/api/save-products-bulk', apiLimiter, writeLimiter, async (req, res) =
 
     const saved = results.filter(r => r?.ok).length;
     track('save', s.shop, { v: products.reduce((n, p) => n + (p.variants?.length || 0), 0), bulk: products.length });
-    if (plan === 'free' && saved > 0) {
-      for (let i = 0; i < saved; i++) await incrementPushes(s.shop);
-    }
     res.json({ ok: true, results });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
@@ -1796,11 +1805,11 @@ app.post('/api/schedule/list', apiLimiter, async (req, res) => {
       .sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor));
     const persistWarning = !process.env.DATABASE_URL && !process.env.SCHED_FILE;
     const plan = await getStorePlan(shop);
-    const schedLimit = PLAN_SCHED_LIMIT[plan] ?? 5;
+    const schedLimit = PLAN_SCHED_LIMIT[plan] ?? 0;
     const { end: periodEnd } = await currentPeriod(shop);
     const schedUsed = await countSchedsThisMonth(shop);
-    const pushesUsed = (plan === 'free') ? await getPushesThisMonth(shop) : null;
-    res.json({ ok: true, schedules: mine, persistWarning, plan, schedLimit: isFinite(schedLimit) ? schedLimit : null, schedUsed, pushesUsed, periodEnd: periodEnd.toISOString() });
+    const trialInfo = await getTrialInfo(shop);
+    res.json({ ok: true, schedules: mine, persistWarning, plan, schedLimit: isFinite(schedLimit) ? schedLimit : null, schedUsed, periodEnd: periodEnd.toISOString(), trialInfo });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
