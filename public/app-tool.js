@@ -1111,6 +1111,7 @@ async function confirmColl(){
 
 /* ── REVIEW & SAVE ── */
 function openSaveModal(){
+  if(S.plan==='expired'){ showUpgradeModal('Your 7-day trial has ended. Choose a plan to keep editing your products.','Choose a plan to continue'); return; }
   const payloads=Object.values(S.changes); if(!payloads.length)return toast('No changes to save.');
   $('m-save-sub').textContent=`${payloads.length} product${payloads.length!==1?'s':''} with pending changes`;
   const list=$('m-save-diff');
@@ -1362,7 +1363,7 @@ function updatePlanBadge(){
   const inTrial=S.trialInfo?.inTrial;
   const fbBtn=$('btn-feedback');
   if(fbBtn) fbBtn.textContent=['starter','pro'].includes(effectivePlan)?'Support':'Feedback';
-  const planLabel=inTrial?`Trial (${S.trialInfo.daysLeft}d)`:effectivePlan==='pro'?'Pro':effectivePlan==='starter'?'Growth':effectivePlan==='beta'?'Beta':'Basic';
+  const planLabel=effectivePlan==='expired'?'Trial ended':inTrial?`Trial (${S.trialInfo.daysLeft}d)`:effectivePlan==='pro'?'Pro':effectivePlan==='starter'?'Growth':effectivePlan==='beta'?'Beta':'Basic';
   const parts=[];
   if(S.schedLimit===0) parts.push('no scheduling');
   else if(S.schedLimit!==null) parts.push(`${S.schedUsed}/${S.schedLimit} schedules`);
@@ -1386,6 +1387,17 @@ async function loadSchedules(){
     S.schedUsed=r.schedUsed??0;
     S.periodEnd=r.periodEnd||null;
     S.trialInfo=r.trialInfo||null;
+    // Expired → show paywall immediately
+    if(S.plan==='expired'){
+      const trialBanner=document.getElementById('trial-banner');
+      if(trialBanner){
+        trialBanner.style.background='#991b1b';
+        document.getElementById('trial-banner-text').textContent='Your free trial has ended.';
+        trialBanner.style.display='block';
+      }
+      showUpgradeModal('Your 7-day trial has ended. Choose a plan to keep editing your products.','Choose a plan to continue');
+      return;
+    }
     // Trial banner
     const trialBanner=document.getElementById('trial-banner');
     const trialText=document.getElementById('trial-banner-text');

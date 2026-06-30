@@ -106,11 +106,15 @@ const PLAN_PRICES = {
 async function getStorePlan(shop) {
   if (!dbPool) return 'beta';
   try {
-    const r = await dbPool.query('SELECT plan, trial_ends_at FROM store_plans WHERE shop=$1', [shop]);
-    if (!r.rows[0]) return 'basic';
-    const { plan, trial_ends_at } = r.rows[0];
+    const r = await dbPool.query(
+      'SELECT plan, trial_ends_at, shopify_charge_id FROM store_plans WHERE shop=$1', [shop]
+    );
+    if (!r.rows[0]) return 'expired';
+    const { plan, trial_ends_at, shopify_charge_id } = r.rows[0];
+    if (plan === 'beta') return 'beta';
     if (trial_ends_at && new Date(trial_ends_at) > new Date()) return 'pro';
-    return plan || 'basic';
+    if (shopify_charge_id) return plan || 'basic';
+    return 'expired'; // trial ended, no active subscription
   } catch { return 'beta'; }
 }
 
@@ -1608,6 +1612,7 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
   try {
     const s = getSession(req);
     const plan = await getStorePlan(s.shop);
+    if (plan === 'expired') return res.status(402).json({ ok: false, error: 'Trial ended. Choose a plan to continue.', expired: true });
     const { productId, product, variants = [], metafields = [] } = req.body || {};
     const results = [];
 
@@ -1693,6 +1698,7 @@ app.post('/api/save-products-bulk', apiLimiter, writeLimiter, async (req, res) =
     if (products.length > 20) return res.status(400).json({ ok: false, error: 'Max 20 products per request' });
 
     const plan = await getStorePlan(s.shop);
+    if (plan === 'expired') return res.status(402).json({ ok: false, error: 'Trial ended. Choose a plan to continue.', expired: true });
 
     // Process 4 products concurrently per round — ~4× faster without hitting Shopify rate limits
     const INNER = 4;
