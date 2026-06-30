@@ -397,6 +397,19 @@ app.post('/webhooks/*', express.raw({ type: '*/*', limit: '1mb' }), async (req, 
         }
         break;
       }
+      case 'app_subscriptions/cancelled': {
+        if (!shop || !dbPool) break;
+        const body = JSON.parse(req.body.toString());
+        const chargeId = body?.app_subscription?.admin_graphql_api_id || body?.admin_graphql_api_id || null;
+        await dbPool.query(
+          `UPDATE store_plans SET plan='basic', shopify_charge_id=NULL, updated_at=NOW()
+           WHERE shop=$1 AND (shopify_charge_id=$2 OR $2 IS NULL)`,
+          [shop, chargeId]
+        ).catch(e => console.error('[webhook] subscription cancel update:', e.message));
+        track('billing_cancelled', shop, { chargeId });
+        console.log('[webhook] subscription cancelled for', shop);
+        break;
+      }
       case 'shop/redact':
         if (shop) { track('shop_redact', null); await purgeShopData(shop); }
         break;
@@ -1323,13 +1336,19 @@ app.get('/auth/callback', authLimiter, async (req, res) => {
     console.log('[token_exchange] keys:', Object.keys(td).join(','), 'has_expiry:', !!td.expires_in);
     if (!td.access_token) throw new Error('No token');
     track('connect', shop);
-    // Register app/uninstalled webhook — fire-and-forget, duplicate registration is a harmless userError
+    // Register webhooks — fire-and-forget, duplicate registration is a harmless userError
     gql({ shop, token: td.access_token }, `
       mutation WebhookCreate($url: URL!) {
         webhookSubscriptionCreate(topic: APP_UNINSTALLED, webhookSubscription: { callbackUrl: $url, format: JSON }) {
           userErrors { message }
         }
       }`, { url: `${APP_URL}/webhooks/app/uninstalled` }).catch(() => {});
+    gql({ shop, token: td.access_token }, `
+      mutation WebhookCreate($url: URL!) {
+        webhookSubscriptionCreate(topic: APP_SUBSCRIPTIONS_CANCELLED, webhookSubscription: { callbackUrl: $url, format: JSON }) {
+          userErrors { message }
+        }
+      }`, { url: `${APP_URL}/webhooks/app/subscriptions/cancelled` }).catch(() => {});
     // Issue a short-lived one-time code — actual token never appears in URL or logs
     const onetimeCode = crypto.randomBytes(16).toString('hex');
     tokenStore.set(onetimeCode, { token: td.access_token, shop, exp: Date.now() + 30000 });
