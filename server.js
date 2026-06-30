@@ -466,7 +466,7 @@ const trackLimiter    = rateLimit({ windowMs: 60000,   max: 60, keyFn: req => re
 const TRACK_ALLOWED = new Set([
   'page_view','cta_click','pricing_view','demo_start',
   'tour_complete','tour_skip','bulk_action','export_csv','csv_import','disconnect',
-  'beta_source',
+  'beta_source','app_open','save_attempt',
 ]);
 
 // ── HELPERS ───────────────────────────────────────────────
