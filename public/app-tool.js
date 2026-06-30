@@ -2578,10 +2578,12 @@ async function startBilling(plan){
   try{
     const r=await api('/billing/subscribe',{plan});
     if(!r.ok||!r.confirmationUrl) throw new Error(r.error||'No confirmation URL');
-    window.location.href=r.confirmationUrl;
+    // Use top-level frame so Shopify billing page works outside the admin iframe
+    window.top.location.href=r.confirmationUrl;
   }catch(e){
-    if(errMsg){ errMsg.textContent=e.message; errMsg.style.display='block'; }
-    else toast(e.message,'warn');
+    const msg=e.message||'Billing error. Try again.';
+    if(errMsg){ errMsg.textContent=msg; errMsg.style.display='block'; }
+    toast(msg,'warn');
   }
 }
 

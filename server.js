@@ -1409,7 +1409,9 @@ app.post('/billing/subscribe', apiLimiter, async (req, res) => {
       }]
     });
 
-    const { userErrors, confirmationUrl } = d.appSubscriptionCreate;
+    const sub = d?.appSubscriptionCreate;
+    if (!sub) throw new Error('No response from Shopify billing API');
+    const { userErrors, confirmationUrl } = sub;
     if (userErrors?.length) throw new Error(userErrors.map(e => e.message).join(', '));
     if (!confirmationUrl) throw new Error('No confirmationUrl returned by Shopify');
 
