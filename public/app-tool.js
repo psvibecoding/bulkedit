@@ -2587,4 +2587,8 @@ async function startBilling(plan){
   }
 }
 
+// Expose billing functions globally so inline onclick attrs can reach them
+window.showUpgradeModal = showUpgradeModal;
+window.startBilling = startBilling;
+
 document.addEventListener('DOMContentLoaded', boot);
