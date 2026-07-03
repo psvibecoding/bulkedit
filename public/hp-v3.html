@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Lederly — Bulk Edit &amp; Schedule Shopify Products</title>
+<meta name="robots" content="noindex,nofollow"/>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%231a5c38'/><text x='16' y='22' text-anchor='middle' fill='white' font-family='system-ui,sans-serif' font-size='16' font-weight='700'>L</text></svg>"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,440;0,9..144,560;0,9..144,650;1,9..144,440;1,9..144,560&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --paper:#F6F3EA; --paper2:#EFEBDC; --paper3:#E7E2CF;
+  --ink:#13221B; --ink2:#3C463E; --ink3:#707A70; --ink4:#A3A99B;
+  --rule:#D2CFBC; --rule2:#C3D0C3;
+  --ledger:#1A5C38; --ledger-lt:#E7F0E9; --ledger-brd:rgba(26,92,56,.24);
+  --redline:#AE3E29; --redline-lt:#F6E7E1; --redline-brd:rgba(174,62,41,.28);
+  --gold:#AD8038; --gold-lt:#F3E9D6;
+  --white:#FFFFFF;
+  --display:'Fraunces',Georgia,serif;
+  --body:'Inter',-apple-system,system-ui,sans-serif;
+  --mono:'IBM Plex Mono','Menlo',monospace;
+  --sh-card:0 1px 2px rgba(19,34,27,.05),0 8px 24px rgba(19,34,27,.06);
+  --sh-book:0 40px 90px rgba(19,34,27,.16),0 10px 28px rgba(19,34,27,.09);
+}
+
+html{scroll-behavior:smooth}
+body{font-family:var(--body);background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;overflow-x:hidden;font-size:15px;line-height:1.5}
+a{color:inherit}
+img{max-width:100%;display:block}
+.wrap{max-width:1180px;margin:0 auto;padding:0 48px}
+::selection{background:var(--gold-lt);color:var(--ink)}
+
+/* ═══ NAV ═══ */
+.l3-nav{position:sticky;top:0;z-index:100;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;background:rgba(246,243,234,.86);backdrop-filter:blur(16px);border-bottom:1px solid var(--rule)}
+.l3-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.l3-logo-mark{width:28px;height:28px;background:var(--ledger);color:#fff;font-family:var(--mono);font-size:11px;font-weight:600;border-radius:5px;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.l3-logo-name{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2)}
+.l3-nav-links{display:flex;align-items:center;gap:28px}
+.l3-nav-link{font-size:13px;color:var(--ink3);text-decoration:none;transition:color .15s}
+.l3-nav-link:hover{color:var(--ink)}
+.l3-nav-cta{background:var(--ledger);color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:600;text-decoration:none;transition:opacity .15s,transform .12s;letter-spacing:.01em}
+.l3-nav-cta:hover{opacity:.9;transform:translateY(-1px)}
+
+/* ═══ HERO — OPEN LEDGER ═══ */
+.l3-hero{padding:64px 48px 96px;background:
+    radial-gradient(ellipse 60% 50% at 15% 0%, rgba(26,92,56,.05), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 100% 10%, rgba(173,128,56,.06), transparent 55%),
+    var(--paper)}
+.l3-hero-eyebrow{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:28px;opacity:0;animation:l3fade .7s ease .1s forwards}
+.l3-hero-eyebrow-dot{width:6px;height:6px;background:var(--redline);border-radius:50%;animation:l3pulse 2.2s ease-in-out infinite}
+.l3-hero-eyebrow span{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3)}
+@keyframes l3pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.5)}}
+@keyframes l3fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.l3-book{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 2px minmax(0,1fr);background:var(--paper);border-radius:14px;box-shadow:var(--sh-book);overflow:hidden;border:1px solid var(--rule)}
+.l3-book-spine{background:linear-gradient(to right,rgba(19,34,27,.1),rgba(19,34,27,.03) 40%,rgba(19,34,27,.03) 60%,rgba(19,34,27,.1))}
+
+.l3-page{position:relative;background-image:
+    repeating-linear-gradient(to bottom,transparent,transparent 30px,var(--rule) 30px,var(--rule) 31px);
+  background-position:0 92px;
+}
+.l3-page-l{padding:76px 56px 64px 64px;display:flex;flex-direction:column;justify-content:center;
+  background-image:
+    repeating-linear-gradient(to bottom,transparent,transparent 30px,var(--rule) 30px,var(--rule) 31px),
+    linear-gradient(to right,transparent 37px,rgba(174,62,41,.32) 37px,rgba(174,62,41,.32) 38px,transparent 38px);
+  background-position:0 92px,0 0;
+}
+.l3-page-r{padding:44px 44px 0}
+
+.l3-h1{font-family:var(--display);font-weight:560;font-size:clamp(38px,4.2vw,58px);line-height:1.04;letter-spacing:-.025em;color:var(--ink);margin-bottom:22px}
+.l3-h1 span{display:block;opacity:0;transform:translateY(18px);animation:l3rise .8s cubic-bezier(.22,.68,0,1.1) forwards}
+.l3-h1 span:nth-child(1){animation-delay:.2s}
+.l3-h1 span:nth-child(2){animation-delay:.34s}
+.l3-h1 span:nth-child(3){animation-delay:.48s}
+.l3-h1 em{font-style:italic;color:var(--ledger)}
+@keyframes l3rise{to{opacity:1;transform:none}}
+
+.l3-sub{font-size:16px;color:var(--ink2);line-height:1.7;max-width:420px;margin-bottom:32px;opacity:0;animation:l3fade .7s ease .68s forwards}
+.l3-cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;opacity:0;animation:l3fade .7s ease .82s forwards}
+.l3-cta{display:inline-flex;align-items:center;gap:9px;background:var(--ledger);color:#fff;border:none;border-radius:9px;padding:14px 26px;font-size:15px;font-weight:600;text-decoration:none;transition:transform .15s,box-shadow .2s;box-shadow:0 10px 26px rgba(26,92,56,.28)}
+.l3-cta:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(26,92,56,.36)}
+.l3-cta-arrow{transition:transform .15s}
+.l3-cta:hover .l3-cta-arrow{transform:translateX(4px)}
+.l3-trust{font-family:var(--mono);font-size:11px;letter-spacing:.03em;color:var(--ink4);opacity:0;animation:l3fade .7s ease .92s forwards}
+
+/* Ledger entries panel (right page) */
+.l3-panel{background:var(--white);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--sh-card);overflow:hidden;opacity:0;transform:translateY(14px);animation:l3rise 1s cubic-bezier(.22,.68,0,1.1) .3s forwards}
+.l3-panel-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--paper2);border-bottom:1px solid var(--rule)}
+.l3-panel-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:7px}
+.l3-rec-dot{width:6px;height:6px;background:var(--redline);border-radius:50%;animation:l3pulse 1.8s ease-in-out infinite}
+.l3-panel-count{font-family:var(--mono);font-size:11px;color:var(--ledger);font-weight:600;transition:color .3s}
+.l3-panel-head{display:grid;grid-template-columns:20px minmax(0,1fr) 78px 44px;gap:8px;padding:9px 16px;background:var(--paper2);border-bottom:1px solid var(--rule)}
+.l3-panel-head span{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4)}
+.l3-row{display:grid;grid-template-columns:20px minmax(0,1fr) 78px 44px;gap:8px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--paper3);transition:background .3s}
+.l3-row:last-child{border-bottom:none}
+.l3-row-chk{width:12px;height:12px;accent-color:var(--ledger)}
+.l3-row-name{font-family:var(--mono);font-size:11px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.l3-row-price{font-family:var(--mono);font-size:11px;white-space:nowrap}
+.l3-row-old{color:var(--redline);text-decoration:line-through;opacity:.7;margin-right:5px}
+.l3-row-new{color:var(--ink4);font-weight:600;transition:color .25s}
+.l3-row-new.is-set{color:var(--ledger)}
+.l3-row.is-active{background:var(--ledger-lt)}
+.l3-row-stamp{font-family:var(--mono);font-size:8px;letter-spacing:.06em;padding:2px 6px;border-radius:3px;background:var(--paper3);color:var(--ink4);text-align:center;transition:all .25s}
+.l3-row-stamp.is-staged{background:var(--gold-lt);color:var(--gold);border:1px solid rgba(173,128,56,.3)}
+.l3-panel-foot{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--paper2);gap:10px}
+.l3-panel-foot-l{font-family:var(--mono);font-size:10px;color:var(--ink3)}
+.l3-panel-btn{font-family:var(--mono);font-size:10px;letter-spacing:.03em;padding:6px 11px;border-radius:5px;border:1px solid var(--rule);background:var(--white);color:var(--ink2)}
+.l3-panel-btn.primary{background:var(--ledger);color:#fff;border-color:transparent;font-weight:600}
+
+/* ═══ LEDGER TAPE MARQUEE ═══ */
+.l3-tape{position:relative;overflow:hidden;padding:14px 0;background:var(--paper2);
+  background-image:
+    repeating-radial-gradient(circle at 6px 0,transparent 0 3px,var(--paper) 3px 4px),
+    repeating-radial-gradient(circle at 6px 100%,transparent 0 3px,var(--paper) 3px 4px);
+  background-size:12px 100%;background-repeat:repeat-x;background-position:top,bottom;
+  border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.l3-tape::before,.l3-tape::after{content:'';position:absolute;top:0;bottom:0;width:70px;z-index:2;pointer-events:none}
+.l3-tape::before{left:0;background:linear-gradient(to right,var(--paper2),transparent)}
+.l3-tape::after{right:0;background:linear-gradient(to left,var(--paper2),transparent)}
+.l3-tape-track{display:flex;width:max-content;animation:l3scroll 34s linear infinite}
+.l3-tape:hover .l3-tape-track{animation-play-state:paused}
+@keyframes l3scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.l3-tape-item{display:inline-flex;align-items:center;gap:10px;padding:0 20px;font-family:var(--mono);font-size:12px;color:var(--ink3);white-space:nowrap}
+.l3-tape-sep{color:var(--ledger);font-size:9px}
+.l3-tape-item.hi{color:var(--ledger);font-weight:600}
+
+/* ═══ SECTION SHARED ═══ */
+.l3-sec{padding:104px 48px}
+.l3-sec-inner{max-width:1080px;margin:0 auto}
+.l3-tag{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--redline);margin-bottom:16px}
+.l3-tag::before{content:'';width:14px;height:1px;background:var(--redline)}
+.l3-h2{font-family:var(--display);font-weight:520;font-size:clamp(30px,3.6vw,46px);letter-spacing:-.02em;line-height:1.08;color:var(--ink);margin-bottom:16px}
+.l3-h2 em{font-style:italic;color:var(--ledger)}
+.l3-sub2{font-size:16px;color:var(--ink3);max-width:560px;line-height:1.65;margin-bottom:56px}
+
+/* ═══ PAIN — FILED COMPLAINTS ═══ */
+.l3-complaints{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.l3-slip{background:var(--white);border:1px solid var(--rule);border-radius:4px 4px 10px 10px;padding:26px 24px 22px;box-shadow:var(--sh-card);position:relative;transform:rotate(var(--r,0deg))}
+.l3-slip:nth-child(1){--r:-0.6deg}
+.l3-slip:nth-child(2){--r:0.4deg}
+.l3-slip:nth-child(3){--r:-0.3deg}
+.l3-slip::before{content:'';position:absolute;top:0;left:20px;right:20px;height:1px;background:repeating-linear-gradient(to right,var(--redline) 0 5px,transparent 5px 9px);opacity:.5}
+.l3-slip-mark{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--redline);background:var(--redline-lt);border:1px solid var(--redline-brd);border-radius:3px;padding:2px 7px;display:inline-block;margin-bottom:16px}
+.l3-slip-title{font-family:var(--display);font-style:italic;font-size:18px;line-height:1.32;color:var(--ink);margin-bottom:12px}
+.l3-slip-body{font-size:13px;color:var(--ink3);line-height:1.65;margin-bottom:16px}
+.l3-slip-attr{font-family:var(--mono);font-size:10px;color:var(--ink4);letter-spacing:.03em}
+.l3-pain-note{font-size:12px;color:var(--ink4);margin-top:40px;text-align:center}
+.l3-pain-bridge{font-family:var(--display);font-size:20px;font-style:italic;color:var(--ink);text-align:center;margin-top:10px}
+.l3-pain-bridge strong{font-style:normal;color:var(--ledger)}
+
+/* ═══ FEATURES — LEDGER ENTRIES ═══ */
+.l3-entries{border-top:1px solid var(--rule)}
+.l3-entry{display:grid;grid-template-columns:64px 1px minmax(0,1fr);gap:24px;padding:32px 0;border-bottom:1px solid var(--rule)}
+.l3-entry-num{font-family:var(--mono);font-size:13px;color:var(--redline);padding-top:2px}
+.l3-entry-rule{background:var(--rule)}
+.l3-entry-title{font-family:var(--display);font-size:21px;color:var(--ink);margin-bottom:8px;letter-spacing:-.01em}
+.l3-entry-body{font-size:14px;color:var(--ink3);line-height:1.65;max-width:520px}
+.l3-entries-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:56px}
+
+/* ═══ COMPARISON — RULED TABLE ═══ */
+.l3-comp{width:100%;border-collapse:collapse;border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.l3-comp th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink4);text-align:left;padding:14px 20px;background:var(--paper2);border-bottom:1px solid var(--rule)}
+.l3-comp th:not(:first-child){text-align:center}
+.l3-comp td{padding:15px 20px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--ink2)}
+.l3-comp tr:last-child td{border-bottom:none}
+.l3-comp tr:nth-child(even) td{background:var(--paper)}
+.l3-comp td.l3-no{text-align:center;color:var(--redline);font-family:var(--mono);font-size:12px}
+.l3-comp td.l3-yes{text-align:center;color:var(--ledger);font-family:var(--mono);font-size:12px;font-weight:600}
+.l3-comp td.l3-yes.hi{background:var(--ledger-lt)}
+.l3-comp tr.l3-star td{background:var(--ledger-lt)!important}
+.l3-comp-badge{font-size:9px;background:var(--ledger);color:#fff;border-radius:3px;padding:1px 6px;font-weight:600;vertical-align:middle;margin-left:6px;font-family:var(--mono)}
+
+/* ═══ SCHEDULING — DARK PAGE, STAMPS ═══ */
+.l3-dark{background:var(--ink);color:var(--paper)}
+.l3-dark .l3-tag{color:var(--gold)}
+.l3-dark .l3-tag::before{background:var(--gold)}
+.l3-dark .l3-h2{color:var(--paper)}
+.l3-dark .l3-h2 em{color:#7FCB9C}
+.l3-dark .l3-sub2{color:rgba(246,243,234,.56)}
+
+.l3-sched-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:64px;align-items:center}
+.l3-sched-points{display:flex;flex-direction:column;gap:24px;margin-top:8px}
+.l3-sp{display:flex;gap:16px}
+.l3-sp-ico{width:34px;height:34px;flex-shrink:0;border:1px solid rgba(246,243,234,.18);border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(246,243,234,.04)}
+.l3-sp h4{font-size:14.5px;font-weight:600;color:var(--paper);margin-bottom:4px}
+.l3-sp p{font-size:13px;color:rgba(246,243,234,.5);line-height:1.62}
+
+.l3-stamp-wrap{display:flex;justify-content:center;align-items:center;position:relative;padding:12px 0 0}
+.l3-stamp{width:196px;height:196px;border-radius:50%;border:3px double rgba(230,80,50,.62);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transform:rotate(-9deg) scale(.5);opacity:0;color:#E65032;mix-blend-mode:normal;filter:blur(.2px)}
+.l3-stamp.is-stamped{animation:l3stamp .5s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes l3stamp{0%{transform:rotate(-9deg) scale(1.9);opacity:0}55%{opacity:1}100%{transform:rotate(-9deg) scale(1);opacity:.92}}
+.l3-stamp-line1{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+.l3-stamp-mid{font-family:var(--display);font-style:italic;font-size:26px}
+.l3-stamp-line2{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+
+.l3-tl{display:flex;align-items:flex-start;gap:0;margin-top:56px;flex-wrap:wrap;justify-content:center}
+.l3-tl-step{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:76px}
+.l3-tl-dot{width:38px;height:38px;border-radius:50%;border:1px solid rgba(246,243,234,.2);background:rgba(246,243,234,.05);display:flex;align-items:center;justify-content:center;font-size:15px}
+.l3-tl-dot.on{border-color:#7FCB9C;background:rgba(127,203,156,.12)}
+.l3-tl-label{font-family:var(--mono);font-size:10px;color:rgba(246,243,234,.65);text-align:center}
+.l3-tl-time{font-family:var(--mono);font-size:9px;color:rgba(246,243,234,.35)}
+.l3-tl-conn{width:56px;height:1px;background:rgba(246,243,234,.18);margin-top:19px;flex-shrink:0}
+
+/* ═══ PRICING — ACCOUNT STATEMENTS ═══ */
+.l3-pricing-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.l3-acct{background:var(--white);border:1px solid var(--rule);border-radius:0 0 12px 12px;padding:30px 26px;position:relative;display:flex;flex-direction:column;box-shadow:var(--sh-card)}
+.l3-acct::before{content:'';position:absolute;top:0;left:0;right:0;height:0;border-top:2px dashed var(--rule2);background-image:repeating-radial-gradient(circle at 0 0,transparent 0 3px,var(--paper) 3px 4px);background-size:14px 8px;background-repeat:repeat-x;height:8px;top:-1px}
+.l3-acct.featured{border-color:var(--ledger);box-shadow:0 1px 2px rgba(19,34,27,.05),0 16px 34px rgba(26,92,56,.14)}
+.l3-acct.featured::before{background-image:repeating-radial-gradient(circle at 0 0,transparent 0 3px,var(--ledger-lt) 3px 4px)}
+.l3-acct.featured{background:var(--ledger-lt)}
+.l3-acct-tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ledger);margin-bottom:10px}
+.l3-acct-name{font-family:var(--display);font-size:23px;color:var(--ink);margin-bottom:6px}
+.l3-acct-price{font-family:var(--display);font-size:40px;color:var(--ink);letter-spacing:-.02em;line-height:1;margin-bottom:6px}
+.l3-acct-price span{font-family:var(--body);font-size:13px;font-weight:500;color:var(--ink3)}
+.l3-acct-sub{font-family:var(--mono);font-size:11px;color:var(--ink4);margin-bottom:20px}
+.l3-acct-div{height:1px;background:var(--rule);margin-bottom:18px}
+.l3-acct-list{list-style:none;display:flex;flex-direction:column;gap:9px;flex:1;margin-bottom:22px}
+.l3-acct-list li{font-size:13px;color:var(--ink2);display:flex;gap:8px;line-height:1.4}
+.l3-acct-list li::before{content:'✓';color:var(--ledger);font-weight:700;font-size:11px;flex-shrink:0}
+.l3-acct-list li.off{color:var(--ink4)}
+.l3-acct-list li.off::before{content:'—';color:var(--ink4)}
+.l3-acct-cta{display:block;text-align:center;background:var(--ink);color:var(--paper);text-decoration:none;padding:11px;border-radius:7px;font-size:13px;font-weight:600;transition:opacity .15s}
+.l3-acct.featured .l3-acct-cta{background:var(--ledger);color:#fff}
+.l3-acct-cta:hover{opacity:.86}
+
+/* ═══ CLOSING CTA ═══ */
+.l3-close{padding:130px 48px;text-align:center;position:relative;overflow:hidden}
+.l3-close-atm{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 80% 55% at 50% 115%,rgba(127,203,156,.16),transparent 60%)}
+.l3-close-h{font-family:var(--display);font-weight:520;font-size:clamp(36px,5.4vw,68px);color:var(--paper);line-height:1.06;letter-spacing:-.025em;margin-bottom:14px;position:relative}
+.l3-close-h em{font-style:italic;color:#7FCB9C}
+.l3-close-sub{font-size:15px;color:rgba(246,243,234,.55);margin-bottom:8px;position:relative}
+.l3-close-note{font-family:var(--mono);font-size:11px;color:rgba(246,243,234,.35);margin-bottom:40px;position:relative}
+.l3-close-cta{display:inline-flex;align-items:center;gap:10px;background:var(--paper);color:var(--ink);border-radius:11px;padding:16px 34px;font-size:15px;font-weight:700;text-decoration:none;position:relative;transition:transform .15s}
+.l3-close-cta:hover{transform:translateY(-2px)}
+
+/* ═══ FOOTER ═══ */
+.l3-footer{padding:32px 48px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;background:var(--paper)}
+.l3-footer-links{display:flex;gap:22px}
+.l3-footer-links a{font-size:12px;color:var(--ink3);text-decoration:none}
+.l3-footer-links a:hover{color:var(--ink)}
+.l3-footer p{font-size:11px;color:var(--ink4);font-family:var(--mono)}
+
+/* ═══ REVEALS ═══ */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.22,.68,0,1),transform .7s cubic-bezier(.22,.68,0,1)}
+.reveal.visible{opacity:1;transform:none}
+.reveal-d1{transition-delay:.1s}
+.reveal-d2{transition-delay:.2s}
+.reveal-d3{transition-delay:.3s}
+
+.l3-badge{position:fixed;bottom:16px;right:16px;z-index:9999;background:rgba(26,92,56,.08);border:1px solid rgba(26,92,56,.24);border-radius:8px;padding:7px 14px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ledger);backdrop-filter:blur(14px);pointer-events:none}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:1080px){
+  .l3-book{grid-template-columns:minmax(0,1fr)}
+  .l3-book-spine{display:none}
+  .l3-page-r{padding:12px 44px 44px}
+  .l3-sched-grid{grid-template-columns:minmax(0,1fr);gap:48px}
+  .l3-entries-grid{grid-template-columns:minmax(0,1fr)}
+  .l3-complaints{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:768px){
+  .wrap,.l3-nav,.l3-hero,.l3-sec,.l3-close,.l3-footer{padding-left:22px;padding-right:22px}
+  .l3-page-l,.l3-page-r{padding-left:26px;padding-right:26px}
+  .l3-nav-links{display:none}
+  .l3-pricing-grid{grid-template-columns:minmax(0,1fr)}
+  .l3-comp{font-size:12px}
+  .l3-comp th,.l3-comp td{padding:11px 12px}
+  .l3-tl{gap:22px 10px}
+  .l3-tl-conn{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav class="l3-nav">
+  <a href="/" class="l3-logo">
+    <span class="l3-logo-mark">L</span>
+    <span class="l3-logo-name">Lederly</span>
+  </a>
+  <div class="l3-nav-links">
+    <a href="#how" class="l3-nav-link">How it works</a>
+    <a href="#pricing" class="l3-nav-link">Pricing</a>
+    <a href="/app" class="l3-nav-cta">Start free trial →</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="l3-hero">
+  <div class="l3-hero-eyebrow"><span class="l3-hero-eyebrow-dot"></span><span>Ledger No. 001 · Shopify Catalog</span></div>
+
+  <div class="l3-book">
+    <div class="l3-page l3-page-l">
+      <h1 class="l3-h1">
+        <span>Your catalog,</span>
+        <span>kept like a ledger.</span>
+        <span><em>Every change accounted for.</em></span>
+      </h1>
+      <p class="l3-sub">Bulk edit prices, tags, status and metafields across hundreds of products in one live table. Old value struck, new value confirmed — nothing posts to Shopify until you say so.</p>
+      <div class="l3-cta-row">
+        <a href="/app" class="l3-cta">Open your ledger <span class="l3-cta-arrow">→</span></a>
+      </div>
+      <p class="l3-trust">No account · Token stays in your browser · OAuth secured</p>
+    </div>
+
+    <div class="l3-book-spine"></div>
+
+    <div class="l3-page l3-page-r">
+      <div class="l3-panel">
+        <div class="l3-panel-bar">
+          <span class="l3-panel-title"><span class="l3-rec-dot"></span>Entries — Live</span>
+          <span class="l3-panel-count" id="l3Count">1,842 edits this week</span>
+        </div>
+        <div class="l3-panel-head">
+          <span></span><span>Product</span><span>Price</span><span>Status</span>
+        </div>
+        <div id="l3Rows">
+          <div class="l3-row" data-old="89.00" data-new="69.00">
+            <input type="checkbox" class="l3-row-chk" checked readonly>
+            <span class="l3-row-name">Merino Sweater — S</span>
+            <span class="l3-row-price"><span class="l3-row-old">89.00</span><span class="l3-row-new">89.00</span></span>
+            <span class="l3-row-stamp">draft</span>
+          </div>
+          <div class="l3-row" data-old="89.00" data-new="69.00">
+            <input type="checkbox" class="l3-row-chk" checked readonly>
+            <span class="l3-row-name">Merino Sweater — M</span>
+            <span class="l3-row-price"><span class="l3-row-old">89.00</span><span class="l3-row-new">89.00</span></span>
+            <span class="l3-row-stamp">draft</span>
+          </div>
+          <div class="l3-row" data-old="149.00" data-new="119.00">
+            <input type="checkbox" class="l3-row-chk" checked readonly>
+            <span class="l3-row-name">Leather Crossbody Bag</span>
+            <span class="l3-row-price"><span class="l3-row-old">149.00</span><span class="l3-row-new">149.00</span></span>
+            <span class="l3-row-stamp">draft</span>
+          </div>
+          <div class="l3-row" data-old="78.00" data-new="65.00">
+            <input type="checkbox" class="l3-row-chk" checked readonly>
+            <span class="l3-row-name">Yoga Mat 6mm</span>
+            <span class="l3-row-price"><span class="l3-row-old">78.00</span><span class="l3-row-new">78.00</span></span>
+            <span class="l3-row-stamp">draft</span>
+          </div>
+          <div class="l3-row" data-old="34.00" data-new="24.00">
+            <input type="checkbox" class="l3-row-chk" checked readonly>
+            <span class="l3-row-name">Organic Cotton Tee</span>
+            <span class="l3-row-price"><span class="l3-row-old">34.00</span><span class="l3-row-new">34.00</span></span>
+            <span class="l3-row-stamp">draft</span>
+          </div>
+        </div>
+        <div class="l3-panel-foot">
+          <span class="l3-panel-foot-l" id="l3FootL">Select rows to start editing</span>
+          <div style="display:flex;gap:8px">
+            <button class="l3-panel-btn">✦ Schedule</button>
+            <button class="l3-panel-btn primary">Push to Shopify →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ LEDGER TAPE ═══ -->
+<div class="l3-tape">
+  <div class="l3-tape-track" id="l3Tape"></div>
+</div>
+
+<!-- ═══ PAIN — FILED COMPLAINTS ═══ -->
+<section class="l3-sec">
+  <div class="l3-sec-inner">
+    <span class="l3-tag reveal">You're not alone</span>
+    <h2 class="l3-h2 reveal">Every Shopify merchant<br>has filed this complaint</h2>
+    <p class="l3-sub2 reveal">Shopify's built-in editor is missing the tools most stores actually need. These pain points come up over and over in the community.</p>
+
+    <div class="l3-complaints">
+      <div class="l3-slip reveal">
+        <span class="l3-slip-mark">Filed · unresolved</span>
+        <p class="l3-slip-title">"Is there any way to edit 500 product prices at once without exporting a CSV?"</p>
+        <p class="l3-slip-body">I need to apply a 15% discount to my whole catalog for a weekend promo. In Shopify I have to export, edit in Excel, reimport — and pray the format is right.</p>
+        <p class="l3-slip-attr">r/shopify · Shopify community</p>
+      </div>
+      <div class="l3-slip reveal reveal-d1">
+        <span class="l3-slip-mark">Filed · unresolved</span>
+        <p class="l3-slip-title">"3 hours to change prices on 200 products — there has to be a better way."</p>
+        <p class="l3-slip-body">Downloaded CSV, reformatted in Excel, fixed encoding errors, re-imported, found new errors, fixed again. Insane for something I need to do every sale.</p>
+        <p class="l3-slip-attr">r/ecommerce · Shopify community</p>
+      </div>
+      <div class="l3-slip reveal reveal-d2">
+        <span class="l3-slip-mark">Filed · unresolved</span>
+        <p class="l3-slip-title">"Forgot to revert my sale prices after BFCM. Sold at a discount for 3 days."</p>
+        <p class="l3-slip-body">Lost a lot of margin on ~180 orders before I caught it. Is there any tool that auto-reverts prices after a sale? Seems basic but I can't find one.</p>
+        <p class="l3-slip-attr">r/shopify · Shopify community</p>
+      </div>
+    </div>
+    <p class="l3-pain-note reveal">Paraphrased from real discussions in r/shopify and r/ecommerce.</p>
+    <p class="l3-pain-bridge reveal">We read every thread. Then we built <strong>Lederly</strong>.</p>
+  </div>
+</section>
+
+<!-- ═══ FEATURES — LEDGER ENTRIES ═══ -->
+<section class="l3-sec" style="background:var(--paper2)">
+  <div class="l3-sec-inner">
+    <span class="l3-tag reveal">The editor</span>
+    <h2 class="l3-h2 reveal">Everything Shopify's editor<br>should have been</h2>
+    <p class="l3-sub2 reveal">Edit any field on any product. Review every entry before it goes live. Push in one click — or schedule for later.</p>
+
+    <div class="l3-entries-grid reveal">
+      <div class="l3-entries">
+        <div class="l3-entry">
+          <span class="l3-entry-num">No. 01</span><span class="l3-entry-rule"></span>
+          <div><h3 class="l3-entry-title">Review before saving</h3><p class="l3-entry-body">See a full diff — old value → new value — for every field before anything hits your store. No surprises, ever.</p></div>
+        </div>
+        <div class="l3-entry">
+          <span class="l3-entry-num">No. 02</span><span class="l3-entry-rule"></span>
+          <div><h3 class="l3-entry-title">Variant metafields</h3><p class="l3-entry-body">The gap Shopify still doesn't fill. Loads your metafield definitions and lets you edit per variant — by name, not namespace and key.</p></div>
+        </div>
+        <div class="l3-entry">
+          <span class="l3-entry-num">No. 03</span><span class="l3-entry-rule"></span>
+          <div><h3 class="l3-entry-title">Inline table editing</h3><p class="l3-entry-body">Click any cell and edit directly. Title, price, vendor, tags, SKU — all in one view without leaving the page.</p></div>
+        </div>
+      </div>
+      <div class="l3-entries">
+        <div class="l3-entry">
+          <span class="l3-entry-num">No. 04</span><span class="l3-entry-rule"></span>
+          <div><h3 class="l3-entry-title">Bulk actions</h3><p class="l3-entry-body">Select multiple products and change status, set a price rule, add or remove tags, update a metafield — all at once.</p></div>
+        </div>
+        <div class="l3-entry">
+          <span class="l3-entry-num">No. 05</span><span class="l3-entry-rule"></span>
+          <div><h3 class="l3-entry-title">Discard changes</h3><p class="l3-entry-body">Nothing is saved until you push. Made a mistake across 50 products? Hit Discard and everything snaps back instantly.</p></div>
+        </div>
+        <div class="l3-entry">
+          <span class="l3-entry-num">No. 06</span><span class="l3-entry-rule"></span>
+          <div><h3 class="l3-entry-title">Privacy first</h3><p class="l3-entry-body">No account needed. Your token lives in browser memory only and disappears when you close the tab.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMPARISON ═══ -->
+<section class="l3-sec">
+  <div class="l3-sec-inner">
+    <span class="l3-tag reveal">Why Lederly</span>
+    <h2 class="l3-h2 reveal">vs Shopify's built-in editor</h2>
+    <table class="l3-comp reveal">
+      <thead><tr><th>Feature</th><th>Shopify built-in</th><th>Lederly</th></tr></thead>
+      <tbody>
+        <tr><td>Bulk price change</td><td class="l3-yes">✓</td><td class="l3-yes hi">✓</td></tr>
+        <tr><td>Variant metafields</td><td class="l3-no">✗ Not supported</td><td class="l3-yes hi">✓ With readable names</td></tr>
+        <tr><td>Review diff before saving</td><td class="l3-no">✗</td><td class="l3-yes hi">✓</td></tr>
+        <tr><td>Bulk add/remove tags</td><td class="l3-no">✗</td><td class="l3-yes hi">✓</td></tr>
+        <tr><td>Add to collections</td><td class="l3-no">✗</td><td class="l3-yes hi">✓</td></tr>
+        <tr><td>Discard all changes instantly</td><td class="l3-no">✗</td><td class="l3-yes hi">✓</td></tr>
+        <tr class="l3-star"><td style="color:var(--ledger);font-weight:600">Scheduled publishing + auto-revert<span class="l3-comp-badge">PRO</span></td><td class="l3-no">✗ Not possible</td><td class="l3-yes hi">✓ Built in · Unique</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ SCHEDULING — DARK, STAMPS ═══ -->
+<section class="l3-sec l3-dark" id="how">
+  <div class="l3-sec-inner">
+    <span class="l3-tag reveal">The part no one else does</span>
+    <h2 class="l3-h2 reveal">Set it up once.<br>Let it go live.<br><em>Then go to sleep.</em></h2>
+
+    <div class="l3-sched-grid">
+      <div>
+        <p class="l3-sub2 reveal" style="margin-bottom:0">When you need to plan ahead — BFCM, flash sales, seasonal drops — schedule your edits to go live automatically and revert just as automatically. No other Shopify bulk editor does this.</p>
+        <div class="l3-sched-points">
+          <div class="l3-sp reveal">
+            <div class="l3-sp-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#7FCB9C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="12" rx="2"/><path d="M1 7h14M5 1v4M11 1v4"/></svg></div>
+            <div><h4>Schedule any change for any time</h4><p>Pick an exact date and time. Your Black Friday prices go live at midnight, not when you remember to log in.</p></div>
+          </div>
+          <div class="l3-sp reveal reveal-d1">
+            <div class="l3-sp-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#7FCB9C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a5 5 0 1 0 5-5H5"/><path d="M2 5l3-2-3-2"/></svg></div>
+            <div><h4>Auto-revert when the sale ends</h4><p>Set a revert time and prices go back to original values automatically. No forgotten discounts still live on Monday.</p></div>
+          </div>
+          <div class="l3-sp reveal reveal-d2">
+            <div class="l3-sp-ico"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#7FCB9C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 5l7 5 7-5"/></svg></div>
+            <div><h4>Email confirmation when it goes live</h4><p>Get notified the moment changes are applied. You'll know it worked without having to check.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="l3-stamp-wrap">
+        <div class="l3-stamp" id="l3Stamp">
+          <span class="l3-stamp-line1">Scheduled</span>
+          <span class="l3-stamp-mid">✦</span>
+          <span class="l3-stamp-line2">Auto-revert enabled</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="l3-tl reveal reveal-d3">
+      <div class="l3-tl-step"><div class="l3-tl-dot">✎</div><div class="l3-tl-label">Edit</div><div class="l3-tl-time">Now</div></div>
+      <div class="l3-tl-conn"></div>
+      <div class="l3-tl-step"><div class="l3-tl-dot on">🗓</div><div class="l3-tl-label">Schedule</div><div class="l3-tl-time">Nov 29 · 00:00</div></div>
+      <div class="l3-tl-conn"></div>
+      <div class="l3-tl-step"><div class="l3-tl-dot on">⚡</div><div class="l3-tl-label">Goes live</div><div class="l3-tl-time">Automatic</div></div>
+      <div class="l3-tl-conn"></div>
+      <div class="l3-tl-step"><div class="l3-tl-dot">↩</div><div class="l3-tl-label">Auto-reverts</div><div class="l3-tl-time">Dec 2 · 09:00</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRICING ═══ -->
+<section class="l3-sec" id="pricing">
+  <div class="l3-sec-inner">
+    <span class="l3-tag reveal">Pricing</span>
+    <h2 class="l3-h2 reveal">Simple, transparent pricing.</h2>
+    <p class="l3-sub2 reveal">7-day free trial on all plans. No credit card required upfront.</p>
+
+    <div class="l3-pricing-grid reveal">
+      <div class="l3-acct">
+        <div class="l3-acct-tag">Start here</div>
+        <div class="l3-acct-name">Basic</div>
+        <div class="l3-acct-price">€4<span>.99/mo</span></div>
+        <div class="l3-acct-sub">7-day free trial · No card upfront</div>
+        <div class="l3-acct-div"></div>
+        <ul class="l3-acct-list">
+          <li>Inline bulk editing</li>
+          <li>Prices, tags, status, SEO, metafields</li>
+          <li>Bulk actions</li>
+          <li>Collections management</li>
+          <li>CSV export</li>
+          <li>Unlimited product edits</li>
+          <li class="off">CSV import</li>
+          <li class="off">Scheduling</li>
+          <li class="off">Auto-revert</li>
+        </ul>
+        <a href="/app" class="l3-acct-cta">Start free trial →</a>
+      </div>
+      <div class="l3-acct featured">
+        <div class="l3-acct-tag">Most popular</div>
+        <div class="l3-acct-name">Growth</div>
+        <div class="l3-acct-price">€9<span>.99/mo</span></div>
+        <div class="l3-acct-sub">For growing stores</div>
+        <div class="l3-acct-div"></div>
+        <ul class="l3-acct-list">
+          <li>Everything in Basic</li>
+          <li>CSV import</li>
+          <li>Up to 5 schedules / month</li>
+          <li class="off">Auto-revert</li>
+          <li class="off">Unlimited schedules</li>
+        </ul>
+        <a href="/app" class="l3-acct-cta">Start free trial →</a>
+      </div>
+      <div class="l3-acct">
+        <div class="l3-acct-tag">Pro</div>
+        <div class="l3-acct-name">Pro</div>
+        <div class="l3-acct-price">€19<span>.99/mo</span></div>
+        <div class="l3-acct-sub">Unlimited scheduling + auto-revert</div>
+        <div class="l3-acct-div"></div>
+        <ul class="l3-acct-list">
+          <li>Everything in Growth</li>
+          <li>Unlimited schedules</li>
+          <li><strong>Auto-revert after sale</strong></li>
+        </ul>
+        <a href="/app" class="l3-acct-cta">Start free trial →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CLOSING CTA ═══ -->
+<section class="l3-close l3-dark">
+  <div class="l3-close-atm"></div>
+  <h2 class="l3-close-h reveal">Stop editing products<br>one by one.<br><em>Keep a better ledger.</em></h2>
+  <p class="l3-close-sub reveal">Works with any Shopify store. No setup, no account, no CSV.</p>
+  <p class="l3-close-note reveal">7-day free trial · No credit card required</p>
+  <a href="/app" class="l3-close-cta reveal">Open your ledger <span>→</span></a>
+</section>
+
+<footer class="l3-footer">
+  <a href="/" class="l3-logo">
+    <span class="l3-logo-mark">L</span>
+    <span class="l3-logo-name">Lederly</span>
+  </a>
+  <div class="l3-footer-links">
+    <a href="/privacy.html">Privacy</a>
+    <a href="/terms.html">Terms</a>
+    <a href="#contact">Support</a>
+  </div>
+  <p>© 2026 Lederly. All rights reserved.</p>
+</footer>
+
+<div class="l3-badge">◆ PREVIEW · hp-v3</div>
+
+<script>
+(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Ledger tape content */
+  var tapeItems = ['Inline table editing','Bulk price rules','Variant metafields','Compare at price','Inventory qty','Bulk tags','Add to collections','Review before saving','CSV import & export','✦ Scheduled publishing','✦ Auto-revert when sale ends','✦ Email confirmation on launch'];
+  var tapeHtml = '';
+  for (var r = 0; r < 2; r++){
+    tapeItems.forEach(function(t){
+      var hi = t.indexOf('✦') === 0 ? ' hi' : '';
+      tapeHtml += '<span class="l3-tape-item'+hi+'">'+t+'<span class="l3-tape-sep">◆</span></span>';
+    });
+  }
+  document.getElementById('l3Tape').innerHTML = tapeHtml;
+
+  /* Scroll reveals */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, {threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  /* Stamp slam on scroll into view */
+  var stamp = document.getElementById('l3Stamp');
+  var stampIo = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting){ stamp.classList.add('is-stamped'); stampIo.disconnect(); }
+    });
+  }, {threshold:.5});
+  stampIo.observe(stamp);
+
+  /* Hero ledger — cycling edit animation */
+  if (!reduced){
+    var rows = Array.prototype.slice.call(document.querySelectorAll('#l3Rows .l3-row'));
+    var footL = document.getElementById('l3FootL');
+    var countEl = document.getElementById('l3Count');
+    var base = 1842;
+    var idx = 0;
+
+    function resetRows(){
+      rows.forEach(function(row){
+        row.classList.remove('is-active');
+        var oldV = row.getAttribute('data-old');
+        row.querySelector('.l3-row-old').textContent = oldV;
+        var nw = row.querySelector('.l3-row-new');
+        nw.textContent = oldV;
+        nw.classList.remove('is-set');
+        row.querySelector('.l3-row-stamp').textContent = 'draft';
+        row.querySelector('.l3-row-stamp').classList.remove('is-staged');
+      });
+    }
+    resetRows();
+
+    function step(){
+      if (idx >= rows.length){
+        footL.textContent = rows.length + ' entries staged · ready to push';
+        setTimeout(function(){ idx = 0; resetRows(); footL.textContent = 'Select rows to start editing'; setTimeout(step, 900); }, 2200);
+        return;
+      }
+      var row = rows[idx];
+      row.classList.add('is-active');
+      footL.textContent = 'Editing ' + row.querySelector('.l3-row-name').textContent + '…';
+      setTimeout(function(){
+        var nw = row.querySelector('.l3-row-new');
+        nw.textContent = row.getAttribute('data-new');
+        nw.classList.add('is-set');
+        row.querySelector('.l3-row-stamp').textContent = 'staged';
+        row.querySelector('.l3-row-stamp').classList.add('is-staged');
+        base += Math.floor(Math.random()*3)+1;
+        countEl.textContent = base.toLocaleString('en-US') + ' edits this week';
+        idx++;
+        setTimeout(step, 650);
+      }, 650);
+    }
+    setTimeout(step, 1600);
+  }
+
+  /* Timeline connector pulse (dark section) */
+  var conns = document.querySelectorAll('.l3-tl-conn');
+  if (conns[0]) conns[0].style.background = 'linear-gradient(to right, rgba(127,203,156,.6), rgba(246,243,234,.18))';
+  if (conns[1]) conns[1].style.background = 'linear-gradient(to right, rgba(127,203,156,.6), rgba(127,203,156,.15))';
+})();
+</script>
+</body>
+</html>
