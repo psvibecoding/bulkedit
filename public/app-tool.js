@@ -517,7 +517,10 @@ function rowHTML(p,v){
 <td><div style="display:flex;flex-direction:column;gap:1px"><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"><div class="badge-stack">${skuBadge}</div></div></td>
 <td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}"><div class="badge-stack">${priceBadge}</div></div></td>
 <td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"><div class="badge-stack">${catBadge}</div></div></td>
-<td><input class="ce ce-num" type="number" min="0" step="1" data-vid="${esc(v.id)}" data-vf="inventoryQuantity" value="${esc(String(v.inventoryQuantity??0))}"></td>
+<td>${(S.locations?.length||0)>=2
+  ? `<button type="button" class="inv-multi-btn" data-vid="${esc(v.id)}" title="Adjust inventory per location">${esc(String(v.inventoryQuantity??0))} <span class="inv-multi-ico">⊞</span></button>`
+  : `<input class="ce ce-num" type="number" min="0" step="1" data-vid="${esc(v.id)}" data-vf="inventoryQuantity" value="${esc(String(v.inventoryQuantity??0))}">`
+}</td>
 <td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
 </tr>`;
 }
@@ -639,6 +642,7 @@ function bindTable(){
   tbody.addEventListener('click',e=>{
     const el=e.target;
     if(el.classList.contains('status-pill')){ cycleStatus(el.dataset.pid); return; }
+    if(el.closest('.inv-multi-btn')){ openInventoryModal(el.closest('.inv-multi-btn').dataset.vid); return; }
     if(el.classList.contains('tag-rm')){ removeTag(el.dataset.pid,el.dataset.tag); return; }
     if(el.classList.contains('tag-add')){ addTagPrompt(el.dataset.pid); return; }
     if(el.classList.contains('mf-add')){ addMfRaw(el.dataset.vid); return; }
