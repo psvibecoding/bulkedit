@@ -680,6 +680,12 @@ function markAltText(el){
   const c=ensureC(pid); c.product.altText=el.value; c.product.imageId=imageId;
   el.classList.add('dirty'); addModChip(el); updateSaveBtn();
 }
+function setInvChange(pid, vid, locationId, inventoryItemId, quantity, oldQuantity){
+  const c=ensureC(pid);
+  if(!c.inventory[vid])c.inventory[vid]={};
+  c.inventory[vid][locationId]={inventoryItemId,locationId,quantity,oldQuantity};
+}
+function primaryLocationId(){ return S.locations?.[0]?.id||''; }
 function markVar(vid,field,value,el){
   const{p,v}=getVar(vid); if(!p||!v)return;
   pushH(`Edit ${field}`);
@@ -688,8 +694,7 @@ function markVar(vid,field,value,el){
     const qty=parseInt(value,10);
     if(isNaN(qty)||qty<0)return;
     v.inventoryQuantity=qty;
-    if(!c.inventory)c.inventory={};
-    c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',quantity:qty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
+    setInvChange(p.id,vid,primaryLocationId(),v.inventoryItem?.id||'',qty,getOrigV(p.id,vid)?.inventoryQuantity??0);
     if(el){ el.classList.add('dirty'); addModChip(el); }
     updateSaveBtn(); return;
   }
@@ -982,14 +987,12 @@ function applyBulkModal(){
     pushH(`Bulk qty ${rule}: ${n}`);
     vids.forEach(vid=>{
       const{p,v}=getVar(vid); if(!p||!v)return;
-      const c=ensureC(p.id);
-      if(!c.inventory)c.inventory={};
       let newQty;
       if(rule==='set')       newQty=n;
       else if(rule==='add')  newQty=Math.max(0,(v.inventoryQuantity||0)+n);
       else                   newQty=Math.max(0,(v.inventoryQuantity||0)-n);
       v.inventoryQuantity=newQty;
-      c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',quantity:newQty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
+      setInvChange(p.id,vid,primaryLocationId(),v.inventoryItem?.id||'',newQty,getOrigV(p.id,vid)?.inventoryQuantity??0);
     });
     renderTable(); updateSaveBtn(); toast(`Qty updated on ${vids.length} variant${vids.length!==1?'s':''}.`);
   }else if(type==='tags'){
@@ -1146,9 +1149,13 @@ function openSaveModal(){
       });
     });
     if((c.metafields||[]).length)diffs.push(`<div class="diff-row"><span class="diff-field">metafields</span><span class="diff-new">${c.metafields.length} change${c.metafields.length!==1?'s':''}</span></div>`);
-    Object.entries(c.inventory||{}).forEach(([vid,inv])=>{
+    Object.entries(c.inventory||{}).forEach(([vid,byLoc])=>{
       const vLbl=p.variants.nodes.find(x=>x.id===vid)?.title||'variant';
-      diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} inventory</span><span class="diff-old">${esc(String(inv.oldQuantity))}</span><span class="diff-arr">→</span><span class="diff-new">${esc(String(inv.quantity))}</span></div>`);
+      const multiLoc=(S.locations?.length||0)>=2;
+      Object.values(byLoc).forEach(inv=>{
+        const locLbl=multiLoc?` @ ${esc(S.locations.find(l=>l.id===inv.locationId)?.name||'location')}`:'';
+        diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} inventory${locLbl}</span><span class="diff-old">${esc(String(inv.oldQuantity))}</span><span class="diff-arr">→</span><span class="diff-new">${esc(String(inv.quantity))}</span></div>`);
+      });
     });
     return `<div class="diff-item"><div class="diff-item-head">${imgEl}<span class="diff-title">${esc(p.title)}</span></div><div class="diff-rows">${diffs.length?diffs.join(''):'<span style="font-size:11px;color:var(--t3)">Variant / metafield changes</span>'}</div></div>`;
   }).join('');
@@ -1261,7 +1268,11 @@ async function confirmSave(){
     const invItems=[];
     for(const c of payloads){
       if(!savedSet.has(c.productId))continue;
-      Object.entries(c.inventory||{}).forEach(([_,inv])=>{ if(inv.inventoryItemId)invItems.push({inventoryItemId:inv.inventoryItemId,quantity:inv.quantity}); });
+      Object.values(c.inventory||{}).forEach(byLoc=>{
+        Object.values(byLoc).forEach(inv=>{
+          if(inv.inventoryItemId&&inv.locationId)invItems.push({inventoryItemId:inv.inventoryItemId,locationId:inv.locationId,quantity:inv.quantity});
+        });
+      });
     }
     if(invItems.length){
       try{ await api('/api/inventory-set',{quantities:invItems}); }
@@ -1348,9 +1359,13 @@ function buildRecap(payloads){
       const vLbl=mf.ownerId===c.productId?'':p.variants.nodes.find(v=>v.id===mf.ownerId)?.title||'';
       rows.push([title,vLbl,`${mf.namespace}.${mf.key}`,'',mf.value??'']);
     });
-    Object.entries(c.inventory||{}).forEach(([vid,inv])=>{
+    Object.entries(c.inventory||{}).forEach(([vid,byLoc])=>{
       const vLbl=p.variants.nodes.find(v=>v.id===vid)?.title||'';
-      rows.push([title,vLbl,'inventoryQuantity',String(inv.oldQuantity),String(inv.quantity)]);
+      const multiLoc=(S.locations?.length||0)>=2;
+      Object.values(byLoc).forEach(inv=>{
+        const field=multiLoc?`inventoryQuantity @ ${S.locations.find(l=>l.id===inv.locationId)?.name||'location'}`:'inventoryQuantity';
+        rows.push([title,vLbl,field,String(inv.oldQuantity),String(inv.quantity)]);
+      });
     });
   });
   return rows.map(r=>r.map(v=>csvQuote(String(v??''))).join(',')).join('\n');
