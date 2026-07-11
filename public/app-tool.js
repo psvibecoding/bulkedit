@@ -41,6 +41,7 @@ let S = {
   filter:'all', searchQ:'', tagFilter:'', collFilter:'',
   selectedVids: new Set(),
   bulkType: null,
+  bulkQtyLevels: null,
   schedules:[],
   plan:'basic', schedLimit:0, schedUsed:0, periodEnd:null, trialInfo:null,
   pageInfo:{ hasNextPage:false, endCursor:null },
@@ -363,7 +364,7 @@ function disconnect(){
   trackEv('disconnect');
   clearCredentials();
   localStorage.removeItem('be_cache');
-  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',collFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
+  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',collFilter:'',bulkType:null,bulkQtyLevels:null,pageInfo:{hasNextPage:false,endCursor:null}});
   const lm=document.getElementById('load-more-wrap'); if(lm)lm.style.display='none';
   S.selectedVids=new Set();
   $('f-shop').value='';
@@ -927,11 +928,18 @@ function openBulkModal(type){
       if(lbl){if(rule==='set')lbl.textContent='New price';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount';}
     });
   }else if(type==='qty'){
-    body.innerHTML=`<div class="bulk-field"><label>Action</label><select id="bv-qty-rule"><option value="set">Set exact quantity</option><option value="add">Increase by</option><option value="sub">Decrease by</option></select></div><div class="bulk-field"><label id="bv-qty-lbl">Quantity</label><input id="bv-qty-val" type="number" min="0" step="1" placeholder="0" autofocus></div>`;
+    const multiLoc=(S.locations?.length||0)>=2;
+    const locSelect=multiLoc?`<div class="bulk-field"><label>Location</label><select id="bv-qty-loc">${S.locations.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('')}</select></div>`:'';
+    body.innerHTML=`${locSelect}<div class="bulk-field"><label>Action</label><select id="bv-qty-rule"><option value="set">Set exact quantity</option><option value="add">Increase by</option><option value="sub">Decrease by</option></select></div><div class="bulk-field"><label id="bv-qty-lbl">Quantity</label><input id="bv-qty-val" type="number" min="0" step="1" placeholder="0" autofocus></div>`;
     body.querySelector('#bv-qty-rule').addEventListener('change',e=>{
       const lbl=$('bv-qty-lbl');
       if(lbl)lbl.textContent={set:'Quantity',add:'Increase by',sub:'Decrease by'}[e.target.value]||'Quantity';
     });
+    if(multiLoc){
+      const vids=[...S.selectedVids];
+      const invItemIds=vids.map(vid=>getVar(vid).v?.inventoryItem?.id).filter(Boolean);
+      if(invItemIds.length) api('/api/inventory-levels',{inventoryItemIds:invItemIds}).then(r=>{ S.bulkQtyLevels=r.levels; }).catch(()=>{ S.bulkQtyLevels=null; });
+    }
   }else if(type==='tags'){
     body.innerHTML=`<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
   }else if(type==='metafield'){
@@ -1028,16 +1036,22 @@ function applyBulkModal(){
     const val=$('bv-qty-val')?.value;
     const n=parseInt(val,10);
     if(val===''||val==null||isNaN(n)||n<0)return toast('Enter a valid quantity.');
+    const multiLoc=(S.locations?.length||0)>=2;
+    const locationId=multiLoc?$('bv-qty-loc')?.value:primaryLocationId();
     const vids=[...S.selectedVids];
     pushH(`Bulk qty ${rule}: ${n}`);
     vids.forEach(vid=>{
       const{p,v}=getVar(vid); if(!p||!v)return;
+      const invItemId=v.inventoryItem?.id;
+      const currentAtLoc=multiLoc
+        ? (S.bulkQtyLevels?.[invItemId]?.find(l=>l.locationId===locationId)?.quantity ?? 0)
+        : (v.inventoryQuantity||0);
       let newQty;
       if(rule==='set')       newQty=n;
-      else if(rule==='add')  newQty=Math.max(0,(v.inventoryQuantity||0)+n);
-      else                   newQty=Math.max(0,(v.inventoryQuantity||0)-n);
-      v.inventoryQuantity=newQty;
-      setInvChange(p.id,vid,primaryLocationId(),v.inventoryItem?.id||'',newQty,getOrigV(p.id,vid)?.inventoryQuantity??0);
+      else if(rule==='add')  newQty=Math.max(0,currentAtLoc+n);
+      else                   newQty=Math.max(0,currentAtLoc-n);
+      if(!multiLoc) v.inventoryQuantity=newQty;
+      setInvChange(p.id,vid,locationId,invItemId||'',newQty,currentAtLoc);
     });
     renderTable(); updateSaveBtn(); toast(`Qty updated on ${vids.length} variant${vids.length!==1?'s':''}.`);
   }else if(type==='tags'){
