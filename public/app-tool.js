@@ -476,8 +476,16 @@ function shopifyAdminUrl(gid){
   const numId=gid.split('/').pop();
   return `https://${S.shop}/admin/products/${numId}`;
 }
+function rowChanged(pid,vid){
+  const c=S.changes[pid]; if(!c)return false;
+  if(Object.keys(c.product||{}).length)return true;
+  if((c.metafields||[]).some(mf=>mf.ownerId===pid||mf.ownerId===vid))return true;
+  if(c.variants?.[vid])return true;
+  if(c.inventory?.[vid]&&Object.keys(c.inventory[vid]).length)return true;
+  return false;
+}
 function rowHTML(p,v){
-  const dirty=!!S.changes[p.id], sel=S.selectedVids.has(v.id);
+  const dirty=rowChanged(p.id,v.id), sel=S.selectedVids.has(v.id);
   const schedList=getSchedBadges(p.id,v.id);
   const hasSched=schedList.length>0;
   const cls=[dirty?'r-changed':'',sel?'r-selected':'',hasSched?'r-scheduled':''].filter(Boolean).join(' ');
@@ -855,7 +863,9 @@ function updateSaveBtn(){
     const selPart=sel?` · ${sel} selected`:'';
     setStatus(`${n} unsaved change${n!==1?'s':''}${selPart}`, 'dirty');
     Object.keys(S.changes).forEach(pid=>{
-      document.querySelectorAll(`tr[data-pid="${pid}"]`).forEach(tr=>tr.classList.add('r-changed'));
+      document.querySelectorAll(`tr[data-pid="${pid}"]`).forEach(tr=>{
+        if(rowChanged(pid,tr.dataset.vid))tr.classList.add('r-changed');
+      });
     });
   }else{
     const selPart=sel?`${sel} selected`:'Ready';
