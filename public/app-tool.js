@@ -1396,12 +1396,13 @@ async function loadSchedules(){
     }
     // Expired: trial/subscription ended → show paywall
     if(S.plan==='expired'){
+      const wasTrialOnly=!!S.trialInfo?.trialEndsAt&&!S.trialInfo?.inTrial;
       if(trialBanner){
         trialBanner.style.background='#991b1b';
-        document.getElementById('trial-banner-text').textContent='Your subscription has ended.';
+        document.getElementById('trial-banner-text').textContent=wasTrialOnly?'Your free trial has ended.':'Your subscription has ended.';
         trialBanner.style.display='block';
       }
-      showUpgradeModal('Your access has ended. Choose a plan to continue editing your products.','Choose a plan to continue');
+      showUpgradeModal(wasTrialOnly?'Your free trial has ended. Choose a plan to keep editing your products.':'Your access has ended. Choose a plan to continue editing your products.','Choose a plan to continue');
       return;
     }
     // Backward compat: server-side trial (old installs)
