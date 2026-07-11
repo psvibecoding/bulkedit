@@ -412,9 +412,21 @@ function buildShopifyQuery(q){
 function flatRows(){ return S.products.flatMap(p=>p.variants.nodes.map(v=>({p,v}))); }
 function getFiltered(){
   const terms = S.searchQ ? S.searchQ.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean) : [];
+  // Match at product level: if ANY variant matches (by sku/barcode/etc.), show ALL variants
+  // of that product — so searching one variant's barcode/SKU surfaces its siblings too.
+  const prodMatchCache=new Map();
+  const productMatches=p=>{
+    if(!terms.length)return true;
+    if(prodMatchCache.has(p.id))return prodMatchCache.get(p.id);
+    const match=p.variants.nodes.some(v=>{
+      const hay=[p.title,p.vendor,(p.tags||[]).join(' '),v.title,v.sku,v.barcode].join(' ').toLowerCase();
+      return terms.some(t=>hay.includes(t));
+    });
+    prodMatchCache.set(p.id,match);
+    return match;
+  };
   return flatRows().filter(({p,v})=>{
-    const hay=[p.title,p.vendor,(p.tags||[]).join(' '),v.title,v.sku].join(' ').toLowerCase();
-    const ms=!terms.length||terms.some(t=>hay.includes(t));
+    const ms=productMatches(p);
     const mf=S.filter==='all'?true:S.filter==='changed'?!!S.changes[p.id]:p.status===S.filter;
     const mt=!S.tagFilter||(p.tags||[]).includes(S.tagFilter);
     const mc=!S.collFilter||(p.collections||[]).some(c=>c.id===S.collFilter);

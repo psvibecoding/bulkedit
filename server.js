@@ -1518,7 +1518,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
     const terms = raw ? raw.split(',').map(t => t.trim().replace(/[^\w\s-]/g, '')).filter(Boolean) : [];
     const first = Math.min(Math.max(Number(req.body?.first || 50), 1), 100);
     const search = terms.length
-      ? terms.map(t => `(title:*${t}* OR tag:${t} OR vendor:${t}* OR sku:${t}*)`).join(' OR ')
+      ? terms.map(t => `(title:*${t}* OR tag:${t} OR vendor:${t}* OR sku:${t}* OR barcode:${t}*)`).join(' OR ')
       : null;
     const d = await gql(s, `
       query Products($first:Int!, $query:String, $after:String) {
@@ -1532,7 +1532,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
             metafields(first:50) { nodes { id namespace key type value } }
             variants(first:100) {
               nodes {
-                id title sku price compareAtPrice inventoryQuantity
+                id title sku barcode price compareAtPrice inventoryQuantity
                 inventoryItem { id }
                 metafields(first:50) { nodes { id namespace key type value } }
               }
