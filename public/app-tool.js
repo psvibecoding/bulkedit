@@ -1351,10 +1351,19 @@ async function confirmSave(){
     }
 
     // Commit successes: update originals + remove from S.changes
+    // If the inventory call failed, keep each product's pending inventory change
+    // so the row stays "modified" and a retry has something to actually resend.
+    const invOk=!invFailed.length;
     savedPids.forEach(pid=>{
       const cur=getProd(pid), origIdx=S.originals.findIndex(p=>p.id===pid);
       if(cur&&origIdx!==-1) S.originals[origIdx]=clone(cur);
-      delete S.changes[pid];
+      const pendingInv=S.changes[pid]?.inventory;
+      const hasPendingInv=pendingInv&&Object.keys(pendingInv).length;
+      if(invOk||!hasPendingInv){
+        delete S.changes[pid];
+      }else{
+        S.changes[pid]={productId:pid,product:{},variants:{},metafields:[],inventory:pendingInv};
+      }
     });
 
     renderTable(); updateSaveBtn(); updateUndoUI();
