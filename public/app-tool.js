@@ -204,7 +204,7 @@ async function afterOAuth(shop, token, silent=false){
     saveCredentials(shop, token);
     $('store-name').textContent = t.shop.name;
     $('loading-msg').textContent='Loading products…';
-    await Promise.all([ loadProducts(), loadMfDefs(), loadColls() ]);
+    await Promise.all([ loadProducts(), loadMfDefs(), loadColls(), loadLocations() ]);
     saveProductsCache(t.shop.name);
     showScreen('s-app');
     loadSchedules();
@@ -292,6 +292,15 @@ async function loadMfDefs(){
   }catch(e){ S.mfDefs=[]; }
 }
 
+async function loadLocations(){
+  if(S.demo) return;
+  try{
+    const r=await api('/api/locations');
+    S.locations=r.locations||[];
+    if(S.products.length) renderTable(); // in case product rows already rendered before this resolved
+  }catch(e){ S.locations=[]; }
+}
+
 function normProd(p){
   const norm = { ...p,
     bodyHtml: p.bodyHtml ?? p.descriptionHtml ?? '',
@@ -341,7 +350,7 @@ async function refreshInBackground(){
     $('store-name').textContent=t.shop.name;
     // Only refresh if no unsaved changes (avoid overwriting user's work)
     if(Object.keys(S.changes).length===0){
-      await Promise.all([loadProducts(),loadMfDefs(),loadColls()]);
+      await Promise.all([loadProducts(),loadMfDefs(),loadColls(),loadLocations()]);
       saveProductsCache(t.shop.name);
     }
   }catch{
