@@ -41,6 +41,7 @@ let S = {
   filter:'all', searchQ:'', tagFilter:'', collFilter:'',
   selectedVids: new Set(),
   bulkType: null,
+  bulkQtyLevels: null,
   schedules:[],
   plan:'basic', schedLimit:0, schedUsed:0, periodEnd:null, trialInfo:null,
   pageInfo:{ hasNextPage:false, endCursor:null },
@@ -204,7 +205,7 @@ async function afterOAuth(shop, token, silent=false){
     saveCredentials(shop, token);
     $('store-name').textContent = t.shop.name;
     $('loading-msg').textContent='Loading products…';
-    await Promise.all([ loadProducts(), loadMfDefs(), loadColls() ]);
+    await Promise.all([ loadProducts(), loadMfDefs(), loadColls(), loadLocations() ]);
     saveProductsCache(t.shop.name);
     showScreen('s-app');
     loadSchedules();
@@ -292,6 +293,15 @@ async function loadMfDefs(){
   }catch(e){ S.mfDefs=[]; }
 }
 
+async function loadLocations(){
+  if(S.demo) return;
+  try{
+    const r=await api('/api/locations');
+    S.locations=r.locations||[];
+    if(S.products.length) renderTable(); // in case product rows already rendered before this resolved
+  }catch(e){ S.locations=[]; }
+}
+
 function normProd(p){
   const norm = { ...p,
     bodyHtml: p.bodyHtml ?? p.descriptionHtml ?? '',
@@ -341,7 +351,7 @@ async function refreshInBackground(){
     $('store-name').textContent=t.shop.name;
     // Only refresh if no unsaved changes (avoid overwriting user's work)
     if(Object.keys(S.changes).length===0){
-      await Promise.all([loadProducts(),loadMfDefs(),loadColls()]);
+      await Promise.all([loadProducts(),loadMfDefs(),loadColls(),loadLocations()]);
       saveProductsCache(t.shop.name);
     }
   }catch{
@@ -354,7 +364,7 @@ function disconnect(){
   trackEv('disconnect');
   clearCredentials();
   localStorage.removeItem('be_cache');
-  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',collFilter:'',bulkType:null,pageInfo:{hasNextPage:false,endCursor:null}});
+  Object.assign(S,{shop:'',token:'',demo:false,products:[],originals:[],changes:{},mfDefs:[],collsCache:null,locations:null,past:[],future:[],filter:'all',searchQ:'',tagFilter:'',collFilter:'',bulkType:null,bulkQtyLevels:null,pageInfo:{hasNextPage:false,endCursor:null}});
   const lm=document.getElementById('load-more-wrap'); if(lm)lm.style.display='none';
   S.selectedVids=new Set();
   $('f-shop').value='';
@@ -402,9 +412,21 @@ function buildShopifyQuery(q){
 function flatRows(){ return S.products.flatMap(p=>p.variants.nodes.map(v=>({p,v}))); }
 function getFiltered(){
   const terms = S.searchQ ? S.searchQ.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean) : [];
+  // Match at product level: if ANY variant matches (by sku/barcode/etc.), show ALL variants
+  // of that product — so searching one variant's barcode/SKU surfaces its siblings too.
+  const prodMatchCache=new Map();
+  const productMatches=p=>{
+    if(!terms.length)return true;
+    if(prodMatchCache.has(p.id))return prodMatchCache.get(p.id);
+    const match=p.variants.nodes.some(v=>{
+      const hay=[p.title,p.vendor,(p.tags||[]).join(' '),v.title,v.sku,v.barcode].join(' ').toLowerCase();
+      return terms.some(t=>hay.includes(t));
+    });
+    prodMatchCache.set(p.id,match);
+    return match;
+  };
   return flatRows().filter(({p,v})=>{
-    const hay=[p.title,p.vendor,(p.tags||[]).join(' '),v.title,v.sku].join(' ').toLowerCase();
-    const ms=!terms.length||terms.some(t=>hay.includes(t));
+    const ms=productMatches(p);
     const mf=S.filter==='all'?true:S.filter==='changed'?!!S.changes[p.id]:p.status===S.filter;
     const mt=!S.tagFilter||(p.tags||[]).includes(S.tagFilter);
     const mc=!S.collFilter||(p.collections||[]).some(c=>c.id===S.collFilter);
@@ -454,8 +476,16 @@ function shopifyAdminUrl(gid){
   const numId=gid.split('/').pop();
   return `https://${S.shop}/admin/products/${numId}`;
 }
+function rowChanged(pid,vid){
+  const c=S.changes[pid]; if(!c)return false;
+  if(Object.keys(c.product||{}).length)return true;
+  if((c.metafields||[]).some(mf=>mf.ownerId===pid||mf.ownerId===vid))return true;
+  if(c.variants?.[vid])return true;
+  if(c.inventory?.[vid]&&Object.keys(c.inventory[vid]).length)return true;
+  return false;
+}
 function rowHTML(p,v){
-  const dirty=!!S.changes[p.id], sel=S.selectedVids.has(v.id);
+  const dirty=rowChanged(p.id,v.id), sel=S.selectedVids.has(v.id);
   const schedList=getSchedBadges(p.id,v.id);
   const hasSched=schedList.length>0;
   const cls=[dirty?'r-changed':'',sel?'r-selected':'',hasSched?'r-scheduled':''].filter(Boolean).join(' ');
@@ -508,7 +538,10 @@ function rowHTML(p,v){
 <td><div style="display:flex;flex-direction:column;gap:1px"><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"><div class="badge-stack">${skuBadge}</div></div></td>
 <td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}"><div class="badge-stack">${priceBadge}</div></div></td>
 <td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"><div class="badge-stack">${catBadge}</div></div></td>
-<td><input class="ce ce-num" type="number" min="0" step="1" data-vid="${esc(v.id)}" data-vf="inventoryQuantity" value="${esc(String(v.inventoryQuantity??0))}"></td>
+<td>${(S.locations?.length||0)>=2
+  ? `<button type="button" class="inv-multi-btn" data-vid="${esc(v.id)}" title="Adjust inventory per location">${esc(String(v.inventoryQuantity??0))} <span class="inv-multi-ico">⊞</span></button>`
+  : `<input class="ce ce-num" type="number" min="0" step="1" data-vid="${esc(v.id)}" data-vf="inventoryQuantity" value="${esc(String(v.inventoryQuantity??0))}">`
+}</td>
 <td><div class="mf-cell" id="mf-${esc(v.id)}">${mfHTML}</div></td>
 </tr>`;
 }
@@ -630,6 +663,7 @@ function bindTable(){
   tbody.addEventListener('click',e=>{
     const el=e.target;
     if(el.classList.contains('status-pill')){ cycleStatus(el.dataset.pid); return; }
+    if(el.closest('.inv-multi-btn')){ openInventoryModal(el.closest('.inv-multi-btn').dataset.vid); return; }
     if(el.classList.contains('tag-rm')){ removeTag(el.dataset.pid,el.dataset.tag); return; }
     if(el.classList.contains('tag-add')){ addTagPrompt(el.dataset.pid); return; }
     if(el.classList.contains('mf-add')){ addMfRaw(el.dataset.vid); return; }
@@ -671,6 +705,12 @@ function markAltText(el){
   const c=ensureC(pid); c.product.altText=el.value; c.product.imageId=imageId;
   el.classList.add('dirty'); addModChip(el); updateSaveBtn();
 }
+function setInvChange(pid, vid, locationId, inventoryItemId, quantity, oldQuantity){
+  const c=ensureC(pid);
+  if(!c.inventory[vid])c.inventory[vid]={};
+  c.inventory[vid][locationId]={inventoryItemId,locationId,quantity,oldQuantity};
+}
+function primaryLocationId(){ return S.locations?.[0]?.id||''; }
 function markVar(vid,field,value,el){
   const{p,v}=getVar(vid); if(!p||!v)return;
   pushH(`Edit ${field}`);
@@ -679,8 +719,7 @@ function markVar(vid,field,value,el){
     const qty=parseInt(value,10);
     if(isNaN(qty)||qty<0)return;
     v.inventoryQuantity=qty;
-    if(!c.inventory)c.inventory={};
-    c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',quantity:qty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
+    setInvChange(p.id,vid,primaryLocationId(),v.inventoryItem?.id||'',qty,getOrigV(p.id,vid)?.inventoryQuantity??0);
     if(el){ el.classList.add('dirty'); addModChip(el); }
     updateSaveBtn(); return;
   }
@@ -824,7 +863,9 @@ function updateSaveBtn(){
     const selPart=sel?` · ${sel} selected`:'';
     setStatus(`${n} unsaved change${n!==1?'s':''}${selPart}`, 'dirty');
     Object.keys(S.changes).forEach(pid=>{
-      document.querySelectorAll(`tr[data-pid="${pid}"]`).forEach(tr=>tr.classList.add('r-changed'));
+      document.querySelectorAll(`tr[data-pid="${pid}"]`).forEach(tr=>{
+        if(rowChanged(pid,tr.dataset.vid))tr.classList.add('r-changed');
+      });
     });
   }else{
     const selPart=sel?`${sel} selected`:'Ready';
@@ -838,6 +879,47 @@ function discardChanges(){
   S.changes={};
   renderTable(); updateSaveBtn();
   toast('Changes discarded.');
+}
+
+/* ── INVENTORY LOCATIONS MODAL ── */
+let S_invVid=null;
+async function openInventoryModal(vid){
+  const{p,v}=getVar(vid); if(!p||!v)return;
+  S_invVid=vid;
+  const invItemId=v.inventoryItem?.id;
+  $('m-inv-sub').textContent=`${p.title}${v.title&&v.title!=='Default Title'?` — ${v.title}`:''}`;
+  const body=$('m-inv-body');
+  body.innerHTML='<p style="font-size:12px;color:var(--t3)">Loading locations…</p>';
+  openModal('m-inv');
+  try{
+    const r=await api('/api/inventory-levels',{inventoryItemIds:[invItemId]});
+    const rows=r.levels[invItemId]||[];
+    body.innerHTML=rows.map(row=>{
+      const pending=S.changes[p.id]?.inventory?.[vid]?.[row.locationId]?.quantity;
+      const val=pending!==undefined?pending:row.quantity;
+      return `<div class="bulk-field"><label>${esc(row.name)}</label><input type="number" min="0" step="1" class="inv-loc-inp" data-location-id="${esc(row.locationId)}" data-old="${esc(String(row.quantity))}" value="${esc(String(val))}"></div>`;
+    }).join('')||'<p style="font-size:12px;color:var(--t3)">No locations stock this item.</p>';
+  }catch(e){
+    body.innerHTML=`<p style="font-size:12px;color:var(--red)">Failed to load: ${esc(e.message)}</p>`;
+  }
+}
+function applyInventoryModal(){
+  const vid=S_invVid; if(!vid)return;
+  const{p,v}=getVar(vid); if(!p||!v)return closeModal('m-inv');
+  pushH('Edit inventory by location');
+  let total=0;
+  document.querySelectorAll('#m-inv-body .inv-loc-inp').forEach(inp=>{
+    const locationId=inp.dataset.locationId;
+    const oldQty=Number(inp.dataset.old);
+    const qty=parseInt(inp.value,10);
+    if(isNaN(qty)||qty<0)return;
+    total+=qty;
+    setInvChange(p.id,vid,locationId,v.inventoryItem?.id||'',qty,oldQty);
+  });
+  v.inventoryQuantity=total;
+  closeModal('m-inv');
+  renderTable(); updateSaveBtn();
+  toast('Inventory updated — review in Save changes.');
 }
 
 /* ── BULK MODAL ── */
@@ -868,11 +950,18 @@ function openBulkModal(type){
       if(lbl){if(rule==='set')lbl.textContent='New price';else if(rule==='pct-up'||rule==='pct-down')lbl.textContent='Percentage (%)';else lbl.textContent='Amount';}
     });
   }else if(type==='qty'){
-    body.innerHTML=`<div class="bulk-field"><label>Action</label><select id="bv-qty-rule"><option value="set">Set exact quantity</option><option value="add">Increase by</option><option value="sub">Decrease by</option></select></div><div class="bulk-field"><label id="bv-qty-lbl">Quantity</label><input id="bv-qty-val" type="number" min="0" step="1" placeholder="0" autofocus></div>`;
+    const multiLoc=(S.locations?.length||0)>=2;
+    const locSelect=multiLoc?`<div class="bulk-field"><label>Location</label><select id="bv-qty-loc">${S.locations.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('')}</select></div>`:'';
+    body.innerHTML=`${locSelect}<div class="bulk-field"><label>Action</label><select id="bv-qty-rule"><option value="set">Set exact quantity</option><option value="add">Increase by</option><option value="sub">Decrease by</option></select></div><div class="bulk-field"><label id="bv-qty-lbl">Quantity</label><input id="bv-qty-val" type="number" min="0" step="1" placeholder="0" autofocus></div>`;
     body.querySelector('#bv-qty-rule').addEventListener('change',e=>{
       const lbl=$('bv-qty-lbl');
       if(lbl)lbl.textContent={set:'Quantity',add:'Increase by',sub:'Decrease by'}[e.target.value]||'Quantity';
     });
+    if(multiLoc){
+      const vids=[...S.selectedVids];
+      const invItemIds=vids.map(vid=>getVar(vid).v?.inventoryItem?.id).filter(Boolean);
+      if(invItemIds.length) api('/api/inventory-levels',{inventoryItemIds:invItemIds}).then(r=>{ S.bulkQtyLevels=r.levels; }).catch(()=>{ S.bulkQtyLevels=null; });
+    }
   }else if(type==='tags'){
     body.innerHTML=`<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
   }else if(type==='metafield'){
@@ -969,18 +1058,22 @@ function applyBulkModal(){
     const val=$('bv-qty-val')?.value;
     const n=parseInt(val,10);
     if(val===''||val==null||isNaN(n)||n<0)return toast('Enter a valid quantity.');
+    const multiLoc=(S.locations?.length||0)>=2;
+    const locationId=multiLoc?$('bv-qty-loc')?.value:primaryLocationId();
     const vids=[...S.selectedVids];
     pushH(`Bulk qty ${rule}: ${n}`);
     vids.forEach(vid=>{
       const{p,v}=getVar(vid); if(!p||!v)return;
-      const c=ensureC(p.id);
-      if(!c.inventory)c.inventory={};
+      const invItemId=v.inventoryItem?.id;
+      const currentAtLoc=multiLoc
+        ? (S.bulkQtyLevels?.[invItemId]?.find(l=>l.locationId===locationId)?.quantity ?? 0)
+        : (v.inventoryQuantity||0);
       let newQty;
       if(rule==='set')       newQty=n;
-      else if(rule==='add')  newQty=Math.max(0,(v.inventoryQuantity||0)+n);
-      else                   newQty=Math.max(0,(v.inventoryQuantity||0)-n);
-      v.inventoryQuantity=newQty;
-      c.inventory[vid]={inventoryItemId:v.inventoryItem?.id||'',quantity:newQty,oldQuantity:getOrigV(p.id,vid)?.inventoryQuantity??0};
+      else if(rule==='add')  newQty=Math.max(0,currentAtLoc+n);
+      else                   newQty=Math.max(0,currentAtLoc-n);
+      if(!multiLoc) v.inventoryQuantity=newQty;
+      setInvChange(p.id,vid,locationId,invItemId||'',newQty,currentAtLoc);
     });
     renderTable(); updateSaveBtn(); toast(`Qty updated on ${vids.length} variant${vids.length!==1?'s':''}.`);
   }else if(type==='tags'){
@@ -1137,9 +1230,13 @@ function openSaveModal(){
       });
     });
     if((c.metafields||[]).length)diffs.push(`<div class="diff-row"><span class="diff-field">metafields</span><span class="diff-new">${c.metafields.length} change${c.metafields.length!==1?'s':''}</span></div>`);
-    Object.entries(c.inventory||{}).forEach(([vid,inv])=>{
+    Object.entries(c.inventory||{}).forEach(([vid,byLoc])=>{
       const vLbl=p.variants.nodes.find(x=>x.id===vid)?.title||'variant';
-      diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} inventory</span><span class="diff-old">${esc(String(inv.oldQuantity))}</span><span class="diff-arr">→</span><span class="diff-new">${esc(String(inv.quantity))}</span></div>`);
+      const multiLoc=(S.locations?.length||0)>=2;
+      Object.values(byLoc).forEach(inv=>{
+        const locLbl=multiLoc?` @ ${esc(S.locations.find(l=>l.id===inv.locationId)?.name||'location')}`:'';
+        diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl)} inventory${locLbl}</span><span class="diff-old">${esc(String(inv.oldQuantity))}</span><span class="diff-arr">→</span><span class="diff-new">${esc(String(inv.quantity))}</span></div>`);
+      });
     });
     return `<div class="diff-item"><div class="diff-item-head">${imgEl}<span class="diff-title">${esc(p.title)}</span></div><div class="diff-rows">${diffs.length?diffs.join(''):'<span style="font-size:11px;color:var(--t3)">Variant / metafield changes</span>'}</div></div>`;
   }).join('');
@@ -1252,7 +1349,11 @@ async function confirmSave(){
     const invItems=[];
     for(const c of payloads){
       if(!savedSet.has(c.productId))continue;
-      Object.entries(c.inventory||{}).forEach(([_,inv])=>{ if(inv.inventoryItemId)invItems.push({inventoryItemId:inv.inventoryItemId,quantity:inv.quantity}); });
+      Object.values(c.inventory||{}).forEach(byLoc=>{
+        Object.values(byLoc).forEach(inv=>{
+          if(inv.inventoryItemId&&inv.locationId)invItems.push({inventoryItemId:inv.inventoryItemId,locationId:inv.locationId,quantity:inv.quantity});
+        });
+      });
     }
     if(invItems.length){
       try{ await api('/api/inventory-set',{quantities:invItems}); }
@@ -1348,9 +1449,13 @@ function buildRecap(payloads){
       const vLbl=mf.ownerId===c.productId?'':p.variants.nodes.find(v=>v.id===mf.ownerId)?.title||'';
       rows.push([title,vLbl,`${mf.namespace}.${mf.key}`,'',mf.value??'']);
     });
-    Object.entries(c.inventory||{}).forEach(([vid,inv])=>{
+    Object.entries(c.inventory||{}).forEach(([vid,byLoc])=>{
       const vLbl=p.variants.nodes.find(v=>v.id===vid)?.title||'';
-      rows.push([title,vLbl,'inventoryQuantity',String(inv.oldQuantity),String(inv.quantity)]);
+      const multiLoc=(S.locations?.length||0)>=2;
+      Object.values(byLoc).forEach(inv=>{
+        const field=multiLoc?`inventoryQuantity @ ${S.locations.find(l=>l.id===inv.locationId)?.name||'location'}`:'inventoryQuantity';
+        rows.push([title,vLbl,field,String(inv.oldQuantity),String(inv.quantity)]);
+      });
     });
   });
   return rows.map(r=>r.map(v=>csvQuote(String(v??''))).join(',')).join('\n');
@@ -1955,6 +2060,7 @@ function boot(){
 
   // Bulk modal
   $('m-bulk-apply').addEventListener('click', applyBulkModal);
+  $('m-inv-apply').addEventListener('click', applyInventoryModal);
 
   // Save modal
   $('m-save-confirm').addEventListener('click', confirmSave);
@@ -2125,7 +2231,7 @@ function boot(){
   });
 
   // Keyboard
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape')['m-bulk','m-save','m-coll','m-sched'].forEach(id=>closeModal(id)); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape')['m-bulk','m-save','m-coll','m-sched','m-inv'].forEach(id=>closeModal(id)); });
 
   // Table events
   bindTable();

@@ -433,3 +433,6 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .stip-key{color:#888;font-size:9px;text-transform:uppercase;letter-spacing:.1em;min-width:68px;flex-shrink:0}
 .stip-val{color:#f0f0f0;font-weight:500;font-size:11px}
 @media(max-width:700px){.topbar{height:auto;padding:10px 16px;flex-wrap:wrap}.topbar-l,.topbar-r{width:100%}.search-box{max-width:100%}}
+.inv-multi-btn{font-family:var(--mono);font-size:12px;text-align:right;width:100%;background:transparent;border:1px dashed var(--b2);border-radius:var(--r4);padding:3px 6px;cursor:pointer;color:var(--tx);display:flex;align-items:center;justify-content:flex-end;gap:4px}
+.inv-multi-btn:hover{background:var(--s2);border-color:var(--b3)}
+.inv-multi-ico{font-size:10px;opacity:.6}

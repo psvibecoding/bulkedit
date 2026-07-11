@@ -1518,7 +1518,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
     const terms = raw ? raw.split(',').map(t => t.trim().replace(/[^\w\s-]/g, '')).filter(Boolean) : [];
     const first = Math.min(Math.max(Number(req.body?.first || 50), 1), 100);
     const search = terms.length
-      ? terms.map(t => `(title:*${t}* OR tag:${t} OR vendor:${t}* OR sku:${t}*)`).join(' OR ')
+      ? terms.map(t => `(title:*${t}* OR tag:${t} OR vendor:${t}* OR sku:${t}* OR barcode:${t}*)`).join(' OR ')
       : null;
     const d = await gql(s, `
       query Products($first:Int!, $query:String, $after:String) {
@@ -1532,7 +1532,7 @@ app.post('/api/products', apiLimiter, async (req, res) => {
             metafields(first:50) { nodes { id namespace key type value } }
             variants(first:100) {
               nodes {
-                id title sku price compareAtPrice inventoryQuantity
+                id title sku barcode price compareAtPrice inventoryQuantity
                 inventoryItem { id }
                 metafields(first:50) { nodes { id namespace key type value } }
               }
@@ -1577,31 +1577,53 @@ app.post('/api/locations', apiLimiter, async (req, res) => {
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
+app.post('/api/inventory-levels', apiLimiter, async (req, res) => {
+  try {
+    const s = getSession(req);
+    const { inventoryItemIds } = req.body || {};
+    if (!Array.isArray(inventoryItemIds) || !inventoryItemIds.length || inventoryItemIds.length > 100) {
+      throw new Error('Invalid inventoryItemIds');
+    }
+    inventoryItemIds.forEach(id => gid(id, 'InventoryItem'));
+
+    const aliasQuery = inventoryItemIds.map((id, i) => `
+      i${i}: inventoryItem(id: "${id}") {
+        inventoryLevels(first: 50) {
+          nodes {
+            location { id name }
+            quantities(names: ["available"]) { name quantity }
+          }
+        }
+      }`).join('\n');
+    const d = await gql(s, `query { ${aliasQuery} }`);
+
+    const levels = {};
+    inventoryItemIds.forEach((id, i) => {
+      const nodes = d[`i${i}`]?.inventoryLevels?.nodes || [];
+      levels[id] = nodes.map(n => ({
+        locationId: n.location.id,
+        name: n.location.name,
+        quantity: n.quantities.find(q => q.name === 'available')?.quantity ?? 0,
+      }));
+    });
+    res.json({ ok: true, levels });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
 app.post('/api/inventory-set', apiLimiter, writeLimiter, async (req, res) => {
   try {
     const s = getSession(req);
     const { quantities } = req.body || {};
     if (!Array.isArray(quantities) || !quantities.length || quantities.length > 100) throw new Error('Invalid quantities');
 
-    // Validate and collect items
-    const validated = quantities.map(q => {
+    const items = quantities.map(q => {
       gid(q.inventoryItemId, 'InventoryItem');
+      gid(q.locationId, 'Location');
       const qty = Math.floor(Number(q.quantity));
       if (!Number.isFinite(qty) || qty < 0 || qty > 999999) throw new Error('Invalid quantity');
-      return { inventoryItemId: q.inventoryItemId, quantity: qty };
+      return { inventoryItemId: q.inventoryItemId, locationId: q.locationId, quantity: qty };
     });
 
-    // Fetch locationId for each inventoryItem in a single batched query
-    const aliasQuery = validated.map((item, i) =>
-      `i${i}: inventoryItem(id: "${item.inventoryItemId}") { inventoryLevels(first:1) { nodes { location { id } } } }`
-    ).join('\n');
-    const levels = await gql(s, `query { ${aliasQuery} }`);
-
-    const items = validated.map((item, i) => {
-      const locationId = levels[`i${i}`]?.inventoryLevels?.nodes?.[0]?.location?.id;
-      if (!locationId) throw new Error(`No inventory location found — make sure the product is stocked at a location in Shopify.`);
-      return { inventoryItemId: item.inventoryItemId, locationId, quantity: item.quantity };
-    });
     const d = await gql(s, `
       mutation InventorySet($input: InventorySetQuantitiesInput!) {
         inventorySetQuantities(input: $input) {
