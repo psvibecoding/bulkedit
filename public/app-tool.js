@@ -858,6 +858,47 @@ function discardChanges(){
   toast('Changes discarded.');
 }
 
+/* ── INVENTORY LOCATIONS MODAL ── */
+let S_invVid=null;
+async function openInventoryModal(vid){
+  const{p,v}=getVar(vid); if(!p||!v)return;
+  S_invVid=vid;
+  const invItemId=v.inventoryItem?.id;
+  $('m-inv-sub').textContent=`${p.title}${v.title&&v.title!=='Default Title'?` — ${v.title}`:''}`;
+  const body=$('m-inv-body');
+  body.innerHTML='<p style="font-size:12px;color:var(--t3)">Loading locations…</p>';
+  openModal('m-inv');
+  try{
+    const r=await api('/api/inventory-levels',{inventoryItemIds:[invItemId]});
+    const rows=r.levels[invItemId]||[];
+    body.innerHTML=rows.map(row=>{
+      const pending=S.changes[p.id]?.inventory?.[vid]?.[row.locationId]?.quantity;
+      const val=pending!==undefined?pending:row.quantity;
+      return `<div class="bulk-field"><label>${esc(row.name)}</label><input type="number" min="0" step="1" class="inv-loc-inp" data-location-id="${esc(row.locationId)}" data-old="${esc(String(row.quantity))}" value="${esc(String(val))}"></div>`;
+    }).join('')||'<p style="font-size:12px;color:var(--t3)">No locations stock this item.</p>';
+  }catch(e){
+    body.innerHTML=`<p style="font-size:12px;color:var(--red)">Failed to load: ${esc(e.message)}</p>`;
+  }
+}
+function applyInventoryModal(){
+  const vid=S_invVid; if(!vid)return;
+  const{p,v}=getVar(vid); if(!p||!v)return closeModal('m-inv');
+  pushH('Edit inventory by location');
+  let total=0;
+  document.querySelectorAll('#m-inv-body .inv-loc-inp').forEach(inp=>{
+    const locationId=inp.dataset.locationId;
+    const oldQty=Number(inp.dataset.old);
+    const qty=parseInt(inp.value,10);
+    if(isNaN(qty)||qty<0)return;
+    total+=qty;
+    setInvChange(p.id,vid,locationId,v.inventoryItem?.id||'',qty,oldQty);
+  });
+  v.inventoryQuantity=total;
+  closeModal('m-inv');
+  renderTable(); updateSaveBtn();
+  toast('Inventory updated — review in Save changes.');
+}
+
 /* ── BULK MODAL ── */
 function openBulkModal(type){
   S.bulkType=type;
@@ -1974,6 +2015,7 @@ function boot(){
 
   // Bulk modal
   $('m-bulk-apply').addEventListener('click', applyBulkModal);
+  $('m-inv-apply').addEventListener('click', applyInventoryModal);
 
   // Save modal
   $('m-save-confirm').addEventListener('click', confirmSave);
@@ -2144,7 +2186,7 @@ function boot(){
   });
 
   // Keyboard
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape')['m-bulk','m-save','m-coll','m-sched'].forEach(id=>closeModal(id)); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape')['m-bulk','m-save','m-coll','m-sched','m-inv'].forEach(id=>closeModal(id)); });
 
   // Table events
   bindTable();
