@@ -721,10 +721,10 @@ function markAltText(el){
   const c=ensureC(pid); c.product.altText=el.value; c.product.imageId=imageId;
   el.classList.add('dirty'); addModChip(el); updateSaveBtn();
 }
-function setInvChange(pid, vid, locationId, inventoryItemId, quantity, oldQuantity){
+function setInvChange(pid, vid, locationId, inventoryItemId, quantity, oldQuantity, notStocked=false){
   const c=ensureC(pid);
   if(!c.inventory[vid])c.inventory[vid]={};
-  c.inventory[vid][locationId]={inventoryItemId,locationId,quantity,oldQuantity};
+  c.inventory[vid][locationId]={inventoryItemId,locationId,quantity,oldQuantity,notStocked};
 }
 function primaryLocationId(){ return S.locations?.[0]?.id||''; }
 function markVar(vid,field,value,el){
@@ -1110,6 +1110,7 @@ function applyBulkModal(){
     vids.forEach(vid=>{
       const{p,v}=getVar(vid); if(!p||!v)return;
       const invItemId=v.inventoryItem?.id;
+      const stockedHere=multiLoc?!!S.bulkQtyLevels?.[invItemId]?.find(l=>l.locationId===locationId):true;
       const currentAtLoc=multiLoc
         ? (S.bulkQtyLevels?.[invItemId]?.find(l=>l.locationId===locationId)?.quantity ?? 0)
         : (v.inventoryQuantity||0);
@@ -1118,7 +1119,7 @@ function applyBulkModal(){
       else if(rule==='add')  newQty=Math.max(0,currentAtLoc+n);
       else                   newQty=Math.max(0,currentAtLoc-n);
       if(!multiLoc) v.inventoryQuantity=newQty;
-      setInvChange(p.id,vid,locationId,invItemId||'',newQty,currentAtLoc);
+      setInvChange(p.id,vid,locationId,invItemId||'',newQty,currentAtLoc,!stockedHere);
     });
     renderTable(); updateSaveBtn(); toast(`Qty updated on ${vids.length} variant${vids.length!==1?'s':''}.`);
   }else if(type==='tags'){
@@ -1314,6 +1315,26 @@ function openSaveModal(){
     const banner=`<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px 14px;margin-bottom:14px">
       <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:2px">⚠ Price below 1.00 — is this correct?</div>
       <div style="font-size:12px;color:#92400e">${affected} price under 1.00 — double-check before saving.</div>
+      ${rows}
+    </div>`;
+    list.innerHTML=banner+list.innerHTML;
+  }
+  // Not-yet-activated locations picked up via bulk qty changes — surface before saving,
+  // since /api/inventory-set will silently activate them instead of failing.
+  const toActivate=[];
+  for(const c of payloads){
+    const p=getProd(c.productId); if(!p)continue;
+    Object.entries(c.inventory||{}).forEach(([vid,byLoc])=>{
+      const sku=p.variants.nodes.find(x=>x.id===vid)?.sku||'(no SKU)';
+      Object.values(byLoc).forEach(inv=>{
+        if(inv.notStocked) toActivate.push(`${esc(sku)} was not activated in ${esc(S.locations?.find(l=>l.id===inv.locationId)?.name||'this location')}. Saving will activate it.`);
+      });
+    });
+  }
+  if(toActivate.length){
+    const rows=toActivate.map(r=>`<div style="margin-top:4px;font-size:12px;color:#92400e">· ${r}</div>`).join('');
+    const banner=`<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:2px">⚠ ${toActivate.length} location${toActivate.length!==1?'s':''} will be activated</div>
       ${rows}
     </div>`;
     list.innerHTML=banner+list.innerHTML;
