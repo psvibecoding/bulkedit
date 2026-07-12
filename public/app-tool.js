@@ -928,7 +928,7 @@ function applyInventoryModal(){
 function openBulkModal(type){
   S.bulkType=type;
   const n=S.selectedVids.size;
-  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',compareAt:'Change Compare at',tags:'Edit Tags',qty:'Change Inventory Qty',metafield:'Edit Metafields',description:'Edit Description',seo:'Edit SEO',collections:'Add / Remove Collection'}[type]||'Bulk action';
+  $('m-bulk-title').textContent={status:'Change Status',price:'Change Prices',compareAt:'Change Compare at',tags:'Edit Tags',barcode:'Clear Barcode',qty:'Change Inventory Qty',metafield:'Edit Metafields',description:'Edit Description',seo:'Edit SEO',collections:'Add / Remove Collection'}[type]||'Bulk action';
   $('m-bulk-sub').textContent=type==='seo'?`Applied to ${getSelPids().length} product${getSelPids().length!==1?'s':''}`:`Applied to ${n} selected variant${n!==1?'s':''}`;
   const body=$('m-bulk-body');
   if(type==='status'){
@@ -966,6 +966,8 @@ function openBulkModal(type){
     }
   }else if(type==='tags'){
     body.innerHTML=`<div class="bulk-field"><label>Tag</label><div class="tag-with-action"><input id="bv-tag" type="text" placeholder="e.g. sale" autofocus><select id="bv-tag-action"><option value="add">Add</option><option value="remove">Remove</option></select></div></div>`;
+  }else if(type==='barcode'){
+    body.innerHTML=`<p style="font-size:13px;color:var(--t2);margin:0">This clears the barcode on ${n} selected variant${n!==1?'s':''}. Nothing is sent to Shopify until you save — review the change in the save modal first.</p>`;
   }else if(type==='metafield'){
     if(S.mfDefs.length){
       const opts=S.mfDefs.map(d=>`<option value="${esc(d.namespace)}|${esc(d.key)}|${esc(d.type||'single_line_text_field')}|${esc(d.ownerType||'PRODUCTVARIANT')}">${esc(d.name)}${d.ownerType==='PRODUCT'?' (product)':''}</option>`).join('');
@@ -1085,6 +1087,17 @@ function applyBulkModal(){
     pushH(`Bulk ${action} tag "${tag}"`);
     pids.forEach(pid=>{const p=getProd(pid);if(!p)return;if(action==='add'){if(!p.tags.includes(tag))p.tags.push(tag);}else p.tags=p.tags.filter(t=>t!==tag);ensureC(pid).product.tags=[...p.tags];});
     renderTable(); updateSaveBtn(); toast(`Tag "${tag}" ${action==='add'?'added to':'removed from'} ${pids.length} products.`);
+  }else if(type==='barcode'){
+    const vids=[...S.selectedVids];
+    pushH('Bulk clear barcode');
+    vids.forEach(vid=>{
+      const{p,v}=getVar(vid); if(!p||!v)return;
+      v.barcode='';
+      const c=ensureC(p.id);
+      if(!c.variants[vid])c.variants[vid]={id:vid};
+      c.variants[vid].barcode='';
+    });
+    renderTable(); updateSaveBtn(); toast(`Barcode cleared on ${vids.length} variant${vids.length!==1?'s':''}.`);
   }else if(type==='metafield'){
     let ns,key,mftype,ownerType,val;
     if(S.mfDefs.length){
@@ -2056,6 +2069,7 @@ function boot(){
   $('bulk-cat-btn').addEventListener('click',    ()=>openBulkModal('compareAt'));
   $('bulk-qty-btn').addEventListener('click',    ()=>openBulkModal('qty'));
   $('bulk-tags-btn').addEventListener('click',   ()=>openBulkModal('tags'));
+  $('bulk-barcode-btn').addEventListener('click',()=>openBulkModal('barcode'));
   $('bulk-mf-btn').addEventListener('click',     ()=>openBulkModal('metafield'));
   $('bulk-desc-btn').addEventListener('click',   ()=>openBulkModal('description'));
   $('bulk-seo-btn').addEventListener('click',    ()=>openBulkModal('seo'));
