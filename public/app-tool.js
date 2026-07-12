@@ -916,13 +916,31 @@ async function openInventoryModal(vid){
   try{
     const r=await api('/api/inventory-levels',{inventoryItemIds:[invItemId]});
     const rows=r.levels[invItemId]||[];
-    body.innerHTML=rows.map(row=>{
+    const stockedIds=new Set(rows.map(row=>row.locationId));
+    const notStocked=(S.locations||[]).filter(l=>!stockedIds.has(l.id));
+    const stockedHTML=rows.map(row=>{
       const pending=S.changes[p.id]?.inventory?.[vid]?.[row.locationId]?.quantity;
       const val=pending!==undefined?pending:row.quantity;
       return `<div class="bulk-field"><label>${esc(row.name)}</label><input type="number" min="0" step="1" class="inv-loc-inp" data-location-id="${esc(row.locationId)}" data-old="${esc(String(row.quantity))}" value="${esc(String(val))}"></div>`;
-    }).join('')||'<p style="font-size:12px;color:var(--t3)">No locations stock this item.</p>';
+    }).join('');
+    const notStockedHTML=notStocked.map(l=>
+      `<div class="bulk-field inv-not-stocked"><label>${esc(l.name)} <span style="color:var(--t4);font-weight:400">— not stocked here</span></label><button type="button" class="inv-activate-btn" data-location-id="${esc(l.id)}" data-inv-item-id="${esc(invItemId)}">Activate</button></div>`
+    ).join('');
+    body.innerHTML=stockedHTML+notStockedHTML||'<p style="font-size:12px;color:var(--t3)">No locations available.</p>';
   }catch(e){
     body.innerHTML=`<p style="font-size:12px;color:var(--red)">Failed to load: ${esc(e.message)}</p>`;
+  }
+}
+async function activateInventoryLocation(btn){
+  const{locationId,invItemId}=btn.dataset;
+  btn.disabled=true; btn.textContent='Activating…';
+  try{
+    await api('/api/inventory-activate',{inventoryItemId:invItemId,locationId,quantity:0});
+    toast('Location activated — set a quantity and save.');
+    if(S_invVid) openInventoryModal(S_invVid);
+  }catch(e){
+    toast(`Failed to activate: ${e.message}`);
+    btn.disabled=false; btn.textContent='Activate';
   }
 }
 function applyInventoryModal(){
@@ -2098,6 +2116,9 @@ function boot(){
   // Bulk modal
   $('m-bulk-apply').addEventListener('click', applyBulkModal);
   $('m-inv-apply').addEventListener('click', applyInventoryModal);
+  $('m-inv-body').addEventListener('click', e=>{
+    const btn=e.target.closest('.inv-activate-btn'); if(btn) activateInventoryLocation(btn);
+  });
 
   // Save modal
   $('m-save-confirm').addEventListener('click', confirmSave);

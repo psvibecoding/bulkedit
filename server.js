@@ -1639,6 +1639,30 @@ app.post('/api/inventory-set', apiLimiter, writeLimiter, async (req, res) => {
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
 
+// Activate a location for a variant that isn't stocked there yet (no InventoryLevel exists)
+app.post('/api/inventory-activate', apiLimiter, writeLimiter, async (req, res) => {
+  try {
+    const s = getSession(req);
+    const { inventoryItemId, locationId, quantity = 0 } = req.body || {};
+    gid(inventoryItemId, 'InventoryItem');
+    gid(locationId, 'Location');
+    const qty = Math.floor(Number(quantity));
+    if (!Number.isFinite(qty) || qty < 0 || qty > 999999) throw new Error('Invalid quantity');
+
+    const d = await gql(s, `
+      mutation InventoryActivate($inventoryItemId: ID!, $locationId: ID!, $available: Int) {
+        inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId, available: $available) {
+          inventoryLevel { id }
+          userErrors { field message }
+        }
+      }`, { inventoryItemId, locationId, available: qty });
+    const errs = d.inventoryActivate?.userErrors || [];
+    if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
+    track('inventory_activate', s.shop, {});
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
+});
+
 app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
   try {
     const s = getSession(req);
