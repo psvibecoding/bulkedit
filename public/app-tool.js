@@ -924,7 +924,7 @@ async function openInventoryModal(vid){
       return `<div class="bulk-field"><label>${esc(row.name)}</label><input type="number" min="0" step="1" class="inv-loc-inp" data-location-id="${esc(row.locationId)}" data-old="${esc(String(row.quantity))}" value="${esc(String(val))}"></div>`;
     }).join('');
     const notStockedHTML=notStocked.map(l=>
-      `<div class="bulk-field inv-not-stocked"><label>${esc(l.name)} <span style="color:var(--t4);font-weight:400">— not stocked here</span></label><button type="button" class="inv-activate-btn" data-location-id="${esc(l.id)}" data-inv-item-id="${esc(invItemId)}">Activate</button></div>`
+      `<div class="bulk-field inv-not-stocked"><label>${esc(l.name)} <span style="color:var(--t4);font-weight:400">— not stocked here</span></label><p class="inv-activate-hint">Activating starts this location at the quantity you enter below — it does NOT recover any quantity shown while inactive. Not sure how much is really there? Check Shopify Admin → this variant → Edit locations first.</p><div class="inv-activate-row"><input type="number" min="0" step="1" class="inv-activate-qty" placeholder="0" data-location-id="${esc(l.id)}"><button type="button" class="inv-activate-btn" data-location-id="${esc(l.id)}" data-inv-item-id="${esc(invItemId)}">Activate</button></div></div>`
     ).join('');
     body.innerHTML=stockedHTML+notStockedHTML||'<p style="font-size:12px;color:var(--t3)">No locations available.</p>';
   }catch(e){
@@ -933,10 +933,13 @@ async function openInventoryModal(vid){
 }
 async function activateInventoryLocation(btn){
   const{locationId,invItemId}=btn.dataset;
+  const qtyInp=btn.parentElement?.querySelector('.inv-activate-qty');
+  const qty=parseInt(qtyInp?.value,10);
+  if(qtyInp?.value&&(isNaN(qty)||qty<0))return toast('Enter a valid starting quantity.');
   btn.disabled=true; btn.textContent='Activating…';
   try{
-    await api('/api/inventory-activate',{inventoryItemId:invItemId,locationId,quantity:0});
-    toast('Location activated — set a quantity and save.');
+    await api('/api/inventory-activate',{inventoryItemId:invItemId,locationId,quantity:isNaN(qty)?0:qty});
+    toast('Location activated.');
     if(S_invVid) openInventoryModal(S_invVid);
   }catch(e){
     toast(`Failed to activate: ${e.message}`);
