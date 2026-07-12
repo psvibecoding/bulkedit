@@ -40,6 +40,7 @@ let S = {
   past:[], future:[],
   filter:'all', searchQ:'', tagFilter:'', collFilter:'',
   selectedVids: new Set(),
+  expandedMfRows: new Set(),
   bulkType: null,
   bulkQtyLevels: null,
   schedules:[],
@@ -596,25 +597,37 @@ function defRow(def, ownerId, currentVal){
   return `<div class="mf-def-row">${lbl}<input class="mf-val-inp" placeholder="—" ${attrs} data-mf="smart" value="${esc(currentVal)}"></div>`;
 }
 
+const MF_FOLD_AT = 2;
+function wrapMfRows(rows, vid){
+  if(rows.length<=MF_FOLD_AT) return rows.join('');
+  const visible=rows.slice(0,MF_FOLD_AT).join('');
+  const extra=rows.slice(MF_FOLD_AT);
+  const expanded=S.expandedMfRows.has(vid);
+  const extraHTML=`<div class="mf-extra"${expanded?'':' style="display:none"'}>${extra.join('')}</div>`;
+  const toggle=`<button type="button" class="mf-toggle" data-vid="${esc(vid)}">${expanded?'▴ Show less':`▾ +${extra.length} more`}</button>`;
+  return visible+extraHTML+toggle;
+}
+
 function buildMfHTML(p, v){
   if(S.mfDefs.length){
     const productDefs  = S.mfDefs.filter(d=>d.ownerType==='PRODUCT');
     const variantDefs  = S.mfDefs.filter(d=>d.ownerType==='PRODUCTVARIANT');
-    const html =
-      productDefs.map(def  => defRow(def, p.id, p.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key)?.value??'')).join('') +
-      variantDefs.map(def  => defRow(def, v.id, v.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key)?.value??'')).join('');
-    return html || `<span class="mf-empty">No definitions</span>`;
+    const rows =
+      productDefs.map(def  => defRow(def, p.id, p.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key)?.value??'')).concat(
+      variantDefs.map(def  => defRow(def, v.id, v.metafields.nodes.find(m=>m.namespace===def.namespace&&m.key===def.key)?.value??'')));
+    return rows.length ? wrapMfRows(rows, v.id) : `<span class="mf-empty">No definitions</span>`;
   }
   // Fallback raw mode: show all existing metafields (product + variant) with ns.key labels
   const prodRows = p.metafields.nodes.map(m =>
     defRow({namespace:m.namespace,key:m.key,name:`${m.namespace}.${m.key}`,type:m.type||'single_line_text_field',ownerType:'PRODUCT'}, p.id, m.value||'')
-  ).join('');
+  );
   const varRows = v.metafields.nodes.map((m,i) => m.key
     ? defRow({namespace:m.namespace,key:m.key,name:`${m.namespace}.${m.key}`,type:m.type||'single_line_text_field',ownerType:'PRODUCTVARIANT'}, v.id, m.value||'')
     : `<div class="mf-row"><input class="mf-inp" placeholder="ns" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="namespace" value="custom"><input class="mf-inp" placeholder="key" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="key" value=""><input class="mf-inp" placeholder="value" data-vid="${esc(v.id)}" data-idx="${i}" data-mf="value" value=""><button class="mf-del" data-vid="${esc(v.id)}" data-idx="${i}">×</button></div>`
-  ).join('');
-  const rawContent = prodRows + varRows;
-  return (rawContent || `<span class="mf-empty">—</span>`) + `<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
+  );
+  const rows=[...prodRows,...varRows];
+  const rawContent=rows.length ? wrapMfRows(rows, v.id) : `<span class="mf-empty">—</span>`;
+  return rawContent+`<button class="mf-add" data-vid="${esc(v.id)}">+ metafield</button>`;
 }
 
 /* ── RESIZABLE COLUMNS ── */
@@ -670,6 +683,7 @@ function bindTable(){
     if(el.classList.contains('tag-add')){ addTagPrompt(el.dataset.pid); return; }
     if(el.classList.contains('mf-add')){ addMfRaw(el.dataset.vid); return; }
     if(el.classList.contains('mf-del')){ removeMfRaw(el.dataset.vid,+el.dataset.idx); return; }
+    if(el.classList.contains('mf-toggle')){ toggleMfExpand(el.dataset.vid); return; }
     if(el.classList.contains('coll-tag')){
       const cid=el.dataset.collId; if(!cid) return;
       S.collFilter=S.collFilter===cid?'':cid;
@@ -821,6 +835,12 @@ function addMfRaw(vid){
   const{p,v}=getVar(vid); if(!p||!v)return;
   pushH('Add metafield');
   v.metafields.nodes.push({namespace:'custom',key:'',type:'single_line_text_field',value:''});
+  S.expandedMfRows.add(vid); // reveal the new row even if it lands past the fold
+  const cell=$(`mf-${vid}`); if(cell)cell.innerHTML=buildMfHTML(p,v);
+}
+function toggleMfExpand(vid){
+  if(S.expandedMfRows.has(vid)) S.expandedMfRows.delete(vid); else S.expandedMfRows.add(vid);
+  const{p,v}=getVar(vid); if(!p||!v)return;
   const cell=$(`mf-${vid}`); if(cell)cell.innerHTML=buildMfHTML(p,v);
 }
 function removeMfRaw(vid,idx){

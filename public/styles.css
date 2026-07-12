@@ -245,6 +245,9 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .mf-del:hover{opacity:1;background:var(--red-bg)}
 .mf-add{font-size:10px;color:var(--t3);background:transparent;border:1px dashed var(--b2);border-radius:20px;padding:2px 10px;cursor:pointer;transition:all .15s;font-family:var(--mono)}
 .mf-add:hover{border-color:var(--green);color:var(--green);background:var(--green-bg);border-style:solid}
+.mf-extra{display:flex;flex-direction:column;gap:4px}
+.mf-toggle{align-self:flex-start;font-size:10px;color:var(--t3);background:transparent;border:1px dashed var(--b2);border-radius:20px;padding:2px 10px;cursor:pointer;transition:all .15s;font-family:var(--mono)}
+.mf-toggle:hover{border-color:var(--green);color:var(--green);background:var(--green-bg);border-style:solid}
 
 /* ═══════════ EXPORT ═══════════ */
 .export-layout{padding:20px;display:flex;flex-direction:column;gap:14px}
