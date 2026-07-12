@@ -1050,6 +1050,7 @@ async function execSaveProduct(session, { productId, product = {}, variants = []
       if (v.price          !== undefined) inp.price          = money(v.price, 'price');
       if (v.compareAtPrice !== undefined) inp.compareAtPrice = money(v.compareAtPrice, 'compareAtPrice');
       if (v.sku            !== undefined) inp.inventoryItem  = { sku: String(v.sku || '').slice(0, 255) };
+      if (v.barcode        !== undefined) inp.barcode        = String(v.barcode || '').slice(0, 255);
       byProduct[productId].push(inp);
     }
     for (const [pid, variantInputs] of Object.entries(byProduct)) {
@@ -1683,13 +1684,14 @@ app.post('/api/save-product', apiLimiter, writeLimiter, async (req, res) => {
         if (v.price          !== undefined) input.price          = money(v.price, 'price');
         if (v.compareAtPrice !== undefined) input.compareAtPrice = money(v.compareAtPrice, 'compareAtPrice');
         if (v.sku            !== undefined) input.inventoryItem  = { sku: String(v.sku || '').slice(0, 255) };
+        if (v.barcode        !== undefined) input.barcode        = String(v.barcode || '').slice(0, 255);
         byProduct[pid].push(input);
       }
       for (const [pid, variantInputs] of Object.entries(byProduct)) {
         const d = await gql(s, `
           mutation VariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
             productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-              productVariants { id price compareAtPrice inventoryItem { sku } }
+              productVariants { id price compareAtPrice barcode inventoryItem { sku } }
               userErrors { field message }
             }
           }`, { productId: pid, variants: variantInputs });

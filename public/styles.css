@@ -203,6 +203,7 @@ tr.r-changed .mod-chip{display:inline-block}
 .num-cell{display:flex;flex-direction:column;align-items:stretch;gap:1px;width:100%}
 .badge-stack{display:flex;flex-direction:column;gap:2px;width:100%}
 .ce-sku{font-family:var(--mono);font-size:11px;letter-spacing:.02em;color:var(--t2)}
+.ce-barcode{font-family:var(--mono);font-size:11px;letter-spacing:.02em;color:var(--t2)}
 .v-title{font-size:11px;color:var(--t3);word-break:break-word;line-height:1.4;font-family:var(--mono)}
 input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:pointer}
 

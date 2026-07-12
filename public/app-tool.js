@@ -521,6 +521,7 @@ function rowHTML(p,v){
   const descBadge=mainScheds.filter(b=>b.pf.bodyHtml!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Edit description'))}">description scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.bodyHtml!==undefined)?rb:'');
   const seoBadge=mainScheds.filter(b=>b.pf.seo!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Edit SEO'))}">SEO scheduled</div>`).join('')+(revertScheds.some(b=>b.pf.seo!==undefined)?rb:'');
   const skuBadge=mainScheds.filter(b=>b.vf.sku!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Change SKU'))}">→ ${esc(b.vf.sku||'(empty)')}</div>`).join('');
+  const barcodeBadge=mainScheds.filter(b=>b.vf.barcode!==undefined).map(b=>`<div class="sched-val-badge" data-stip="${esc(tip(b,'Change barcode'))}">→ ${esc(b.vf.barcode||'(empty)')}</div>`).join('');
   const seoMissing=!p.seo?.title&&!p.seo?.description;
   const seoIndicator=seoMissing?`<span class="seo-missing" title="No SEO title/description set">SEO</span>`:'';
   const bodyStripped=(p.bodyHtml||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
@@ -536,6 +537,7 @@ function rowHTML(p,v){
 <td><div class="colls-wrap">${collsHTML}</div></td>
 <td class="v-title">${esc(v.title||'Default')}</td>
 <td><div style="display:flex;flex-direction:column;gap:1px"><input class="ce ce-sku" data-vid="${esc(v.id)}" data-vf="sku" value="${esc(v.sku||'')}"><div class="badge-stack">${skuBadge}</div></div></td>
+<td><div style="display:flex;flex-direction:column;gap:1px"><input class="ce ce-barcode" data-vid="${esc(v.id)}" data-vf="barcode" value="${esc(v.barcode||'')}"><div class="badge-stack">${barcodeBadge}</div></div></td>
 <td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="price" value="${esc(v.price||'')}"><div class="badge-stack">${priceBadge}</div></div></td>
 <td><div class="num-cell"><input class="ce ce-num" type="number" step=".01" min="0" data-vid="${esc(v.id)}" data-vf="compareAtPrice" placeholder="—" value="${esc(v.compareAtPrice||'')}"><div class="badge-stack">${catBadge}</div></div></td>
 <td>${(S.locations?.length||0)>=2
@@ -620,7 +622,7 @@ function initColResize(){
   const table=document.querySelector('table'); if(!table)return;
   table.style.tableLayout='fixed';
   const ths=[...document.querySelectorAll('thead th')];
-  const widths=[34,44,240,90,110,160,130,110,100,82,90,72,220];
+  const widths=[34,44,240,90,110,160,130,110,100,110,82,90,72,220];
   ths.forEach((th,i)=>{
     th.style.width=(widths[i]||100)+'px';
     if(i<2)return;
@@ -1225,7 +1227,7 @@ function openSaveModal(){
       const vTitle=p.variants.nodes.find(x=>x.id===v.id)?.title||'variant';
       const isDefault=p.variants.nodes.length===1||vTitle==='Default Title';
       const vLbl=isDefault?'':vTitle+' ';
-      ['price','compareAtPrice','sku'].forEach(field=>{
+      ['price','compareAtPrice','sku','barcode'].forEach(field=>{
         if(v[field]!==undefined){const old=origV?String(origV[field]??''):'?';const nw=String(v[field]??'');if(old!==nw)diffs.push(`<div class="diff-row"><span class="diff-field">${esc(vLbl+field)}</span><span class="diff-old">${esc(old||'—')}</span><span class="diff-arr">→</span><span class="diff-new">${esc(nw)}</span></div>`);}
       });
     });
@@ -1437,7 +1439,7 @@ function buildRecap(payloads){
     Object.values(c.variants||{}).forEach(v=>{
       const origV=orig?.variants?.nodes?.find(x=>x.id===v.id);
       const vLbl=p.variants.nodes.find(x=>x.id===v.id)?.title||'';
-      ['price','compareAtPrice','sku'].forEach(field=>{
+      ['price','compareAtPrice','sku','barcode'].forEach(field=>{
         if(v[field]!==undefined){
           const old=origV?String(origV[field]??''):'';
           const nw=String(v[field]??'');
@@ -1612,7 +1614,7 @@ function buildRevertChanges(){
     Object.entries(c.variants||{}).forEach(([vid,v])=>{
       const origV=orig.variants?.nodes?.find(x=>x.id===vid); if(!origV)return;
       const rv={id:vid};
-      ['price','compareAtPrice','sku'].forEach(f=>{ if(v[f]!==undefined)rv[f]=origV[f]??''; });
+      ['price','compareAtPrice','sku','barcode'].forEach(f=>{ if(v[f]!==undefined)rv[f]=origV[f]??''; });
       variantsRevert[vid]=rv;
     });
     const metafieldsRevert=(c.metafields||[]).map(mf=>{
@@ -1930,8 +1932,8 @@ function switchTab(name){
 }
 
 /* ── EXPORT ── */
-const EX_ALL=['handle','id','title','status','vendor','tags','variant','sku','price','compareAtPrice','inventoryQuantity'];
-const EX_LBL={handle:'Handle',id:'ID',title:'Title',status:'Status',vendor:'Vendor',tags:'Tags',variant:'Variant',sku:'SKU',price:'Price',compareAtPrice:'Compare at',inventoryQuantity:'Inventory'};
+const EX_ALL=['handle','id','title','status','vendor','tags','variant','sku','barcode','price','compareAtPrice','inventoryQuantity'];
+const EX_LBL={handle:'Handle',id:'ID',title:'Title',status:'Status',vendor:'Vendor',tags:'Tags',variant:'Variant',sku:'SKU',barcode:'Barcode',price:'Price',compareAtPrice:'Compare at',inventoryQuantity:'Inventory'};
 
 function allMfFields(){
   const seen=new Set(), fields=[];
@@ -1970,6 +1972,7 @@ function exVal(p,v,f){
   if(f==='tags')return(p.tags||[]).join('|');
   if(f==='variant')return v.title||'Default';
   if(f==='sku')return v.sku||'';
+  if(f==='barcode')return v.barcode||'';
   if(f==='price')return v.price||'';
   if(f==='compareAtPrice')return v.compareAtPrice||'';
   if(f==='inventoryQuantity')return String(v.inventoryQuantity??'');
