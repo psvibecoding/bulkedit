@@ -1625,16 +1625,49 @@ app.post('/api/inventory-set', apiLimiter, writeLimiter, async (req, res) => {
       return { inventoryItemId: q.inventoryItemId, locationId: q.locationId, quantity: qty };
     });
 
-    const d = await gql(s, `
-      mutation InventorySet($input: InventorySetQuantitiesInput!) {
-        inventorySetQuantities(input: $input) {
-          inventoryAdjustmentGroup { id }
-          userErrors { field message }
-        }
-      }`, { input: { name: 'available', reason: 'correction', ignoreCompareQuantity: true, quantities: items } });
-    const errs = d.inventorySetQuantities?.userErrors || [];
-    if (errs.length) throw new Error(errs.map(e => e.message).join(', '));
-    track('inventory_set', s.shop, { n: items.length });
+    // inventorySetQuantities is all-or-nothing: if ANY item in the batch isn't stocked at
+    // its location yet, Shopify rejects the whole batch (confirmed empirically — a valid
+    // item mixed with an invalid one does not partially commit). So: try the batch, and for
+    // any item that fails specifically because the location isn't stocked, activate it
+    // directly at the target quantity, then retry the set for whatever's left.
+    let toSet = items, activated = 0;
+    for (let attempt = 0; attempt < 2 && toSet.length; attempt++) {
+      const d = await gql(s, `
+        mutation InventorySet($input: InventorySetQuantitiesInput!) {
+          inventorySetQuantities(input: $input) {
+            inventoryAdjustmentGroup { id }
+            userErrors { field message }
+          }
+        }`, { input: { name: 'available', reason: 'correction', ignoreCompareQuantity: true, quantities: toSet } });
+      const errs = d.inventorySetQuantities?.userErrors || [];
+      if (!errs.length) { toSet = []; break; }
+
+      const notStockedIdx = new Set(), otherMsgs = [];
+      for (const e of errs) {
+        const idx = Number(e.field?.[2]);
+        if (/not stocked at the location/i.test(e.message) && Number.isInteger(idx)) notStockedIdx.add(idx);
+        else otherMsgs.push(e.message);
+      }
+      if (otherMsgs.length || !notStockedIdx.size || attempt === 1) {
+        throw new Error(errs.map(e => e.message).join(', '));
+      }
+
+      const toActivate = toSet.filter((_, i) => notStockedIdx.has(i));
+      toSet = toSet.filter((_, i) => !notStockedIdx.has(i));
+      for (const it of toActivate) {
+        const ad = await gql(s, `
+          mutation InventoryActivate($inventoryItemId: ID!, $locationId: ID!, $available: Int) {
+            inventoryActivate(inventoryItemId: $inventoryItemId, locationId: $locationId, available: $available) {
+              inventoryLevel { id }
+              userErrors { field message }
+            }
+          }`, { inventoryItemId: it.inventoryItemId, locationId: it.locationId, available: it.quantity });
+        const aErrs = ad.inventoryActivate?.userErrors || [];
+        if (aErrs.length) throw new Error(aErrs.map(e => e.message).join(', '));
+        activated++;
+      }
+    }
+    track('inventory_set', s.shop, { n: items.length, activated });
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ ok: false, error: safeErr(e), requestId: req.requestId }); }
 });
