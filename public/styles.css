@@ -299,11 +299,13 @@ input[type="checkbox"]{width:14px;height:14px;accent-color:var(--green);cursor:p
 .bulk-field{display:flex;flex-direction:column;gap:5px}
 .bulk-field label{font-size:9px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--t3);font-weight:600}
 .bulk-field input:not([type=checkbox]):not([type=radio]),.bulk-field select{background:var(--bg);border:1px solid var(--b2);border-radius:var(--r6);padding:9px 11px;font-size:13px;font-family:var(--font);color:var(--tx);outline:none;width:100%;transition:border-color .15s,box-shadow .15s}
+.inv-not-stocked{background:var(--red-bg);border:1px solid var(--red-brd);border-radius:var(--r8);padding:10px 12px}
+.inv-not-stocked-pill{display:inline-flex;align-items:center;background:var(--red-bg);border:1px solid var(--red-brd);border-radius:20px;padding:2px 9px;font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--red);font-family:var(--mono);vertical-align:middle}
 .inv-activate-hint{font-size:10px;color:var(--t3);margin:0;line-height:1.5}
-.inv-activate-row{display:flex;gap:6px;align-items:stretch}
-.inv-activate-row .inv-activate-qty{width:80px;flex:none}
-.inv-activate-btn{flex:none;font-size:11px;font-weight:600;color:var(--green);background:var(--green-bg);border:1px solid var(--green-brd);border-radius:var(--r6);padding:6px 12px;cursor:pointer;transition:all .15s;font-family:var(--font);white-space:nowrap}
-.inv-activate-btn:hover{background:var(--green);color:#fff}
+.inv-activate-row{display:flex;gap:6px;align-items:stretch;flex-wrap:wrap}
+.bulk-field.inv-not-stocked .inv-activate-row input.inv-activate-qty{width:80px;flex:none;min-width:0}
+.inv-activate-btn{flex:none;font-size:11px;font-weight:600;color:#fff;background:var(--green);border:1px solid var(--green);border-radius:var(--r6);padding:6px 14px;cursor:pointer;transition:all .15s;font-family:var(--font);white-space:nowrap}
+.inv-activate-btn:hover{background:var(--green-lt);border-color:var(--green-lt)}
 .inv-activate-btn:disabled{opacity:.5;cursor:default}
 .bulk-field input:not([type=checkbox]):not([type=radio]):focus,.bulk-field select:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-bg)}
 .tag-with-action{display:grid;grid-template-columns:1fr auto;gap:7px}
