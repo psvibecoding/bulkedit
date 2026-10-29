@@ -1196,6 +1196,11 @@ app.get('/terms',   (req, res) => res.sendFile(path.join(__dirname, 'public', 't
 app.get('/bulk-edit-shopify-prices',       (req, res) => res.sendFile(path.join(__dirname, 'public', 'bulk-edit-shopify-prices.html')));
 app.get('/shopify-schedule-price-changes', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-schedule-price-changes.html')));
 app.get('/shopify-auto-revert-prices',     (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-auto-revert-prices.html')));
+app.get('/shopify-black-friday-pricing', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-black-friday-pricing.html')));
+app.get('/shopify-flash-sale', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-flash-sale.html')));
+app.get('/shopify-bulk-compare-at-price', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-bulk-compare-at-price.html')));
+app.get('/shopify-bulk-edit-tags', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-bulk-edit-tags.html')));
+app.get('/shopify-bulk-edit-seo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'shopify-bulk-edit-seo.html')));
 
 app.get('/hp-v2', (req, res) => res.sendFile(path.join(__dirname, 'public', 'hp-v2.html')));
 app.get('/hp-v3', (req, res) => res.sendFile(path.join(__dirname, 'public', 'hp-v3.html')));
