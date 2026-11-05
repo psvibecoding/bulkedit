@@ -182,6 +182,7 @@
     .plan-card.live{background:var(--dark);border-color:var(--dark)}
     .plan-date{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:var(--green-bg);border:1px solid var(--green-brd);border-radius:20px;padding:4px 12px;margin-bottom:18px}
     .plan-card.live .plan-date{color:var(--mint);background:rgba(134,239,172,.1);border-color:rgba(134,239,172,.3)}
+    @media(min-width:769px){.plan-card.nodate{padding-top:70px}}
     .plan-card h3{font-family:var(--serif);font-size:26px;line-height:1.15;margin-bottom:10px;color:var(--ink)}
     .plan-card.live h3{color:#fff}
     .plan-card p{font-size:14px;line-height:1.65;color:var(--ink3)}
@@ -379,7 +380,7 @@
     <span class="section-tag reveal">Your BFCM, handled</span>
     <h2 class="section-title reveal">Set it up now.<br>Spend Black Friday on ads, not on prices.</h2>
     <div class="plan-grid">
-      <div class="plan-card reveal">
+      <div class="plan-card nodate reveal">
         <h3>Build your prices</h3>
         <p>Select your products, apply a price rule and set compare-at so shoppers see the "was" price. Review every old → new value before anything touches your store.</p>
       </div>
