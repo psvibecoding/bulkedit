@@ -1407,9 +1407,20 @@ app.post('/billing/subscribe', apiLimiter, async (req, res) => {
       [state, shop, plan, encTok]
     );
 
+    // Dev/partner stores must get a *test* charge: Shopify never bills them and
+    // doesn't ask for a payment method. Real merchants are never flagged as test —
+    // if the lookup fails we fall back to a real charge, never the other way round.
+    let isTest = false;
+    try {
+      const s = await gql({ shop, token }, `query { shop { plan { partnerDevelopment } } }`);
+      isTest = s?.shop?.plan?.partnerDevelopment === true;
+    } catch (e) {
+      console.error('[billing/subscribe] dev-store check failed, using real charge:', e.message);
+    }
+
     const d = await gql({ shop, token }, `
-      mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int) {
-        appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, trialDays: $trialDays) {
+      mutation AppSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
+        appSubscriptionCreate(name: $name, returnUrl: $returnUrl, lineItems: $lineItems, trialDays: $trialDays, test: $test) {
           userErrors { field message }
           confirmationUrl
           appSubscription { id }
@@ -1418,6 +1429,7 @@ app.post('/billing/subscribe', apiLimiter, async (req, res) => {
       name: cfg.name,
       returnUrl,
       trialDays,
+      test: isTest,
       lineItems: [{
         plan: {
           appRecurringPricingDetails: {
